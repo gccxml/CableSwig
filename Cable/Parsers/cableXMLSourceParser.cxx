@@ -1184,7 +1184,7 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
       cableErrorMacro("Found " << element->GetName()
                       << " nested in Enumeration " << element->GetId()
                       << ".  It is not an EnumValue.");
-      return false;
+      return 0;
       }
     }
 

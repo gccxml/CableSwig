@@ -16,7 +16,3 @@ SET(CxxTypes_SRCS
   "${CABLE_SOURCE_DIR}/CxxTypes/cxxTypeSystem.cxx"
 )
 
-IF (WIN32)
-  SET(CxxTypes_SRCS ${CxxTypes_SRCS}
-      "${CABLE_SOURCE_DIR}/CxxTypes/cxxDllAllocator.cxx")
-ENDIF (WIN32)

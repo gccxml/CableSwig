@@ -47,11 +47,11 @@ public:
   
   /** Allow assignment.  */
   SmartPointer& operator = (const SmartPointer& r)
-    { SmartPointer(r).Swap(*this); return *this; }  
+    { SmartPointer<T>(r).Swap(*this); return *this; }  
 
   /** Allow assignment.  */
   SmartPointer& operator = (T* r)
-    { SmartPointer(r).Swap(*this); return *this; }  
+    { SmartPointer<T>(r).Swap(*this); return *this; }  
 
   /** Allow access to members of T as if this were a normal pointer.  */
   T* operator -> () const { return m_Pointer;  }

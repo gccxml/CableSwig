@@ -60,12 +60,6 @@
 #    define _cxx_char_traits string_char_traits
 #  endif
 
-#  define _cxx_NEED_DLL_ALLOCATOR
-#  define _cxx_STATIC_ALLOCATOR_METHODS
-#  define _cxxUtils_DllAllocator_include
-#  include "cxxDllAllocator.h"
-#  undef _cxxUtils_DllAllocator_include
-
 #else /* UNIX version */
 
 #  define _cxx_EXPORT
