@@ -4,7 +4,7 @@ namespace _cable_
 {
   const char* const group="StringTcl1";
   const char* const package="StringTcl";
-    const char* const groups[]={"StringTcl1"};
+  const char* const groups[]={"StringTcl1"};
   namespace wrappers
   {
     typedef ::std::string stdstring;

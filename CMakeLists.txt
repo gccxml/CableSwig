@@ -4,8 +4,8 @@ FIND_LIBRARY(SWIG_TOP  swig.spec.in ${CableSwig_SOURCE_DIR}/SWIG-1.3.17 ${HOME}/
                        DOC "Path to the swig build/source tree" )
 
 FIND_PATH(CABLE_BIN NAMES cableVersion.h  
-             ${HOME}/Cable-gcc/Generators
-             ${HOME}/Cable-build/Generators
+             $ENV{HOME}/Cable-gcc/Generators
+             $ENV{HOME}/Cable-build/Generators
              DOC "Full path to the cable bin")
 
 FIND_PATH(CABLE_SOURCE CABLEConfig.cmake.in ${HOME}/Cable

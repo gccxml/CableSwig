@@ -22,6 +22,14 @@ class foo : public bar<T>
 {
   T val;
 public:
+  foo(T t) 
+    {
+      val = t;
+    }
+  foo()
+    {
+      val = (T)0;
+    }
   void SetT(T v)
     {
       val = v;
@@ -36,9 +44,9 @@ public:
 #ifdef CABLE_CONFIGURATION
 namespace _cable_
 {
-  const char* const group="FooTcl1";
-  const char* const package="FooTcl";
-  const char* const groups[]={"FooTcl1"};
+  const char* const group="WrapTemplate";
+  const char* const package="WrapTemplate";
+  const char* const groups[]={"WrapTemplate"};
   namespace wrappers
   {
     typedef bar<int> intbar;
