@@ -318,32 +318,29 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 
 
   // Check for SWIG_LIB environment variable
-
   if ((c = getenv("SWIG_LIB")) == (char *) 0) {
-#if defined(_WIN32)
-      char buf[MAX_PATH];
-      char *p;
-      if (GetModuleFileName(0, buf, MAX_PATH) == 0
-	  || (p = strrchr(buf, '\\')) == 0) {
-       Printf(stderr, "Warning: Could not determine SWIG library location. Assuming " SWIG_LIB "\n");
-       sprintf(LibDir,"%s",SWIG_LIB);    // Build up search paths
-      } else {
-       strcpy(p+1, "Lib");
-       strcpy(LibDir, buf);
-      }
-#else
-       sprintf(LibDir,"%s",SWIG_LIB);    // Build up search paths
-#endif                                        
+  if(SWIG_FileIsDirectory(SWIG_LIB))
+    {
+    sprintf(LibDir,"%s",SWIG_LIB);
+    }
+#ifdef SWIG_LIB_INSTALL
+  else if(SWIG_FileIsDirectory(SWIG_LIB_INSTALL))
+    {
+    sprintf(LibDir,"%s",SWIG_LIB_INSTALL);
+    }
+#endif
+  else
+    {
+    fprintf(stderr, "Cannot find SWIG Lib directory.  Checked:\n");
+    fprintf(stderr, "  %s\n", SWIG_LIB);
+#ifdef SWIG_LIB_INSTALL
+    fprintf(stderr, "  %s\n", SWIG_LIB_INSTALL);
+#endif
+    SWIG_exit (EXIT_FAILURE);
+    }
   } else {
       strcpy(LibDir,c);
   }
-  if(!SWIG_FileIsDirectory(LibDir))
-    {
-    if(SWIG_FileIsDirectory(SWIG_SOURCE_LIB))
-      {
-      strcpy(LibDir,SWIG_SOURCE_LIB);
-      }
-    }
   
   SwigLib = Swig_copy_string(LibDir);        // Make a copy of the real library location
   

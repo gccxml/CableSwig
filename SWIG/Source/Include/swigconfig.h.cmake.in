@@ -85,8 +85,7 @@
 /* Version number of package */
 #cmakedefine VERSION @VERSION@
 
-
-
+#cmakedefine SWIG_LIB_INSTALL "@SWIG_LIB_INSTALL@"
 
 /* Default language */
 #define SWIG_LANG               "-tcl"
