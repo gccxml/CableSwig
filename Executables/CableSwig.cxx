@@ -139,16 +139,21 @@ void CableSwig::ReplaceString(std::string& source,
 // in which case you return the typedef for the class
 std::string CableSwig::GetClassName(const cable::Class* c, const char* td)
 {
+  // if there is a typedef use that name
+  if(td)
+    {
+    return std::string(td);
+    }
   std::string name = c->GetName();
+  // if not a template name or a typedef then return the name
   if(name.find('<') == name.npos)
     {
     return name;
     }
-  if(!td)
+  else
     {
     return this->TemplateName(c->GetName());
     }
-  return std::string(td);
 }
 
 
