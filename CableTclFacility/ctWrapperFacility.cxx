@@ -1169,6 +1169,9 @@ void WrapperFacility::InitializePredefinedConversions() const
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, unsigned short);
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, unsigned int);
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, unsigned long);
+  _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(int, char);
+  _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(int, short);
+  _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(int, long);
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, char);
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, short);
   _cable_tcl_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(long, int);
