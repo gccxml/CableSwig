@@ -15,7 +15,7 @@
 char cvsroot_cscanner_c[] = "/cvsroot/SWIG/Source/CParse/cscanner.c,v 1.7 2004/01/15 22:46:04 cheetah Exp";
 
 #include "cparse.h"
-#include "parser.h"
+#include <../CParse/parser.h> /* Hack include to find correct parser.h */
 #include <string.h>
 #include <ctype.h>
 
