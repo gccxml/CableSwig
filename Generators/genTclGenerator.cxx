@@ -362,8 +362,6 @@ TclGenerator
   this->WriteWrapperClassDefinition(c, methods);
   
   m_Output <<
-    "namespace _wrap_\n"
-    "{\n"
     "\n";
 
   for(unsigned int m = 0 ; m < methods.size() ; ++m)
@@ -538,10 +536,6 @@ TclGenerator
   
   m_Output <<
     "}\n"
-    "\n";
-
-  m_Output <<
-    "} // namespace _wrap_\n"
     "\n";
 }
 
