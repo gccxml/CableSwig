@@ -8,7 +8,7 @@
 #pragma warning ( disable : 4786 )
 #endif
 
-//#include "swigmod.h"
+// include swig stuff
 #ifndef MACSWIG
 #include "swigconfig.h"
 #endif
@@ -68,16 +68,12 @@ public:
     }
 
   int ParseFile(const char* input_file, Node* top, const char* wrapLang);
-  void SetIncludeDirectories( char** includefiles, int includecount);
   void AddMasterIndexFile(const char* m);
 private:
   void ParseIndexInformation(const char* s);
   void ReplaceString(std::string& source,
                      const char* replace,
                      const char* with);
-  std::string findSelfPath(const char* argv0);
-  std::string findGCC_XML(const char* argv0, const char* cableGCCXML);
-  std::string findXMLFileName(const char* argv0);
   std::string GetClassName(const cable::Class* c, const char* typeDefName);
   std::string TemplateName(const char* s);
   std::string ToSwigType(cxx::CvQualifiedType const&  t);
@@ -103,6 +99,7 @@ private:
   bool FindImportTypedef(const char* className, std::string* typeName = 0);
   bool ReadMasterIndexFile();
   void AddClassToBeImported(cable::Class*);
+  void FindWrappedBases(List* bases, const cable::Class* c);
 private:
   std::string m_IncludeFlags;
   std::string m_WrapLanguage;

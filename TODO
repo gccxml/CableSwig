@@ -1,4 +1,5 @@
-- base class fix
+- tcl dll export
+- library names, need to remove Tcl from python...
 - operator rename files
 - missing class files
 - mark if a class has a public constructor in the idx file
@@ -8,3 +9,4 @@
 - namespace change
 - add a -cable option to cswig and process those files with cswig and any other
   input with regular swig
+- remove use of patch somehow....

@@ -15,6 +15,7 @@
 char cvsroot_main_cxx[] = "Header";
 
 #include "CableSwig.h"
+#include "cableSystemTools.h"
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #pragma warning ( disable : 4786 )
@@ -189,6 +190,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   char   *c;
   char    temp[512];
   char   *outfile_name = 0;
+  char   *bin_dir = 0;
   int     help = 0;
   int     checkout = 0;
   int     cpp_only = 0;
@@ -248,8 +250,8 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 
   if ((c = getenv("SWIG_LIB")) == (char *) 0) {
 #if defined(_WIN32)
-      char buf[MAX_PATH];
-      char *p;
+//      char buf[MAX_PATH];
+//      char *p;
 //      if (GetModuleFileName(0, buf, MAX_PATH) == 0
 //	  || (p = strrchr(buf, '\\')) == 0) 
         {
@@ -333,6 +335,15 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	      Swig_mark_arg(i);
 	      if (argv[i+1]) {
                 Append(cable_index_files,argv[i+1]);
+		Swig_mark_arg(i+1);
+		i++;
+	      } else {
+		Swig_arg_error();
+	      }
+	  } else if (strcmp(argv[i],"-bindir") == 0) {
+              Swig_mark_arg(i);
+	      if (argv[i+1]) {
+                bin_dir = Swig_copy_string(argv[i+1]);
 		Swig_mark_arg(i+1);
 		i++;
 	      } else {
@@ -574,7 +585,6 @@ int SWIG_main(int argc, char *argv[], Language *l) {
       cswig.AddMasterIndexFile(Char(Getitem(cable_index_files,i)));
       }
     Delete(cable_index_files);
-    cswig.SetIncludeDirectories(includefiles, includecount);
     cswig.ParseFile(input_file, top, typemap_lang);
     if (Verbose) {
       Printf(stdout,"Processing types...\n");
@@ -635,6 +645,20 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	  Swig_browser(top,0);
 	}
       }
+      // if the wrap language is python and
+      // the user specifies a bin dir on the command line
+      // then copy the .py file to the bindir so it is in the
+      // same place as the _library.dll or .so file.
+      if(bin_dir && strcmp(typemap_lang, "python") == 0)
+        {
+        char source[2048]; 
+        char dest[2048]; 
+        String* module = Getattr(top,"name");
+        cable::String bdir = cable::SystemTools::CollapseDirectory(bin_dir);
+        sprintf(source,"%s%s.py", Swig_file_dirname(outfile_name), Char(module));
+        sprintf(dest,"%s/%s.py", bdir.c_str(), Char(module));
+        cable::SystemTools::FileCopy(source, dest);
+        }
     }
   }
   if (tm_debug) Swig_typemap_debug();
