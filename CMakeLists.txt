@@ -35,4 +35,7 @@ INCLUDE_DIRECTORIES(
 
 
 LINK_DIRECTORIES( ${CableSwig_BINARY_DIR}/bin  )
+
+# Tell GCC-XML that we are building gccxml_cc1plus.
+SET(GCCXML_NATIVE_CC1PLUS 1)
 SUBDIRS(SWIG Cable GCCPatch GCC_XML Executables)
