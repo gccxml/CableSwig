@@ -1578,7 +1578,7 @@ SwigType_emit_type_table(File *f_forward, File *f_table) {
     
     cd = SwigType_clientdata_collect(key,0);
     if (!cd) cd = "0";
-    Printv(types,"{\"", key, "\", 0, \"", SwigType_str(Getattr(r_ltype,key),0),"\", ", cd, "},", NIL);
+    Printv(types,"{\"", key, "\", 0, \"", SwigType_str(Getattr(r_ltype,key),0),"\", ", cd, ",0,0,0},", NIL);
     el = SwigType_equivalent_mangle(key,0,0);
     for (en = Firstitem(el); en; en = Nextitem(el)) {
       String *ckey;
@@ -1586,14 +1586,14 @@ SwigType_emit_type_table(File *f_forward, File *f_table) {
       ckey = NewStringf("%s+%s", en, key);
       conv = Getattr(conversions,ckey);
       if (conv) {
-	Printf(types,"{\"%s\", %s},", en, conv);
+	Printf(types,"{\"%s\", %s,0,0,0,0,0},", en, conv);
       } else {
-	Printf(types,"{\"%s\"},", en);
+	Printf(types,"{\"%s\",0,0,0,0,0,0},", en);
       }
       Delete(ckey);
     }
     Delete(el);
-    Printf(types,"{0}};\n");
+    Printf(types,"{0,0,0,0,0,0,0}};\n");
     Printv(table, "_swigt_", key, ", \n", NIL);
     key = Nextkey(r_mangled);
     i++;

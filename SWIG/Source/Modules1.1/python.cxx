@@ -238,13 +238,13 @@ public:
     Language::top(n);
 
     /* Close language module */
-    Printf(methods,"\t { NULL, NULL }\n");
+    Printf(methods,"\t { NULL, NULL, 0, 0 }\n");
     Printf(methods,"};\n");
     Printf(f_wrappers,"%s\n",methods);
 
     SwigType_emit_type_table(f_runtime,f_wrappers);
 
-    Printf(const_code, "{0}};\n");
+    Printf(const_code, "{0,0,0,0,0,0}};\n");
     Printf(f_wrappers,"%s\n",const_code);
     Printf(f_init,"}\n");
 
@@ -289,9 +289,9 @@ public:
 
   void add_method(String *name, String *function, int kw) {
     if (!kw)
-      Printf(methods,"\t { (char *)\"%s\", %s, METH_VARARGS },\n", name, function);
+      Printf(methods,"\t { (char *)\"%s\", %s, METH_VARARGS, 0 },\n", name, function);
     else
-      Printf(methods,"\t { (char *)\"%s\", (PyCFunction) %s, METH_VARARGS | METH_KEYWORDS },\n", name, function);
+      Printf(methods,"\t { (char *)\"%s\", (PyCFunction) %s, METH_VARARGS | METH_KEYWORDS, 0 },\n", name, function);
   }
   
   /* ------------------------------------------------------------
@@ -360,12 +360,12 @@ public:
       if (!varargs) {
 	Printv(f->def,
 	       "static PyObject *", wname,
-	       "(PyObject *self, PyObject *args) {",
+	       "(PyObject *self, PyObject *args) {\n(void)self; (void)args;",
 	       NIL);
       } else {
 	Printv(f->def,
 	       "static PyObject *", wname, "__varargs__", 
-	       "(PyObject *self, PyObject *args, PyObject *varargs) {",
+	       "(PyObject *self, PyObject *args, PyObject *varargs) {\n(void)self; (void)args; (void)varargs;",
 	       NIL);
       }
       if (allow_kwargs) {
@@ -381,7 +381,7 @@ public:
       }
       Printv(f->def,
 	     "static PyObject *", wname,
-	     "(PyObject *self, PyObject *args, PyObject *kwargs) {",
+	     "(PyObject *self, PyObject *args, PyObject *kwargs) {\n(void)self; (void)args; (void)kwargs;",
 	     NIL);
     }
     if (!allow_kwargs) {
@@ -578,7 +578,7 @@ public:
       f = NewWrapper();
       Printv(f->def,
 	     "static PyObject *", wname,
-	     "(PyObject *self, PyObject *args) {",
+	     "(PyObject *self, PyObject *args) {\n(void)self; (void)args;",
 	     NIL);
       Wrapper_add_local(f,"resultobj", "PyObject *resultobj");
       Wrapper_add_local(f,"varargs", "PyObject *varargs");
@@ -640,7 +640,7 @@ public:
 
     Printv(f->def,	
 	   "static PyObject *", wname,
-	   "(PyObject *self, PyObject *args) {",
+	   "(PyObject *self, PyObject *args) {\n(void)self;",
 	   NIL);
     
     Wrapper_add_local(f,"argc","int argc");
@@ -934,7 +934,7 @@ public:
 	SwigType  *ct = NewStringf("p.%s", real_classname);
 	SwigType_remember(ct);
 	Printv(f_wrappers,
-	       "static PyObject * ", class_name, "_swigregister(PyObject *self, PyObject *args) {\n",
+	       "static PyObject * ", class_name, "_swigregister(PyObject *self, PyObject *args) {\n(void)self; (void)args;\n",
 	       tab4, "PyObject *obj;\n",
 	       tab4, "if (!PyArg_ParseTuple(args,(char*)\"O\", &obj)) return NULL;\n",
 	       tab4, "SWIG_TypeClientData(SWIGTYPE", SwigType_manglestr(ct),", obj);\n",

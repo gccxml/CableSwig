@@ -224,7 +224,8 @@ public:
     Setattr(n,"wrap:name",wname);
 
     Printv(f->def,
-	   "static int\n ", wname, "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {",
+	   "static int\n ", wname, "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
+           "(void)clientData; (void)interp; (void)objc; (void)objv;",
 	   NIL);
     
     /* Print out variables for storing arguments. */
@@ -422,7 +423,8 @@ public:
 
 	Printv(df->def,	
 	       "static int\n", dname,
-	       "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {",
+	       "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
+               "(void)clientData; (void)interp; (void)objc; (void)objv;",
 	       NIL);
 	Printf(df->code,"Tcl_Obj *CONST *argv = objv+1;\n");
 	Printf(df->code,"int argc = objc-1;\n");
