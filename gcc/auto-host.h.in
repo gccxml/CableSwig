@@ -387,6 +387,9 @@
 
 /* Define to 1 if we found this declaration otherwise define to 0. */
 #cmakedefine HAVE_DECL_ENVIRON 1
+#ifndef HAVE_DECL_ENVIRON
+#define HAVE_DECL_ENVIRON 0
+#endif HAVE_DECL_ENVIRON
 
 /* Define to 1 if we found this declaration otherwise define to 0. */
 #define HAVE_DECL_MALLOC 1
