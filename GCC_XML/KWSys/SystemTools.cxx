@@ -693,6 +693,90 @@ bool SystemTools::FileExists(const char* filename)
 }
 
 
+bool SystemTools::FileTimeCompare(const char* f1, const char* f2,
+                                  int* result)
+{
+  // Default to same time.
+  *result = 0;
+#if !defined(_WIN32) || defined(__CYGWIN__)
+  // POSIX version.  Use stat function to get file modification time.
+  struct stat s1;
+  if(stat(f1, &s1) != 0)
+    {
+    return false;
+    }
+  struct stat s2;
+  if(stat(f2, &s2) != 0)
+    {
+    return false;
+    }
+# if KWSYS_STAT_HAS_ST_MTIM
+  // Compare using nanosecond resolution.
+  if(s1.st_mtim.tv_sec < s2.st_mtim.tv_sec)
+    {
+    *result = -1;
+    }
+  else if(s1.st_mtim.tv_sec > s2.st_mtim.tv_sec)
+    {
+    *result = 1;
+    }
+  else if(s1.st_mtim.tv_nsec < s2.st_mtim.tv_nsec)
+    {
+    *result = -1;
+    }
+  else if(s1.st_mtim.tv_nsec > s2.st_mtim.tv_nsec)
+    {
+    *result = 1;
+    }
+# else
+  // Compare using 1 second resolution.
+  if(s1.st_mtime < s2.st_mtime)
+    {
+    *result = -1;
+    }
+  else if(s1.st_mtime > s2.st_mtime)
+    {
+    *result = 1;
+    }
+# endif
+#else
+  // Windows version.  Create file handles and get the modification times.
+  HANDLE hf1 = CreateFile(f1, GENERIC_READ, FILE_SHARE_READ,
+                          NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS,
+                          NULL);
+  if(hf1 == INVALID_HANDLE_VALUE)
+    {
+    return false;
+    }
+  FILETIME tf1;
+  if(!GetFileTime(hf1, 0, 0, &tf1))
+    {
+    CloseHandle(hf1);
+    return false;
+    }
+  CloseHandle(hf1);
+  HANDLE hf2 = CreateFile(f2, GENERIC_READ, FILE_SHARE_READ,
+                          NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS,
+                          NULL);
+  if(hf2 == INVALID_HANDLE_VALUE)
+    {
+    return false;
+    }
+  FILETIME tf2;
+  if(!GetFileTime(hf2, 0, 0, &tf2))
+    {
+    CloseHandle(hf2);
+    return false;
+    }
+  CloseHandle(hf2);
+
+  // Compare the file times using resolution provided by system call.
+  *result = (int)CompareFileTime(&tf1, &tf2);
+#endif
+  return true;
+}
+
+
 // Return a capitalized string (i.e the first letter is uppercased, all other
 // are lowercased)
 kwsys_stl::string SystemTools::Capitalized(const kwsys_stl::string& s)
@@ -1061,6 +1145,51 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
   return true;
 }
 
+/**
+ * Copy a directory content from "source" directory to the directory named by
+ * "destination".
+ */
+bool SystemTools::CopyADirectory(const char* source, const char* destination)
+{
+  Directory dir;
+  dir.Load(source);
+  size_t fileNum;
+  if ( !SystemTools::MakeDirectory(destination) )
+    {
+    return false;
+    }
+  for (fileNum = 0; fileNum <  dir.GetNumberOfFiles(); ++fileNum)
+    {
+    if (strcmp(dir.GetFile(static_cast<unsigned long>(fileNum)),".") &&
+        strcmp(dir.GetFile(static_cast<unsigned long>(fileNum)),".."))
+      {
+      kwsys_stl::string fullPath = source;
+      fullPath += "/";
+      fullPath += dir.GetFile(static_cast<unsigned long>(fileNum));
+      if(SystemTools::FileIsDirectory(fullPath.c_str()))
+        {
+        kwsys_stl::string fullDestPath = destination;
+        fullDestPath += "/";
+        fullDestPath += dir.GetFile(static_cast<unsigned long>(fileNum));
+        if (!SystemTools::CopyADirectory(fullPath.c_str(), fullDestPath.c_str()))
+          {
+          return false;
+          }
+        }
+      else
+        {
+        if(!SystemTools::CopyFileAlways(fullPath.c_str(), destination))
+          {
+          return false;
+          }
+        }
+      }
+    }
+
+  return true;
+}
+
+
 // return size of file; also returns zero if no file exists
 unsigned long SystemTools::FileLength(const char* filename)
 {
@@ -1112,7 +1241,23 @@ kwsys_stl::string SystemTools::GetLastSystemError()
 
 bool SystemTools::RemoveFile(const char* source)
 {
-  return unlink(source) != 0 ? false : true;
+#ifdef _WIN32
+  mode_t mode;
+  if ( !SystemTools::GetPermissions(source, mode) )
+    {
+    return false;
+    }
+  /* Win32 unlink is stupid --- it fails if the file is read-only  */
+  SystemTools::SetPermissions(source, S_IWRITE);
+#endif
+  bool res = unlink(source) != 0 ? false : true;
+#ifdef _WIN32
+  if ( !res )
+    {
+    SystemTools::SetPermissions(source, mode);
+    }
+#endif
+  return res;
 }
 
 bool SystemTools::RemoveADirectory(const char* source)
@@ -1495,7 +1640,14 @@ void SystemTools::AddTranslationPath(const char * a, const char * b)
         == kwsys_stl::string::npos )
       {
       // Before inserting make sure path ends with '/'
-      path_a += '/'; path_b += '/';
+      if(path_a.size() && path_a[path_a.size() -1] != '/')
+        {
+        path_a += '/'; 
+        }
+      if(path_b.size() && path_b[path_b.size() -1] != '/')
+        {
+        path_b += '/';
+        }
       if( !(path_a == path_b) )
         {
         SystemTools::TranslationMap->insert(
@@ -1513,6 +1665,18 @@ void SystemTools::AddKeepPath(const char* dir)
 
 void SystemTools::CheckTranslationPath(kwsys_stl::string & path)
 {
+  // Do not translate paths that are too short to have meaningful
+  // translations.
+  if(path.size() < 2)
+    {
+    return;
+    }
+
+  // Always add a trailing slash before translation.  It does not
+  // matter if this adds an extra slash, but we do not want to
+  // translate part of a directory (like the foo part of foo-dir).
+  path += "/";
+
   // In case a file was specified we still have to go through this:
   // Now convert any path found in the table back to the one desired:
   kwsys_stl::map<kwsys_stl::string,kwsys_stl::string>::const_iterator it;
@@ -1521,28 +1685,19 @@ void SystemTools::CheckTranslationPath(kwsys_stl::string & path)
       ++it )
     {
     // We need to check of the path is a substring of the other path
-    // But also check that the last character is a '/' otherwise we could
-    // have some weird case such as /tmp/VTK and /tmp/VTK-bin
-    if(path.size() > 1 && path[path.size()-1] != '/')
-      {
-      // Do not append '/' on a program name:
-      if( SystemTools::FileIsDirectory( path.c_str() ) )
-        {
-        path += "/";
-        }
-      }
     if(path.find( it->first ) == 0)
       {
       path = path.replace( 0, it->first.size(), it->second);
       }
     }
+
+  // Remove the trailing slash we added before.
+  path.erase(path.end()-1, path.end());
 }
 
 kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
                                                 const char* in_base)
 {
-  static int initialized = 0;
-
   kwsys_stl::string orig;
   
   // Change to base of relative path.
@@ -1590,28 +1745,103 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
     newPath += file;
     }
 
-  // If the table has never been initialized, add default path:
-  if(!initialized)
-    {
-    initialized = 1;
-    // add some special translation paths for unix
-    // these are not added for windows because drive
-    // letters need to be maintained.  Also, there
-    // are not sym-links and mount points on windows anyway.
-#if !defined( _WIN32 ) 
-    //Also add some good default one:
-    // This one should always be there it fix a bug on sgi
-    SystemTools::AddTranslationPath("/tmp_mnt/", "/");
-    //This is a good default also:
-    SystemTools::AddKeepPath("/tmp/");
-#endif
-    }
-
   // Now we need to update the translation table with this potentially new path
   SystemTools::AddTranslationPath(newPath.c_str(), in_relative);
   SystemTools::CheckTranslationPath(newPath);
 
   return newPath;
+}
+
+//----------------------------------------------------------------------------
+void SystemTools::SplitPath(const char* p,
+                            kwsys_stl::vector<kwsys_stl::string>& components)
+{
+  components.clear();
+  // Identify the root component.
+  const char* c = p;
+  if(c[0] == '/' && c[1] == '/')
+    {
+    // Network path.
+    components.push_back("//");
+    c += 2;
+    }
+  else if(c[0] == '/')
+    {
+    // Unix path.
+    components.push_back("/");
+    c += 1;
+    }
+  else if(c[0] && c[1] == ':' && c[2] == '/')
+    {
+    // Windows path.
+    kwsys_stl::string root = "_:/";
+    root[0] = c[0];
+    components.push_back(root);
+    c += 3;
+    }
+  else if(c[0] && c[1] == ':')
+    {
+    // Path relative to a windows drive working directory.
+    kwsys_stl::string root = "_:";
+    root[0] = c[0];
+    components.push_back(root);
+    c += 2;
+    }
+  else
+    {
+    // Relative path.
+    components.push_back("");
+    }
+
+  // Parse the remaining components.
+  const char* first = c;
+  const char* last = first;
+  for(;*last; ++last)
+    {
+    if(*last == '/')
+      {
+      // End of a component.  Save it.
+      components.push_back(kwsys_stl::string(first, last-first));
+      first = last+1;
+      }
+    }
+
+  // Save the last component unless there were no components.
+  if(last != c)
+    {
+    components.push_back(kwsys_stl::string(first, last-first));
+    }
+}
+
+//----------------------------------------------------------------------------
+kwsys_stl::string
+SystemTools::JoinPath(const kwsys_stl::vector<kwsys_stl::string>& components)
+{
+  kwsys_stl::string result;
+  if(components.size() > 0)
+    {
+    result += components[0];
+    }
+  if(components.size() > 1)
+    {
+    result += components[1];
+    }
+  for(unsigned int i=2; i < components.size(); ++i)
+    {
+    result += "/";
+    result += components[i];
+    }
+  return result;
+}
+
+//----------------------------------------------------------------------------
+bool SystemTools::ComparePath(const char* c1, const char* c2)
+{
+#if defined(_WIN32) || defined(__APPLE__)
+  return SystemTools::Strucmp(c1, c2) == 0;
+#else
+  return strcmp(c1, c2) == 0;
+#endif
 }
 
 bool SystemTools::Split(const char* str, kwsys_stl::vector<kwsys_stl::string>& lines)
@@ -2138,7 +2368,60 @@ SystemToolsManager::~SystemToolsManager()
 
 void SystemTools::ClassInitialize()
 {
+  // Allocate the translation map first.
   SystemTools::TranslationMap = new SystemToolsTranslationMap;
+
+  // Add some special translation paths for unix.  These are not added
+  // for windows because drive letters need to be maintained.  Also,
+  // there are not sym-links and mount points on windows anyway.
+#if !defined(_WIN32) || defined(__CYGWIN__)
+  // Work-around an SGI problem by always adding this mapping:
+  SystemTools::AddTranslationPath("/tmp_mnt/", "/");
+  // The tmp path is frequently a logical path so always keep it:
+  SystemTools::AddKeepPath("/tmp/");
+
+  // If the current working directory is a logical path then keep the
+  // logical name.
+  if(const char* pwd = getenv("PWD"))
+    {
+    char buf[2048];
+    if(const char* cwd = Getcwd(buf, 2048))
+      {
+      kwsys_stl::string pwd_path;
+      Realpath(pwd, pwd_path);
+      if(cwd == pwd_path && strcmp(cwd, pwd) != 0)
+        {
+        // The current working directory is a logical path.  Split
+        // both the logical and physical paths into their components.
+        kwsys_stl::vector<kwsys_stl::string> cwd_components;
+        kwsys_stl::vector<kwsys_stl::string> pwd_components;
+        SystemTools::SplitPath(cwd, cwd_components);
+        SystemTools::SplitPath(pwd, pwd_components);
+
+        // Remove the common ending of the paths to leave only the
+        // part that changes under the logical mapping.
+        kwsys_stl::vector<kwsys_stl::string>::iterator ic = cwd_components.end();
+        kwsys_stl::vector<kwsys_stl::string>::iterator ip = pwd_components.end();
+        for(;ip != pwd_components.begin() && ic != cwd_components.begin() &&
+              *(ip-1) == *(ic-1); --ip,--ic);
+        cwd_components.erase(ic, cwd_components.end());
+        pwd_components.erase(ip, pwd_components.end());
+
+        // Reconstruct the string versions of the part of the path
+        // that changed.
+        kwsys_stl::string cwd_changed = SystemTools::JoinPath(cwd_components);
+        kwsys_stl::string pwd_changed = SystemTools::JoinPath(pwd_components);
+
+        // Add the translation to keep the logical path name.
+        if(!cwd_changed.empty() && !pwd_changed.empty())
+          {
+          SystemTools::AddTranslationPath(cwd_changed.c_str(),
+                                          pwd_changed.c_str());
+          }
+        }
+      }
+    }
+#endif
 }
 
 void SystemTools::ClassFinalize()
