@@ -74,7 +74,7 @@
 # define XML_PRE_3_4_TREE_VIA_PUBLIC
 #endif
 
-#define GCC_XML_C_VERSION "$Revision: 1.89 $"
+#define GCC_XML_C_VERSION "$Revision: 1.96 $"
 
 /* A "dump node" corresponding to a particular tree node.  */
 typedef struct xml_dump_node
@@ -674,6 +674,41 @@ xml_print_access_attribute (xml_dump_info_p xdi, tree d)
     }
 }
 
+/* Print the XML attribute size="..." for the given type.  */
+static void
+xml_print_size_attribute (xml_dump_info_p xdi, tree t)
+{
+  tree size_tree = TYPE_SIZE (t);
+  if (size_tree && host_integerp (size_tree, 1))
+    {
+    unsigned HOST_WIDE_INT size = tree_low_cst (size_tree, 1);
+    fprintf (xdi->file, " size=\"" HOST_WIDE_INT_PRINT_UNSIGNED "\"", size);
+    }
+}
+
+/* Print the XML attribute align="..." for the given type.  */
+static void
+xml_print_align_attribute (xml_dump_info_p xdi, tree t)
+{
+  fprintf (xdi->file, " align=\"%d\"", TYPE_ALIGN (t));
+}
+
+/* Print the XML attribute offset="..." for the given decl.  */
+static void
+xml_print_offset_attribute (xml_dump_info_p xdi, tree d)
+{
+  tree tree_byte_ofs = DECL_FIELD_OFFSET(d);
+  tree tree_bit_ofs = DECL_FIELD_BIT_OFFSET(d);
+  if (tree_byte_ofs && host_integerp(tree_byte_ofs, 1) &&
+      tree_bit_ofs && host_integerp(tree_bit_ofs, 1))
+    {
+    unsigned HOST_WIDE_INT bit_ofs = tree_low_cst (tree_bit_ofs, 1);
+    unsigned HOST_WIDE_INT byte_ofs = tree_low_cst (tree_byte_ofs, 1);
+    fprintf(xdi->file, " offset=\"" HOST_WIDE_INT_PRINT_UNSIGNED "\"",
+            byte_ofs * 8 + bit_ofs);
+    }
+}
+
 /* Print XML attribute const="1" for const methods.  */
 static void
 xml_print_const_method_attribute (xml_dump_info_p xdi, tree fd)
@@ -955,11 +990,7 @@ xml_print_bits_attribute (xml_dump_info_p xdi, tree d)
     if (size_tree && host_integerp (size_tree, 1))
       {
       unsigned HOST_WIDE_INT bits = tree_low_cst(size_tree, 1);
-      fprintf (xdi->file, " bits=\"%u\"", bits);
-      }
-    else
-      {
-      fprintf (xdi->file, " bits=\"0\"");
+      fprintf (xdi->file, " bits=\"" HOST_WIDE_INT_PRINT_UNSIGNED "\"", bits);
       }
     }
 }
@@ -1107,6 +1138,7 @@ xml_output_argument (xml_dump_info_p xdi, tree pd, tree tl, int complete)
   if (pd && TREE_TYPE (pd))
     {
     xml_print_type_attribute (xdi, TREE_TYPE (pd), complete);
+    xml_print_location_attribute (xdi, pd);
     }
   else
     {
@@ -1322,6 +1354,7 @@ xml_output_field_decl (xml_dump_info_p xdi, tree fd, xml_dump_node_p dn)
     {
     xml_print_type_attribute (xdi, TREE_TYPE (fd), dn->complete);
     }
+  xml_print_offset_attribute (xdi, fd);
   xml_print_context_attribute (xdi, fd);
   xml_print_mangled_attribute (xdi, fd);
   xml_print_mutable_attribute(xdi, fd);
@@ -1362,6 +1395,8 @@ xml_output_record_type (xml_dump_info_p xdi, tree rt, xml_dump_node_p dn)
   xml_print_location_attribute (xdi, TYPE_NAME (rt));
   xml_print_artificial_attribute (xdi, TYPE_NAME (rt));
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(rt), 0);
+  xml_print_size_attribute (xdi, rt);
+  xml_print_align_attribute (xdi, rt);
 
   if (dn->complete && COMPLETE_TYPE_P (rt))
     {
@@ -1521,6 +1556,8 @@ xml_output_fundamental_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_id_attribute (xdi, dn);
   xml_print_name_attribute (xdi, DECL_NAME (TYPE_NAME (t)));
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, "/>\n");
 }
 
@@ -1615,6 +1652,8 @@ xml_output_pointer_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_id_attribute (xdi, dn);
   xml_print_type_attribute (xdi, TREE_TYPE (t), 0);
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, "/>\n");
 }
 
@@ -1626,6 +1665,8 @@ xml_output_reference_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_id_attribute (xdi, dn);
   xml_print_type_attribute (xdi, TREE_TYPE (t), 0);
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, "/>\n");
 }
 
@@ -1638,6 +1679,8 @@ xml_output_offset_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_base_type_attribute (xdi, TYPE_OFFSET_BASETYPE (t), dn->complete);
   xml_print_type_attribute (xdi, TREE_TYPE (t), dn->complete);
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, "/>\n");
 }
 
@@ -1650,6 +1693,8 @@ xml_output_array_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_array_attributes (xdi, t);
   xml_print_type_attribute (xdi, TREE_TYPE (t), dn->complete);
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, "/>\n");
 }
 
@@ -1667,6 +1712,8 @@ xml_output_enumeral_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_location_attribute (xdi, TYPE_NAME (t));
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
   xml_print_artificial_attribute (xdi, TYPE_NAME (t));
+  xml_print_size_attribute (xdi, t);
+  xml_print_align_attribute (xdi, t);
   fprintf (xdi->file, ">\n");
 
   /* Output the list of possible values for the enumeration type.  */
@@ -1747,6 +1794,14 @@ xml_output_cv_qualified_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
     const char* c = qc? "c" : "";
     const char* v = qv? "v" : "";
     const char* r = qr? "r" : "";
+
+    /* If for some reason there are no cv-qualifiers then just do not
+       output the type.  Any reference to it will skip to the
+       unqualified type anyway.  */
+    if(!(qc||qv||qr))
+      {
+      return;
+      }
 
     /* Create a special CvQualifiedType element to hold top-level
        cv-qualifiers for a real type node. */
@@ -1948,7 +2003,7 @@ xml_find_template_parm (tree t)
 
   switch (TREE_CODE (t))
     {
-    /* A vector of template arguments on a instantiation.  */
+    /* A vector of template arguments on an instantiation.  */
     case TREE_VEC:
       {
       int i;
@@ -1959,6 +2014,16 @@ xml_find_template_parm (tree t)
           return 1;
           }
         }
+      } break;
+
+    /* A type list has nested types.  */
+    case TREE_LIST:
+      {
+      if(xml_find_template_parm (TREE_PURPOSE (t)))
+        {
+        return 1;
+        }
+      return xml_find_template_parm (TREE_VALUE (t));
       } break;
 
     /* Template parameter types.  */
@@ -2013,7 +2078,7 @@ xml_find_template_parm (tree t)
     case REAL_TYPE: return 0;
     case VOID_TYPE: return 0;
 
-    /* Other types that have not nested types.  */
+    /* Other types that have no nested types.  */
     case INTEGER_CST: return 0;
     default:
       fprintf(stderr, "xml_find_template_parm encountered unsupported type %s\n",

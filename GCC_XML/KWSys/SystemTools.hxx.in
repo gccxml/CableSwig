@@ -17,8 +17,15 @@
 #include <@KWSYS_NAMESPACE@/ios/iosfwd>
 #include <@KWSYS_NAMESPACE@/stl/string>
 #include <@KWSYS_NAMESPACE@/stl/vector>
+#include <@KWSYS_NAMESPACE@/stl/map>
 
 #include <@KWSYS_NAMESPACE@/Configure.h>
+
+#include <sys/types.h>
+
+#if defined( _MSC_VER )
+typedef unsigned short mode_t;
+#endif
 
 /* Define these macros temporarily to keep the code readable.  */
 #if !defined (KWSYS_NAMESPACE) && !@KWSYS_NAMESPACE@_NAME_IS_KWSYS
@@ -28,6 +35,19 @@
 
 namespace @KWSYS_NAMESPACE@
 {
+
+class SystemToolsTranslationMap;
+class @KWSYS_NAMESPACE@_EXPORT SystemToolsManager
+{
+public:
+  SystemToolsManager();
+  ~SystemToolsManager();
+};
+
+// This instance will show up in any translation unit that uses
+// SystemTools. It will make sure SystemTools is initialized 
+// before it is used and is the last static object destroyed.
+static SystemToolsManager SystemToolsManagerInstance;
 
 /** \class SystemTools
  * \brief A collection of useful platform-independent system functions.
@@ -276,7 +296,51 @@ public:
    */
   static bool GetLineFromStream(kwsys_ios::istream& istr, kwsys_stl::string& line,
                                 bool* has_newline=0);
+
+  /**
+   * Get the width of the terminal window. The code may or may not work, so
+   * make sure you have some resonable defaults prepared if the code returns
+   * some bogus size.
+   */
+  static int GetTerminalWidth();
   
+  /**
+   * Add an entry in the path translation table.
+   */
+  static void AddTranslationPath(const char * dir, const char * refdir);
+
+  /**
+   * If dir is different after CollapseFullPath is called,
+   * Then insert it into the path translation table
+   */
+  static void AddKeepPath(const char* dir);
+
+  /**
+   * Update path by going through the Path Translation table;
+   */
+  static void CheckTranslationPath(kwsys_stl::string & path);
+
+  /**
+   * Get and set permissions of the file.
+   */
+  static bool GetPermissions(const char* file, mode_t& mode);
+  static bool SetPermissions(const char* file, mode_t mode);
+
+  /** Get the parent directory of the directory or file */
+  static kwsys_stl::string GetParentDirectory(const char* fileOrDir);
+
+  /** Check if the given file or directory is in subdirectory of dir */
+  static bool IsSubDirectory(const char* fileOrDir, const char* dir);
+
+  /** Check if the given file exists in one of the parent directory of the
+   * given file or directory and if it does, return the name of the file.
+   * Toplevel specifies the top-most directory to where it will look.*/
+  static kwsys_stl::string FileExistsInParentDirectories(const char* fname,
+    const char* directory, const char* toplevel);
+
+  /** Delay the execution for a specified amount of time specified in miliseconds */
+  static void Delay(unsigned int msec);
+
 protected:
   // these two functions can be called from ConvertToOutputPath
   /**
@@ -292,6 +356,33 @@ protected:
    * if there are spaces in the string it is double quoted.
    */
   static kwsys_stl::string ConvertToWindowsOutputPath(const char*);
+
+private:
+  /**
+   * Allocate the std::map that serve as the Path Translation table.
+   */
+  static void ClassInitialize();
+
+  /**
+   * Deallocate the std::map that serve as the Path Translation table.
+   */
+  static void ClassFinalize();
+
+  /**
+   * This method prevents warning on SGI
+   */
+  SystemToolsManager* GetSystemToolsManager()
+    {
+    return &SystemToolsManagerInstance;
+    }
+
+  /**
+   * Path translation table from dir to refdir
+   * Each time 'dir' will be found it will be replace by 'refdir'
+   */
+  static SystemToolsTranslationMap *TranslationMap;
+  
+  friend class SystemToolsManager;
 };
 
 } // namespace @KWSYS_NAMESPACE@

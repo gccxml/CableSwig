@@ -35,6 +35,9 @@
 #include <stdlib.h>
 #include <sys/param.h>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
+#include <termios.h>
 #endif
 
 #if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
@@ -65,6 +68,16 @@ inline int Chdir(const char* dir)
   return _chdir(dir);
   #endif
 }
+inline void Realpath(const char *path, kwsys_stl::string & resolved_path)
+{
+  char *ptemp;
+  char fullpath[MAX_PATH];
+  if( GetFullPathName(path, sizeof(fullpath), fullpath, &ptemp) )
+    {
+    resolved_path = fullpath;
+    KWSYS_NAMESPACE::SystemTools::ConvertToUnixSlashes(resolved_path);
+    }
+}
 #else
 #include <sys/types.h>
 #include <fcntl.h>
@@ -84,6 +97,21 @@ inline const char* Getcwd(char* buf, unsigned int len)
 inline int Chdir(const char* dir)
 {
   return chdir(dir);
+}
+inline void Realpath(const char *path, kwsys_stl::string & resolved_path)
+{
+# ifdef MAXPATHLEN
+  char resolved_name[MAXPATHLEN];
+# else
+#  ifdef PATH_MAX
+  char resolved_name[PATH_MAX];
+#  else
+  char resolved_name[5024];
+#  endif  //PATH_MAX
+# endif //MAXPATHLEN
+
+  realpath(path, resolved_name);
+  resolved_path = resolved_name;
 }
 #endif
 
@@ -121,6 +149,11 @@ extern int putenv (char *__string) __THROW;
 
 namespace KWSYS_NAMESPACE
 {
+
+class SystemToolsTranslationMap : 
+    public kwsys_stl::map<kwsys_stl::string,kwsys_stl::string>
+{
+};
 
 double
 SystemTools::GetTime(void)
@@ -401,6 +434,7 @@ bool SystemTools::ReadRegistryValue(const char *key, kwsys_stl::string &value)
       if (dwType == REG_SZ)
         {
         value = data;
+        RegCloseKey(hKey);
         return true;
         }
       }
@@ -564,6 +598,7 @@ bool SystemTools::DeleteRegistryValue(const char *key)
     if(RegDeleteValue(hKey, 
                       (LPTSTR)valuename.c_str()) == ERROR_SUCCESS)
       {
+      RegCloseKey(hKey);
       return true;
       }
     }
@@ -708,16 +743,25 @@ void SystemTools::ConvertToUnixSlashes(kwsys_stl::string& path)
   kwsys_stl::string::size_type pos = 0;
   while((pos = path.find('\\', pos)) != kwsys_stl::string::npos)
     {
-    path[pos] = '/';
+    // make sure we don't convert an escaped space to a unix slash
+    if(pos < path.size()-1)
+      {
+      if(path[pos+1] != ' ')
+        {
+        path[pos] = '/';
+        }
+      }
     pos++;
     }
   // Remove all // from the path just like most unix shells
-  int start_find = 0;
+  int start_find;
 
 #ifdef _WIN32
   // However, on windows if the first characters are both slashes,
   // then keep them that way, so that network paths can be handled.
   start_find = 1;
+#else
+  start_find = 0;
 #endif
 
   while((pos = path.find("//", start_find)) != kwsys_stl::string::npos)
@@ -738,12 +782,6 @@ void SystemTools::ConvertToUnixSlashes(kwsys_stl::string& path)
       {
       path = kwsys_stl::string(getenv("HOME")) + path.substr(1);
       }
-    }
-  
-  // if there is a /tmp_mnt in a path get rid of it!
-  if(path.find("/tmp_mnt") == 0)
-    {
-    path = path.substr(8);
     }
 }
 
@@ -916,6 +954,10 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
     {
     return true;
     }
+
+  mode_t perm = 0;
+  bool perms = SystemTools::GetPermissions(source, perm);
+
   const int bufferSize = 4096;
   char buffer[bufferSize];
 
@@ -952,6 +994,12 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
     {
     return false;
     }
+ 
+  // try and remove the destination file so that read only destination files
+  // can be written to.
+  // If the remove fails continue so that files in read only directories
+  // that do not allow file removal can be modified.
+  SystemTools::RemoveFile(destination);
 
 #if defined(_WIN32) || defined(__CYGWIN__)
   kwsys_ios::ofstream fout(destination, 
@@ -1002,6 +1050,13 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
   else if(statSource.st_size != statDestination.st_size)
     {
     return false;
+    }
+  if ( perms )
+    {
+    if ( !SystemTools::SetPermissions(destination, perm) )
+      {
+      return false;
+      }
     }
   return true;
 }
@@ -1098,8 +1153,9 @@ bool SystemTools::RemoveADirectory(const char* source)
  * the system search path.  Returns the full path to the file if it is
  * found.  Otherwise, the empty string is returned.
  */
-kwsys_stl::string SystemTools::FindFile(const char* name, 
-                                       const kwsys_stl::vector<kwsys_stl::string>& userPaths)
+kwsys_stl::string SystemTools
+::FindFile(const char* name, 
+           const kwsys_stl::vector<kwsys_stl::string>& userPaths)
 {
   // Add the system search path to our path first
   kwsys_stl::vector<kwsys_stl::string> path; 
@@ -1203,8 +1259,9 @@ kwsys_stl::string SystemTools::FindProgram(
  * the system search path.  Returns the full path to the library if it is
  * found.  Otherwise, the empty string is returned.
  */
-kwsys_stl::string SystemTools::FindLibrary(const char* name,
-                                       const kwsys_stl::vector<kwsys_stl::string>& userPaths)
+kwsys_stl::string SystemTools
+::FindLibrary(const char* name,
+              const kwsys_stl::vector<kwsys_stl::string>& userPaths)
 {
   // See if the executable exists as written.
   if(SystemTools::FileExists(name) &&
@@ -1316,7 +1373,8 @@ kwsys_stl::string SystemTools::GetCurrentWorkingDirectory()
     {
     path = cwd;
     }
-  return path;
+
+  return SystemTools::CollapseFullPath(path.c_str());
 }
 
 kwsys_stl::string SystemTools::GetProgramPath(const char* in_name)
@@ -1422,15 +1480,76 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative)
   return SystemTools::CollapseFullPath(in_relative, 0);
 }
 
-kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
-                                            const char* in_base)
+void SystemTools::AddTranslationPath(const char * a, const char * b)
 {
-  // Save original working directory.
-  kwsys_stl::string orig = SystemTools::GetCurrentWorkingDirectory();
+  kwsys_stl::string path_a = a;
+  kwsys_stl::string path_b = b;
+  SystemTools::ConvertToUnixSlashes(path_a);
+  SystemTools::ConvertToUnixSlashes(path_b);
+  // First check this is a directory path, since we don't want the table to
+  // grow too fat
+  if( SystemTools::FileIsDirectory( path_a.c_str() ) )
+    {
+    // Make sure the path is a full path and does not contain no '..'
+    if( SystemTools::FileIsFullPath(path_b.c_str()) && path_b.find("..") 
+        == kwsys_stl::string::npos )
+      {
+      // Before inserting make sure path ends with '/'
+      path_a += '/'; path_b += '/';
+      if( !(path_a == path_b) )
+        {
+        SystemTools::TranslationMap->insert(
+          SystemToolsTranslationMap::value_type(path_a, path_b));
+        }
+      }
+    }
+}
+
+void SystemTools::AddKeepPath(const char* dir)
+{
+  kwsys_stl::string cdir = SystemTools::CollapseFullPath(dir);
+  SystemTools::AddTranslationPath(cdir.c_str(), dir);
+}
+
+void SystemTools::CheckTranslationPath(kwsys_stl::string & path)
+{
+  // In case a file was specified we still have to go through this:
+  // Now convert any path found in the table back to the one desired:
+  kwsys_stl::map<kwsys_stl::string,kwsys_stl::string>::const_iterator it;
+  for(it  = SystemTools::TranslationMap->begin();
+      it != SystemTools::TranslationMap->end();
+      ++it )
+    {
+    // We need to check of the path is a substring of the other path
+    // But also check that the last character is a '/' otherwise we could
+    // have some weird case such as /tmp/VTK and /tmp/VTK-bin
+    if(path.size() > 1 && path[path.size()-1] != '/')
+      {
+      // Do not append '/' on a program name:
+      if( SystemTools::FileIsDirectory( path.c_str() ) )
+        {
+        path += "/";
+        }
+      }
+    if(path.find( it->first ) == 0)
+      {
+      path = path.replace( 0, it->first.size(), it->second);
+      }
+    }
+}
+
+kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
+                                                const char* in_base)
+{
+  static int initialized = 0;
+
+  kwsys_stl::string orig;
   
   // Change to base of relative path.
   if(in_base)
     {
+    // Save original working directory.
+    orig = SystemTools::GetCurrentWorkingDirectory();
     Chdir(in_base);
     }
   
@@ -1442,50 +1561,23 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
      {
      dir = "/";
      }
-  
-#ifdef _WIN32
-  // Follow relative path.
-  if(!(dir == ""))
-    {
-    Chdir(dir.c_str());
-    }
-  
-  // Get the resulting directory.
-  kwsys_stl::string newDir = SystemTools::GetCurrentWorkingDirectory();
-  
-  // Add the file back on to the directory.
-  SystemTools::ConvertToUnixSlashes(newDir);
-#else
-# ifdef MAXPATHLEN
-  char resolved_name[MAXPATHLEN];
-# else
-#  ifdef PATH_MAX
-  char resolved_name[PATH_MAX];
-#  else
-  char resolved_name[5024];
-#  endif
-# endif
-  
+
   // Resolve relative path.
   kwsys_stl::string newDir;
   if(!(dir == ""))
     {
-    realpath(dir.c_str(), resolved_name);
-    newDir = resolved_name;
+    Realpath(dir.c_str(), newDir);    
     }
   else
     {
     newDir = SystemTools::GetCurrentWorkingDirectory();
     }
-  // if there is a /tmp_mnt in a path get rid of it!
-  if(newDir.find("/tmp_mnt") == 0)
+
+  if(in_base)
     {
-    newDir = newDir.substr(8);
+    // Restore original working directory.
+    Chdir(orig.c_str());
     }
-#endif
-  
-  // Restore original working directory.
-  Chdir(orig.c_str());
   
   // Construct and return the full path.
   kwsys_stl::string newPath = newDir;
@@ -1497,6 +1589,28 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
       }
     newPath += file;
     }
+
+  // If the table has never been initialized, add default path:
+  if(!initialized)
+    {
+    initialized = 1;
+    // add some special translation paths for unix
+    // these are not added for windows because drive
+    // letters need to be maintained.  Also, there
+    // are not sym-links and mount points on windows anyway.
+#if !defined( _WIN32 ) 
+    //Also add some good default one:
+    // This one should always be there it fix a bug on sgi
+    SystemTools::AddTranslationPath("/tmp_mnt/", "/");
+    //This is a good default also:
+    SystemTools::AddKeepPath("/tmp/");
+#endif
+    }
+
+  // Now we need to update the translation table with this potentially new path
+  SystemTools::AddTranslationPath(newPath.c_str(), in_relative);
+  SystemTools::CheckTranslationPath(newPath);
+
   return newPath;
 }
 
@@ -1647,7 +1761,7 @@ SystemTools::GetFilenameWithoutLastExtension(const kwsys_stl::string& filename)
 bool SystemTools::FileIsFullPath(const char* in_name)
 {
   kwsys_stl::string name = in_name;
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN__)
   // On Windows, the name must be at least two characters long.
   if(name.length() < 2)
     {
@@ -1720,14 +1834,18 @@ bool SystemTools::GetShortPath(const char* path, kwsys_stl::string& shortPath)
 }
 
 void SystemTools::SplitProgramFromArgs(const char* path, 
-                                         kwsys_stl::string& program, kwsys_stl::string& args)
+                                       kwsys_stl::string& program, kwsys_stl::string& args)
 {
+  // see if this is a full path to a program
+  // if so then set program to path and args to nothing
   if(SystemTools::FileExists(path))
     {
     program = path;
     args = "";
     return;
     }
+  // Try to find the program in the path, note the program
+  // may have spaces in its name so we have to look for it 
   kwsys_stl::vector<kwsys_stl::string> e;
   kwsys_stl::string findProg = SystemTools::FindProgram(path, e);
   if(findProg.size())
@@ -1736,32 +1854,48 @@ void SystemTools::SplitProgramFromArgs(const char* path,
     args = "";
     return;
     }
+
+  // Now try and peel off space separated chunks from the end of the string
+  // so the largest path possible is found allowing for spaces in the path
   kwsys_stl::string dir = path;
   kwsys_stl::string::size_type spacePos = dir.rfind(' ');
-  if(spacePos == kwsys_stl::string::npos)
-    {
-    program = "";
-    args = "";
-    return;
-    }
   while(spacePos != kwsys_stl::string::npos)
     {
     kwsys_stl::string tryProg = dir.substr(0, spacePos);
+    // See if the file exists
     if(SystemTools::FileExists(tryProg.c_str()))
       {
       program = tryProg;
+      // remove trailing spaces from program
+      kwsys_stl::string::size_type pos = program.size()-1;
+      while(program[pos] == ' ')
+        {
+        program.erase(pos);
+        pos--;
+        }
       args = dir.substr(spacePos, dir.size()-spacePos);
       return;
-      } 
+      }
+    // Now try and find the the program in the path 
     findProg = SystemTools::FindProgram(tryProg.c_str(), e);
     if(findProg.size())
       {
       program = findProg;
+      // remove trailing spaces from program
+      kwsys_stl::string::size_type pos = program.size()-1;
+      while(program[pos] == ' ')
+        {
+        program.erase(pos);
+        pos--;
+        }
       args = dir.substr(spacePos, dir.size()-spacePos);
       return;
       }
-    spacePos = dir.rfind(' ', spacePos--);
+    // move past the space for the next search
+    spacePos--;
+    spacePos = dir.rfind(' ', spacePos);
     }
+
   program = "";
   args = "";
 }
@@ -1835,6 +1969,184 @@ bool SystemTools::GetLineFromStream(kwsys_ios::istream& is, kwsys_stl::string& l
   return haveData;
 }
 
+int SystemTools::GetTerminalWidth()
+{
+  int width = -1;
+#ifndef _WIN32
+  struct winsize ws;
+  char *columns; /* Unix98 environment variable */
+  if(ioctl(1, TIOCGWINSZ, &ws) != -1 && ws.ws_col>0 && ws.ws_row>0)
+    {
+    width = ws.ws_col;
+    }
+  if(!isatty(STDOUT_FILENO))
+    {
+    width = -1;
+    }
+  columns = getenv("COLUMNS");
+  if(columns && *columns)
+    {
+    long t;
+    char *endptr;
+    t = strtol(columns, &endptr, 0);
+    if(endptr && !*endptr && (t>0) && (t<1000))
+      {
+      width = (int)t;
+      }
+    }
+  if ( width < 9 )
+    {
+    width = -1;
+    }
+#endif
+  return width;
+}
+
+bool SystemTools::GetPermissions(const char* file, mode_t& mode)
+{
+  if ( !file )
+    {
+    return false;
+    }
+
+  struct stat st;
+  if ( stat(file, &st) < 0 )
+    {
+    return false;
+    }
+  mode = st.st_mode;
+  return true;
+}
+
+bool SystemTools::SetPermissions(const char* file, mode_t mode)
+{
+  if ( !file )
+    {
+    return false;
+    }
+  if ( !SystemTools::FileExists(file) )
+    {
+    return false;
+    }
+  if ( chmod(file, mode) < 0 )
+    {
+    return false;
+    }
+
+  return true;
+}
+
+kwsys_stl::string SystemTools::GetParentDirectory(const char* fileOrDir)
+{
+  if ( !fileOrDir || !*fileOrDir )
+    {
+    return "";
+    }
+  kwsys_stl::string res = fileOrDir;
+  SystemTools::ConvertToUnixSlashes(res);
+  kwsys_stl::string::size_type cc = res.size()-1;
+  if ( res[cc] == '/' )
+    {
+    cc --;
+    }
+  for ( ; cc > 0; cc -- )
+    {
+    if ( res[cc] == '/' )
+      {
+      break;
+      }
+    }
+  return res.substr(0, cc);
+}
+
+bool SystemTools::IsSubDirectory(const char* cSubdir, const char* cDir)
+{
+  kwsys_stl::string subdir = cSubdir;
+  kwsys_stl::string dir = cDir;
+  SystemTools::ConvertToUnixSlashes(dir);
+  kwsys_stl::string path = subdir;
+  do
+    {
+    path = SystemTools::GetParentDirectory(path.c_str());
+    if ( dir == path )
+      {
+      return true;
+      }
+    }
+  while ( path.size() > dir.size() );
+  return false;
+}
+
+kwsys_stl::string SystemTools::FileExistsInParentDirectories(const char* fname,
+  const char* directory, const char* toplevel)
+{
+  kwsys_stl::string file = fname;
+  SystemTools::ConvertToUnixSlashes(file);
+  kwsys_stl::string dir = directory;
+  SystemTools::ConvertToUnixSlashes(dir);
+  while ( !dir.empty() )
+    {
+    kwsys_stl::string path = dir + "/" + file;
+    if ( SystemTools::FileExists(path.c_str()) )
+      {
+      return path;
+      }
+    if ( dir.size() < strlen(toplevel) )
+      {
+      break;
+      }
+    dir = SystemTools::GetParentDirectory(dir.c_str());
+    }
+  return "";
+}
+
+void SystemTools::Delay(unsigned int msec)
+{
+#ifdef _WIN32
+  Sleep(msec);
+#else
+  usleep(msec * 1000);
+#endif
+}
+
+// These must NOT be initialized.  Default initialization to zero is
+// necessary.
+unsigned int SystemToolsManagerCount;
+SystemToolsTranslationMap *SystemTools::TranslationMap;
+
+// SystemToolsManager manages the SystemTools singleton.
+// SystemToolsManager should be included in any translation unit
+// that will use SystemTools or that implements the singleton
+// pattern. It makes sure that the SystemTools singleton is created
+// before and destroyed after all other singletons in CMake.
+
+SystemToolsManager::SystemToolsManager()
+{
+  if(++SystemToolsManagerCount == 1)
+    {
+    SystemTools::ClassInitialize();
+    }
+}
+
+SystemToolsManager::~SystemToolsManager()
+{
+  if(--SystemToolsManagerCount == 0)
+    {
+    SystemTools::ClassFinalize();
+    }
+}
+
+void SystemTools::ClassInitialize()
+{
+  SystemTools::TranslationMap = new SystemToolsTranslationMap;
+}
+
+void SystemTools::ClassFinalize()
+{
+  delete SystemTools::TranslationMap;
+}
+
+
 } // namespace KWSYS_NAMESPACE
 
 #if defined(_MSC_VER) && defined(_DEBUG)
@@ -1864,3 +2176,4 @@ namespace KWSYS_NAMESPACE
 void SystemTools::EnableMSVCDebugHook() {}
 } // namespace KWSYS_NAMESPACE
 #endif
+
