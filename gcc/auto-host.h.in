@@ -386,7 +386,7 @@
 #define HAVE_DECL_STRSTR 1
 
 /* Define to 1 if we found this declaration otherwise define to 0. */
-#define HAVE_DECL_ENVIRON 1
+#cmakedefine HAVE_DECL_ENVIRON 1
 
 /* Define to 1 if we found this declaration otherwise define to 0. */
 #define HAVE_DECL_MALLOC 1

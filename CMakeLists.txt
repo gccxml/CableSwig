@@ -158,7 +158,7 @@ IF(STRING_WITH_STRINGS MATCHES "^STRING_WITH_STRINGS$")
     MESSAGE(STATUS "Checking include of string.h and strings.h together - passed")
     SET(STRING_WITH_STRINGS 1 CACHE INTERNAL "string.h and strings.h work together")
   ELSE(STRING_WITH_STRINGS)
-    MESSAGE(STATUS "Checking include of string.h and strings.h together - passed")
+    MESSAGE(STATUS "Checking include of string.h and strings.h together - failed")
     SET(STRING_WITH_STRINGS "" CACHE INTERNAL "string.h and strings.h work together")
     WRITE_FILE(${GCC_BINARY_DIR}/CMakeError.log 
       "Checking include of string.h and strings.h together "
@@ -166,6 +166,25 @@ IF(STRING_WITH_STRINGS MATCHES "^STRING_WITH_STRINGS$")
       "${OUTPUT}\n" APPEND)
   ENDIF(STRING_WITH_STRINGS)
 ENDIF(STRING_WITH_STRINGS MATCHES "^STRING_WITH_STRINGS$")
+
+IF(HAVE_DECL_ENVIRON MATCHES "^HAVE_DECL_ENVIRON$")
+  MESSAGE(STATUS "Checking whether environ is declared")
+  TRY_COMPILE(HAVE_DECL_ENVIRON 
+	  ${GCC_BINARY_DIR}
+	  ${GCC_SOURCE_DIR}/CheckEnviron.c
+	  OUTPUT_VARIABLE OUTPUT)
+  IF(HAVE_DECL_ENVIRON)
+    MESSAGE(STATUS "Checking whether environ is declared - yes")
+    SET(HAVE_DECL_ENVIRON 1 CACHE INTERNAL "environ is declared")
+  ELSE(HAVE_DECL_ENVIRON)
+    MESSAGE(STATUS "Checking whether environ is declared - no")
+    SET(HAVE_DECL_ENVIRON "" CACHE INTERNAL "environ is declared")
+    WRITE_FILE(${GCC_BINARY_DIR}/CMakeError.log 
+      "Checking if environ is declared "
+      "failed with the following output:\n"
+      "${OUTPUT}\n" APPEND)
+  ENDIF(HAVE_DECL_ENVIRON)
+ENDIF(HAVE_DECL_ENVIRON MATCHES "^HAVE_DECL_ENVIRON$")
 
 CONFIGURE_FILE(${GCC_SOURCE_DIR}/gcc/auto-host.h.in
                ${GCC_BINARY_DIR}/gcc/auto-host.h)
