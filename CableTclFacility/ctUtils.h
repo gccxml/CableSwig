@@ -118,16 +118,31 @@ struct VoidPointerCompare
   
 } // namespace _cable_tcl_
 
-
 // Setup debug support if it is on.
 #ifdef _cable_tcl_DEBUG_SUPPORT
-#  include <strstream>
-#  define _cable_tcl_DEBUG_OUTPUT(wf, x)        \
-  { if((wf)->DebugIsOn())                       \
-      { std::ostrstream msg;                    \
-        msg << x << std::ends;                  \
-        wf->OutputDebugText(msg.str());         \
-        msg.rdbuf()->freeze(0); } }
+#  if !defined(CMAKE_NO_ANSI_STRING_STREAM)
+#    include <sstream>
+#  elif !defined(CMAKE_NO_ANSI_STREAM_HEADERS)
+#    include <strstream>
+#    define CABLE_NO_ANSI_STRING_STREAM
+#  else
+#    include <strstream.h>
+#    define CABLE_NO_ANSI_STRING_STREAM
+#  endif
+#  ifndef CABLE_NO_ANSI_STRING_STREAM
+#    define _cable_tcl_DEBUG_OUTPUT(wf, x)        \
+    { if((wf)->DebugIsOn())                       \
+        { std::ostringstream msg;                 \
+          msg << x;                               \
+          wf->OutputDebugText(msg.str().c_str()); } }
+#  else
+#    define _cable_tcl_DEBUG_OUTPUT(wf, x)        \
+    { if((wf)->DebugIsOn())                       \
+        { std::ostrstream msg;                    \
+          msg << x << std::ends;                  \
+          wf->OutputDebugText(msg.str());         \
+          msg.rdbuf()->freeze(0); } }
+#  endif
 #else
 #  define _cable_tcl_DEBUG_OUTPUT(wf, x)
 #endif
