@@ -543,11 +543,14 @@ int SWIG_main(int argc, char *argv[], Language *l) {
       if(NoCable)
         {
         Printf(fs,"%%include \"%s\"\n", Swig_last_file());
-        for (i = 0; i < Len(libfiles); i++) 
-          {
-          Printf(fs,"\n%%include \"%s\"\n", Getitem(libfiles,i));
-          }
         }
+      // But still do the -l libraries, as these are used to perform some
+      // application-specific changes
+      for (i = 0; i < Len(libfiles); i++) 
+        {
+        Printf(fs,"\n%%include \"%s\"\n", Getitem(libfiles,i));
+        }
+        
       Seek(fs,0,SEEK_SET);
       cpps = Preprocessor_parse(fs);
       if (Swig_error_count()) {

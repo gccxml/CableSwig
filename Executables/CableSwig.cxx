@@ -318,40 +318,23 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   // The following clause will instruct SWIG to let standard C++
   // exceptions propagate through as Python exceptions.  Original
   // version contributed by Charl P. Botha <cpbotha [AT] ieee.org>
-  
+  //
   // attaching this node as "throws" attribute to the method object
   // will cause the swig emit code to add an exception handler the
   // node only has to have a type-attribute with the type of the
-  // object that will be thrown
+  // object that will be thrown - in itk.swg the actual typemaps
+  // live that map from the type of the throws to the catch code
+  // that will actually be emited
+  // 
+  // As soon as CableSwig gets proper throw() types from gcc_xml,
+  // this little piece of code has to be adapted ever so slightly.
   Node *catchNode = NewHash();
+  // for now we assume that every method could throw a std::exception
   Setattr(catchNode, "type", "std::exception");
   Setattr(m, "throws", catchNode);
-  
-  // this has to be added to the swig typemap... when hitting a method
-  // with a "throws" attribute, it will look up the "type" attribute
-  // of that "throws" attribute, once again look up the "throws" of
-  // that result, and use the "code" attribute of the final result as
-  // handler (catch) code - we should only have to do this
-  // registration once, but for now it's much clearer here and it does
-  // no real harm being called multiple times
-  if (m_WrapLanguage == "python")
-    {
-    char code[] = 
-      "PyErr_SetString(PyExc_RuntimeError, _e.what());\n"
-      "SWIG_fail;";
-    Swig_typemap_register("throws", catchNode, code, NULL, NULL);
-
-    }
-  else if(m_WrapLanguage == "tcl8")
-    {
-    char code[] = 
-      "Tcl_SetObjResult(interp, Tcl_NewStringObj(_e.what(), -1));\n"
-      "SWIG_fail;";
-    Swig_typemap_register("throws", catchNode, code, NULL, NULL);
-    }
   // take care of the memory
   Delete(catchNode);
-  
+
   ParmList* parms = 0;
   Parm* pp = 0;
   std::string allParams;
@@ -1162,7 +1145,7 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
     appendChild(top, header);
     appendChild(top, init);
     }
-  
+    
   // collect up all classes to be included or imported
   this->DetermineClassesToWrap(cns);
   // first process imported classes 
