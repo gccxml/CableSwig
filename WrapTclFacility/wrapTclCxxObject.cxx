@@ -40,7 +40,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =========================================================================*/
 #include "wrapTclCxxObject.h"
 #include "wrapWrapperFacility.h"
+#include "wrapTypeInfo.h"
 
+#include <strstream>
 #include <string.h>
 
 namespace _wrap_
@@ -182,14 +184,132 @@ void TclCxxObject::DupInternalRep(Tcl_Obj* srcPtr, Tcl_Obj* destPtr)
 }
 
 
+namespace
+{
+
+/**
+ * Internal function used to convert the value in a CxxObject that
+ * references a predefined type into a string describing the value.
+ *
+ * This is called by TclCxxObject::UpdateString() to get the string
+ * representation for the values.
+ */
+template <typename T>
+struct GetCxxObjectValue
+{
+  static String From(CxxObject* cxxObject)
+    {
+    std::ostrstream value;
+    value << *reinterpret_cast<T*>(cxxObject->GetObject()) << std::ends;
+    String result = value.str();
+    value.rdbuf()->freeze(0);
+    return result;
+    }
+};
+
+template <>
+struct GetCxxObjectValue<char>
+{
+  static String From(CxxObject* cxxObject)
+    {
+    std::ostrstream value;
+    value << int(*reinterpret_cast<char*>(cxxObject->GetObject()))
+          << std::ends;
+    String result = value.str();
+    value.rdbuf()->freeze(0);
+    return result;
+    }
+};
+
+template <>
+struct GetCxxObjectValue<signed char>
+{
+  static String From(CxxObject* cxxObject)
+    {
+    std::ostrstream value;
+    value << int(*reinterpret_cast<signed char*>(cxxObject->GetObject()))
+          << std::ends;
+    String result = value.str();
+    value.rdbuf()->freeze(0);
+    return result;
+    }
+};
+
+template <>
+struct GetCxxObjectValue<unsigned char>
+{
+  static String From(CxxObject* cxxObject)
+    {
+    std::ostrstream value;
+    value << int(*reinterpret_cast<unsigned char*>(cxxObject->GetObject()))
+          << std::ends;
+    String result = value.str();
+    value.rdbuf()->freeze(0);
+    return result;
+    }
+};
+
+template <>
+struct GetCxxObjectValue<bool>
+{
+  static String From(CxxObject* cxxObject)
+    {
+    if(*reinterpret_cast<bool*>(cxxObject->GetObject())) { return "1"; }
+    else { return "0"; }
+    }
+};
+  
+} // anonymous namespace
+
+
 /**
  * Tcl object implementation:
  * Generate the string representation of the Tcl object from the internal
  * representation.
+ *
+ * This will be a string capable of re-constructing a pointer to the
+ * internal CxxObject instance in all cases except values that are
+ * references to non-const fundamental types.  In these cases, the
+ * value of the predefined type will be used to construct the string
+ * representation.  This allows references to predefined types to be
+ * passed through arguments as references, but still be displayed and
+ * used by Tcl as their values.
  */
 void TclCxxObject::UpdateString(Tcl_Obj *objPtr)
 {
-  String stringRep = Self::Cast(objPtr)->GetStringRepresentation();
+  String stringRep;
+  CxxObject* cxxObject = Self::Cast(objPtr);
+  const Type* type = cxxObject->GetType();
+  
+  if(type == CvPredefinedType<bool&>::type.GetType())
+    { stringRep = GetCxxObjectValue<bool>::From(cxxObject); }
+  else if(type == CvPredefinedType<char&>::type.GetType())
+    { stringRep = GetCxxObjectValue<char>::From(cxxObject); }
+  else if(type == CvPredefinedType<signed char&>::type.GetType())
+    { stringRep = GetCxxObjectValue<signed char>::From(cxxObject); }
+  else if(type == CvPredefinedType<unsigned char&>::type.GetType())
+    { stringRep = GetCxxObjectValue<unsigned char>::From(cxxObject); }
+  else if(type == CvPredefinedType<short&>::type.GetType())
+    { stringRep = GetCxxObjectValue<short>::From(cxxObject); }
+  else if(type == CvPredefinedType<unsigned short&>::type.GetType())
+    { stringRep = GetCxxObjectValue<unsigned short>::From(cxxObject); }
+  else if(type == CvPredefinedType<int&>::type.GetType())
+    { stringRep = GetCxxObjectValue<int>::From(cxxObject); }
+  else if(type == CvPredefinedType<unsigned int&>::type.GetType())
+    { stringRep = GetCxxObjectValue<unsigned int>::From(cxxObject); }
+  else if(type == CvPredefinedType<long&>::type.GetType())
+    { stringRep = GetCxxObjectValue<long>::From(cxxObject); }
+  else if(type == CvPredefinedType<unsigned long&>::type.GetType())
+    { stringRep = GetCxxObjectValue<unsigned long>::From(cxxObject); }
+  else if(type == CvPredefinedType<float&>::type.GetType())
+    { stringRep = GetCxxObjectValue<float>::From(cxxObject); }
+  else if(type == CvPredefinedType<double&>::type.GetType())
+    { stringRep = GetCxxObjectValue<double>::From(cxxObject); }
+  else if(type == CvPredefinedType<long double&>::type.GetType())
+    { stringRep = GetCxxObjectValue<long double>::From(cxxObject); }  
+  else
+    { stringRep = cxxObject->GetStringRepresentation(); }
+  
   objPtr->bytes = Tcl_Alloc(stringRep.length()+1);
   objPtr->length = stringRep.length();
   strcpy(objPtr->bytes, stringRep.c_str());
