@@ -1118,8 +1118,13 @@ void TclGenerator::WriteMethodWrapper(const Class* c,
     "Wrapper< " << cName.c_str() << " >\n"
     "::";
   this->WriteMethodName(m, index);
+  const char* argParm = " arguments";
+  if((numberOfArguments == 0) && (isStatic || fid == Function::ConstructorId))
+    {
+    argParm = "";
+    }
   os <<
-    "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
+    "(const WrapperFacility* wrapperFacility, const Arguments&" << argParm << ")\n"
     "{\n";
   
   if(fid == Function::ConstructorId)
