@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    wrapFunctionSelector.h
+  Module:    wrapFunctionWrapper.h
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
@@ -38,9 +38,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
-#ifndef _wrapFunctionSelector_h
-#define _wrapFunctionSelector_h
+#ifndef _wrapFunctionWrapper_h
+#define _wrapFunctionWrapper_h
 
+#include "wrapUtils.h"
 #include "wrapArgument.h"
 
 #include <vector>
@@ -49,87 +50,49 @@ namespace _wrap_
 {
 
 class FunctionBase;
-class Constructor;
-class Method;
 class Function;
 class WrapperFacility;
 
 /**
- * 
+ * Dispatch class for all registered functions of the same name.
  */
-class _wrap_EXPORT FunctionSelectorBase
+class _wrap_EXPORT FunctionWrapper
 {
 public:
-  FunctionSelectorBase(const WrapperFacility*, int, Tcl_Obj*CONST[], unsigned int);
-  virtual ~FunctionSelectorBase();
+  FunctionWrapper(WrapperFacility*, const String&);
+  ~FunctionWrapper();
   
-  CvQualifiedTypes GetArgumentTypes() const;
+  Tcl_Interp* GetInterpreter() const;
+  WrapperFacility* GetWrapperFacility() const;
+
+  void ListFunctions() const;
   
-  const Arguments& GetArguments() const;
-protected:  
+  ///! The type of a wrapper function for a Tcl interpreter call-back.
+  typedef int (*WrapperFunction)(ClientData, Tcl_Interp*, int, Tcl_Obj* CONST[]);
+  WrapperFunction GetWrapperFunction() const;
+  
+protected:
   typedef std::vector<FunctionBase*> CandidateFunctions;
-  void SetImplicitArgument(bool staticOnly);
-  void AddCandidate(FunctionBase*);
-  FunctionBase* ResolveOverload();
-  FunctionBase* ResolveOverloadWithSeparateArguments();
-  bool CandidateIsViable(unsigned int candidateIndex,
-                         const Arguments& arguments);
-  bool CxxConversionPossible(const CvQualifiedType& from,
-                             const Type* to) const;
-  bool TryMagic(int candidateIndex);
-  bool TryMagic(int candidateIndex, int parameterIndex);  
+  void AddFunction(Function*);
+  void UnknownOverload(const CvQualifiedTypes& argumentTypes) const;
+  int WrapperDispatch(int, Tcl_Obj* CONST[]) const;
   
-  const WrapperFacility* m_WrapperFacility;
-  int m_Objc;
-  Tcl_Obj*CONST* m_Objv;
-  unsigned int m_ArgumentCount;
-  
-  CandidateFunctions m_Candidates;
-  std::vector< std::vector<bool> >  m_MatchedArguments;
-  std::vector< Arguments >  m_CandidateArguments;
-  Arguments m_Arguments;
-  std::vector< Argument* > m_ArrayArguments;
-};
-
-
-class _wrap_EXPORT ConstructorSelector: public FunctionSelectorBase
-{
-public:
-  ConstructorSelector(const WrapperFacility*, int, Tcl_Obj*CONST[]);
-  ~ConstructorSelector();
-  
-  void AddCandidate(Constructor*);
-  Constructor* Select();
+  static int WrapperDispatchFunction(ClientData, Tcl_Interp*,
+                                     int, Tcl_Obj*CONST[]);
 protected:
-  void GuessArguments();  
-};
+  ///! The wrapper facility for this wrapper's interpreter.
+  WrapperFacility* m_WrapperFacility;
 
-class _wrap_EXPORT MethodSelector: public FunctionSelectorBase
-{
-public:
-  MethodSelector(const WrapperFacility*, int, Tcl_Obj*CONST[]);
-  ~MethodSelector();
+  ///! The name of the wrapped function.
+  const String m_WrappedFunctionName;
   
-  void AddCandidate(Method*);
-  Method* Select(bool);
-protected:
-  void GuessArguments();  
-};
-
-
-class _wrap_EXPORT FunctionSelector: public FunctionSelectorBase
-{
-public:
-  FunctionSelector(const WrapperFacility*, int, Tcl_Obj*CONST[]);
-  ~FunctionSelector();
+  typedef std::vector<Function*> Functions;
   
-  void AddCandidate(Function*);
-  Function* Select();
-protected:
-  void GuessArguments();  
+  ///! The overloads available to this function wrapper.
+  Functions m_Functions;
 };
-
 
 } // namespace _wrap_
 
 #endif
+

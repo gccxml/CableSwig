@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    wrapStaticMethod.cxx
+  Module:    wrapFunction.h
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
@@ -38,42 +38,49 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
+#ifndef _wrapFunction_h
+#define _wrapFunction_h
 
-#include "wrapStaticMethod.h"
-#include "wrapTypeInfo.h"
+#include "wrapFunctionBase.h"
+#include "wrapArgument.h"
 
 namespace _wrap_
 {
 
-/**
- * The constructor passes the function name and pararmeter types down to
- * the FunctionBase.  It then adds the implicit object parameter to the
- * front of the parameter list.  This implicit object parameter for
- * a static method wrapper is of a special type that matches any object.
- */
-StaticMethod::StaticMethod(const WrapperFacility* wrapperFacility,
-                           MethodWrapper methodWrapper,
-                           const ClassType* wrappedTypeRepresentation,
-                           const String& name, bool isOperator,
-                           const CvQualifiedType& returnType,
-                           const ParameterTypes& parameterTypes):
-  Method(wrapperFacility, methodWrapper, wrappedTypeRepresentation, name,
-         false, isOperator, returnType, parameterTypes)
-{
-  // Replace the implicit object parameter with a dummy.
-  const Type* implicit =
-    TypeInfo::GetFundamentalType(FundamentalType::Void, false, false).GetType();
-  m_ParameterTypes[0] = implicit;
-}
-
+class WrapperFacility;
 
 /**
- * Return whether the method is static.
+ * Pointer to a function that implements a wrapped function.
  */
-bool StaticMethod::IsStatic() const
+typedef void (*WrappedFunctionInvoker)(const WrapperFacility*,
+                                       const Arguments&);
+
+/**
+ * The subclass of FunctionBase which is used for function
+ * wrappers.
+ */
+class _wrap_EXPORT Function: public FunctionBase
 {
-  return true;
-}
+public:
+  // Pull a typedef out of the superclass.
+  typedef FunctionBase::ParameterTypes ParameterTypes;
+  
+  Function(const WrapperFacility* wrapper,
+           WrappedFunctionInvoker wrappedFunctionInvoker,
+           const String& name, bool isOperator,
+           const CvQualifiedType& returnType,
+           const ParameterTypes& parameterTypes = ParameterTypes());
+  virtual String GetPrototype() const;
+  String GetCallName() const;
+  void Call(const Arguments&) const;
+private:
+  const WrapperFacility* m_WrapperFacility;
+  WrappedFunctionInvoker m_WrappedFunctionInvoker;
+  CvQualifiedType m_FunctionType;
+  bool m_IsOperator;
+};
 
 
 } // namespace _wrap_
+
+#endif

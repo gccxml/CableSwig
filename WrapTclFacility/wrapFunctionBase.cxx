@@ -46,8 +46,8 @@ namespace _wrap_
 
 /**
  * Constructor just initializes all members.  This is only called from
- * a subclass's constructor, which is only called by a member of a subclass
- * of WrapperBase.
+ * a subclass's constructor, which is only called by a generated
+ * registration function.
  */
 FunctionBase::FunctionBase(const String& name,
                            const ParameterTypes& parameterTypes):

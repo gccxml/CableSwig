@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    wrapWrapperBase.h
+  Module:    wrapClassWrapper.h
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
@@ -38,8 +38,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
-#ifndef _wrapWrapperBase_h
-#define _wrapWrapperBase_h
+#ifndef _wrapClassWrapper_h
+#define _wrapClassWrapper_h
 
 #include "wrapUtils.h"
 #include "wrapArgument.h"
@@ -56,40 +56,32 @@ class StaticMethod;
 class WrapperFacility;
 
 /**
- * An individual wrapper class is a specialization of this template.
+ * Dispatch class for a particular class's wrapped methods.
  */
-template <class T>
-class Wrapper;
-
-/**
- * Implement functionality common to all wrapper classes.  An individual
- * wrapper class should inherit from this class.
- */
-class _wrap_EXPORT WrapperBase
+class _wrap_EXPORT ClassWrapper
 {
 public:
-  WrapperBase(WrapperFacility*, const String&);
-  virtual ~WrapperBase();
+  ClassWrapper(WrapperFacility*, const ClassType*);
+  virtual ~ClassWrapper();
   
-  const Type* GetWrappedTypeRepresentation() const;
+  const ClassType* GetWrappedTypeRepresentation() const;
   
-  Tcl_Interp* GetInterpreter() const;
   WrapperFacility* GetWrapperFacility() const;
   
   void ListMethods() const;
-  
-  ConversionFunction GetConversionFunction(const CvQualifiedType& from,
-                                           const Type* to) const;
   
   ///! The type of a wrapper function for a Tcl interpreter call-back.
   typedef int (*WrapperFunction)(ClientData, Tcl_Interp*, int, Tcl_Obj* CONST[]);
   WrapperFunction GetClassWrapperFunction() const;
   WrapperFunction GetObjectWrapperFunction() const;
   
-protected:
-  typedef std::vector<FunctionBase*> CandidateFunctions;
+  void AddInterpreterClassCommand(const String&);
+  
   void AddFunction(Method*);
   void AddFunction(Constructor*);
+  
+protected:
+  typedef std::vector<FunctionBase*> CandidateFunctions;
   void NoMethodSpecified() const;
   void UnknownConstructor(const CvQualifiedTypes& argumentTypes) const;
   void UnknownMethod(const String& methodName,
@@ -97,7 +89,7 @@ protected:
                      const CandidateFunctions& = CandidateFunctions()) const;
   void ReportErrorMessage(const String& errorMessage) const;
   int ObjectWrapperDispatch(int, Tcl_Obj* CONST[]) const;
-  const WrapperBase* FindMethodWrapper(const String& name) const;
+  const ClassWrapper* FindMethodWrapper(const String& name) const;
   bool HasMethod(const String& name) const;
   int ClassWrapperDispatch(int, Tcl_Obj* CONST[]) const;
   int CallWrappedFunction(int, Tcl_Obj* CONST[], bool) const;
@@ -107,37 +99,21 @@ protected:
   static int ObjectWrapperDispatchFunction(ClientData, Tcl_Interp*,
                                            int, Tcl_Obj*CONST[]);
 protected:
-  /**
-   * The wrapper facility for this wrapper's interpreter.
-   */
+  ///! The wrapper facility for this wrapper's interpreter.
   WrapperFacility* m_WrapperFacility;
-
-  /**
-   * The Tcl interpreter to which this wrapper is attached.
-   */
-  Tcl_Interp*    m_Interpreter;
+  
+  ///! The TypeSystem's representation for this wrapped type.
+  const ClassType* m_WrappedTypeRepresentation;
   
   /**
-   * The name of the wrapped type.
-   */
-  const String   m_WrappedTypeName;  
-  
-  /**
-   * The TypeSystem's representation for this wrapped type.
-   */
-  const ClassType*    m_WrappedTypeRepresentation;
-  
-  /**
-   * The name of a constructor of the type.  This is the type name without
-   * template arguments or namespace qualification.
+   * The name of a constructor of the type.  This is the type name
+   * without template arguments or namespace qualification.
    */
   String m_ConstructorName;
   
   typedef std::vector<Constructor*> Constructors;
   
-  /**
-   * The constructors available to this wrapper.
-   */
+  ///! The constructors available to this wrapper.
   Constructors m_Constructors;
   
   struct MethodMap;
@@ -148,6 +124,13 @@ protected:
    * calls from a subclass to AddFunction.
    */
   MethodMap* m_MethodMap;
+  
+  struct ClassCommandSet;
+  /**
+   * The set of commands registered with the Tcl interpreter that will
+   * invoke the ClassWrapperDispatchFunction callback.
+   */
+  ClassCommandSet* m_ClassCommandSet;
 };
 
 } // namespace _wrap_

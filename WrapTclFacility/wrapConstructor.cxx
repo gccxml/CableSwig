@@ -41,7 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "wrapConstructor.h"
 #include "wrapTypeInfo.h"
-#include "wrapWrapperBase.h"
+
 
 namespace _wrap_
 {
@@ -51,12 +51,14 @@ namespace _wrap_
  * The constructor passes the function name and pararmeter types down to
  * the FunctionBase.
  */
-Constructor::Constructor(WrapperBase* wrapper,
+Constructor::Constructor(const WrapperFacility* wrapperFacility,
                          ConstructorWrapper constructorWrapper,
+                         const String& wrappedTypeName,
                          const String& name,
                          const ParameterTypes& parameterTypes):
   FunctionBase(name, parameterTypes),
-  m_Wrapper(wrapper),
+  m_WrappedTypeName(wrappedTypeName),
+  m_WrapperFacility(wrapperFacility),
   m_ConstructorWrapper(constructorWrapper)
 {
 }
@@ -67,7 +69,7 @@ Constructor::Constructor(WrapperBase* wrapper,
  */
 String Constructor::GetPrototype() const
 {
-  String prototype = m_Wrapper->GetWrappedTypeRepresentation()->Name() + "::" + m_Name + "(";
+  String prototype = m_WrappedTypeName + "::" + m_Name + "(";
   ParameterTypes::const_iterator arg = m_ParameterTypes.begin();
   while(arg != m_ParameterTypes.end())
     {
@@ -91,7 +93,7 @@ String Constructor::GetPrototype() const
 void Constructor::Call(const Arguments& arguments) const
 {
   // Call the constructor wrapper.
-  m_ConstructorWrapper(m_Wrapper->GetWrapperFacility(), arguments);
+  m_ConstructorWrapper(m_WrapperFacility, arguments);
 }
 
 

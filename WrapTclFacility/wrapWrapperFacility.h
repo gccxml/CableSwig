@@ -48,7 +48,7 @@ namespace _wrap_
 {
 
 class ConversionTable;
-class WrapperBase;
+class ClassWrapper;
 class CxxObject;
 
 /**
@@ -65,10 +65,10 @@ public:
 
   Tcl_Interp* GetInterpreter() const;
   ConversionTable* GetConversionTable() const;
+  void ReportErrorMessage(const String& errorMessage) const;
   
-  bool WrapperExists(const Type* type) const;
-  void SetWrapper(const Type*, WrapperBase*);
-  WrapperBase* GetWrapper(const Type*) const;
+  ClassWrapper* CreateClassWrapper(const ClassType*);
+  ClassWrapper* GetClassWrapper(const ClassType*) const;
   
   CvQualifiedType GetObjectType(Tcl_Obj* obj) const;
   Argument GetObjectArgument(Tcl_Obj* obj) const;
@@ -119,9 +119,9 @@ private:
   ///! The table of enumeration values that have been registered.
   EnumMap* m_EnumMap;
 
-  struct WrapperMap;
+  struct ClassWrapperMap;
   ///! Map from type to wrapper function.
-  WrapperMap* m_WrapperMap;
+  ClassWrapperMap* m_ClassWrapperMap;
 
   struct DeleteFunctionMap;
   ///! Table of registered delete functions.

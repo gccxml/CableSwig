@@ -90,8 +90,7 @@ private:
   void WriteEnumValueRegistration() const;
   void WriteMethodRegistration(const String&, const MethodEntry&,
                                unsigned int) const;
-  void WriteWrapperClassDefinition(const source::Class*, const Methods&,
-                                   const configuration::Class*) const;
+  void WriteWrapperClassDefinition(const source::Class*, const Methods&) const;
   void WriteImplicitArgument(const source::Class*, const source::Method*) const;
   void WriteArgumentList(const source::ArgumentContainer&, unsigned int, unsigned int) const;
   void WriteReturnBegin(const source::Function*) const;

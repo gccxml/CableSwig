@@ -56,8 +56,9 @@ public:
   // Pull a typedef out of the superclass.
   typedef FunctionBase::ParameterTypes ParameterTypes;
   
-  StaticMethod(WrapperBase* wrapper,
+  StaticMethod(const WrapperFacility* wrapperFacility,
                MethodWrapper methodWrapper,
+               const ClassType* wrappedTypeRepresentation,
                const String& name, bool isOperator,
                const CvQualifiedType& returnType,
                const ParameterTypes& parameterTypes = ParameterTypes());

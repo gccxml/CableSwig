@@ -109,13 +109,13 @@ Wrapper(WrapperFacility* wrapperFacility):
     ClassType::SafeDownCast(CvType<WrappedType>::type.GetType());
   
   // Register the Wrapper with the WrapperFacility.
-  m_WrapperFacility->SetWrapper(m_WrappedTypeRepresentation, this);
+  m_WrapperFacility->SetClassWrapper(m_WrappedTypeRepresentation, this);
   
   // Register our method wrappers with the superclass.
   this->RegisterMethodWrappers();
   
   // Setup this instance of the Wrapper to work with its interpreter.
-  Tcl_CreateObjCommand(m_Interpreter,
+  Tcl_CreateObjCommand(m_WrapperFacility->GetInterpreter(),
                        const_cast<char*>(m_WrappedTypeName.c_str()),
                        this->GetClassWrapperFunction(),
                        static_cast<WrapperBase*>(this), 0);
@@ -123,7 +123,7 @@ Wrapper(WrapperFacility* wrapperFacility):
   static char* alternateNames[] = { _wrap_ALTERNATE_NAMES, 0 };
   for(char** alternate = alternateNames; *alternate; ++alternate)
     {
-    Tcl_CreateObjCommand(m_Interpreter, *alternate,
+    Tcl_CreateObjCommand(m_WrapperFacility->GetInterpreter(), *alternate,
                          this->GetClassWrapperFunction(),
                          static_cast<WrapperBase*>(this), 0);
     }

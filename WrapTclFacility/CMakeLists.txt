@@ -19,17 +19,19 @@ ADD_DEFINITIONS(-DCxxTypes_EXPORTS)
 SOURCE_FILES(WrapTclFacility_SRCS
 wrapArgument
 wrapCalls
+wrapClassWrapper
 wrapConstructor
 wrapCxxObject
+wrapFunction
 wrapFunctionBase
 wrapFunctionSelector
+wrapFunctionWrapper
 wrapInit
 wrapMethod
 wrapStaticMethod
 wrapTclCxxObject
 wrapTypeInfo
 wrapUtils
-wrapWrapperBase
 wrapWrapperFacility
 )
 

@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    wrapWrapperBase.cxx
+  Module:    wrapClassWrapper.cxx
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
@@ -38,7 +38,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
-#include "wrapWrapperBase.h"
+#include "wrapClassWrapper.h"
 #include "wrapFunctionBase.h"
 #include "wrapConstructor.h"
 #include "wrapMethod.h"
@@ -49,6 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapWrapperFacility.h"
 #include "wrapException.h"
 
+#include <set>
 #include <map>
 #include <queue>
 
@@ -57,37 +58,54 @@ namespace _wrap_
 
 // Map from method name to its registered method wrapper.
 typedef std::multimap<String, Method*> MethodMapBase;
-struct WrapperBase::MethodMap: public MethodMapBase
+struct ClassWrapper::MethodMap: public MethodMapBase
 {
   typedef MethodMapBase::iterator iterator;
   typedef MethodMapBase::const_iterator const_iterator;
   typedef MethodMapBase::value_type value_type;
 };
 
+// Store a set of strings.
+typedef std::set<String> ClassCommandSetBase;
+struct ClassWrapper::ClassCommandSet: public ClassCommandSetBase
+{
+  typedef ClassCommandSetBase::iterator iterator;
+  typedef ClassCommandSetBase::const_iterator const_iterator;
+  typedef ClassCommandSetBase::value_type value_type;
+};
+
 
 /**
- * The constructor links this wrapper to the given interpreter.  It
- * also gets the interpreter's TypeSystem and WrapperFacility
- * for this wrapper's use.
+ * The constructor links this wrapper to the given WrapperFacility.
  */
-WrapperBase::WrapperBase(WrapperFacility* wrapperFacility,
-                         const String& wrappedTypeName):
+ClassWrapper::ClassWrapper(WrapperFacility* wrapperFacility,
+                           const ClassType* wrappedTypeRepresentation):
   m_WrapperFacility(wrapperFacility),
-  m_Interpreter(m_WrapperFacility->GetInterpreter()),
-  m_WrappedTypeName(wrappedTypeName),
-  m_WrappedTypeRepresentation(NULL),
-  m_MethodMap(new MethodMap)
+  m_WrappedTypeRepresentation(wrappedTypeRepresentation),
+  m_MethodMap(new MethodMap),
+  m_ClassCommandSet(new ClassCommandSet)
 {
-  String noTemplate = m_WrappedTypeName.substr(0, m_WrappedTypeName.find_first_of("<"));
+  String wrappedTypeName = m_WrappedTypeRepresentation->Name();
+  String noTemplate =
+    wrappedTypeName.substr(0, wrappedTypeName.find_first_of("<"));
   m_ConstructorName = noTemplate.substr(noTemplate.find_last_of(":") + 1);
+  
+  this->AddInterpreterClassCommand(wrappedTypeName);
 }
 
 
 /**
- * Virtual destructor.
+ * Destructor deletes all registered constructor and method wrappers.
  */
-WrapperBase::~WrapperBase()
+ClassWrapper::~ClassWrapper()
 {
+  // Free all the wrapped constructors.
+  for(Constructors::const_iterator i = m_Constructors.begin();
+      i != m_Constructors.end(); ++i)
+    {
+    delete (*i);
+    }
+  
   // Free all the wrapped functions.
   for(MethodMap::const_iterator i = m_MethodMap->begin();
       i != m_MethodMap->end(); ++i)
@@ -95,31 +113,23 @@ WrapperBase::~WrapperBase()
     delete i->second;
     }
   delete m_MethodMap;
+  delete m_ClassCommandSet;
 }
 
 
 /**
  * Get the representation of the type that is wrapped by this instance.
  */
-const Type* WrapperBase::GetWrappedTypeRepresentation() const
+const ClassType* ClassWrapper::GetWrappedTypeRepresentation() const
 {
   return m_WrappedTypeRepresentation;
 }
 
 
 /**
- * Get the interpreter to which this wrapper is attached.
- */
-Tcl_Interp* WrapperBase::GetInterpreter() const
-{
-  return m_Interpreter;
-}
-
-
-/**
  * Get the wrapper facility to which this wrapper is attached.
  */
-WrapperFacility* WrapperBase::GetWrapperFacility() const
+WrapperFacility* ClassWrapper::GetWrapperFacility() const
 {
   return m_WrapperFacility;
 }
@@ -129,10 +139,10 @@ WrapperFacility* WrapperBase::GetWrapperFacility() const
  * Appends the list of methods provided by this wrapper's class to the
  * current Tcl result.
  */
-void WrapperBase::ListMethods() const
+void ClassWrapper::ListMethods() const
 {
   String className = m_WrappedTypeRepresentation->Name();  
-  Tcl_AppendResult(m_Interpreter,
+  Tcl_AppendResult(m_WrapperFacility->GetInterpreter(),
                    "Methods provided by class ",
                    const_cast<char*>(className.c_str()),
                    ":\n",
@@ -141,22 +151,9 @@ void WrapperBase::ListMethods() const
       m != m_MethodMap->end(); ++m)
     {
     String prototype = m->second->GetInclassPrototype();
-    Tcl_AppendResult(m_Interpreter,
+    Tcl_AppendResult(m_WrapperFacility->GetInterpreter(),
                      "  ", const_cast<char*>(prototype.c_str()), "\n", NULL);
     }
-}
-
-
-/**
- * Get the conversion function from the wrapper's ConversionTable for
- * the specified conversion.  The table will automatically try to add
- * cv-qualifiers to the "from" type to find a conversion.
- */
-ConversionFunction
-WrapperBase::GetConversionFunction(const CvQualifiedType& from,
-                                   const Type* to) const
-{
-  return m_WrapperFacility->GetConversion(from, to);
 }
 
 
@@ -164,9 +161,9 @@ WrapperBase::GetConversionFunction(const CvQualifiedType& from,
  * Get a pointer to the function to register with a Tcl interpreter
  * for the class-level command for the wrapped type.
  */
-WrapperBase::WrapperFunction WrapperBase::GetClassWrapperFunction() const
+ClassWrapper::WrapperFunction ClassWrapper::GetClassWrapperFunction() const
 {
-  return &WrapperBase::ClassWrapperDispatchFunction;
+  return &ClassWrapper::ClassWrapperDispatchFunction;
 }
 
 
@@ -174,16 +171,36 @@ WrapperBase::WrapperFunction WrapperBase::GetClassWrapperFunction() const
  * Get a pointer to the function to register with a Tcl interpreter
  * for the instance-level command for the wrapped type.
  */
-WrapperBase::WrapperFunction WrapperBase::GetObjectWrapperFunction() const
+ClassWrapper::WrapperFunction ClassWrapper::GetObjectWrapperFunction() const
 {
-  return &WrapperBase::ObjectWrapperDispatchFunction;
+  return &ClassWrapper::ObjectWrapperDispatchFunction;
+}
+
+
+/**
+ * Register a command with the Tcl interpreter to call back to the
+ * ClassWrapperDispatchFunction.
+ */
+void ClassWrapper::AddInterpreterClassCommand(const String& command)
+{
+  // Check if this command was already added.
+  ClassCommandSet::const_iterator c = m_ClassCommandSet->find(command);
+  if(c != m_ClassCommandSet->end()) { return; }
+  
+  // Add the command to the set of registered commands.
+  m_ClassCommandSet->insert(command);
+  
+  // Create the Tcl command.
+  Tcl_CreateObjCommand(m_WrapperFacility->GetInterpreter(),
+                       const_cast<char*>(command.c_str()),
+                       this->GetClassWrapperFunction(), this, 0);
 }
 
 
 /**
  * A subclass calls this to add a wrapped function.
  */
-void WrapperBase::AddFunction(Method* method)
+void ClassWrapper::AddFunction(Method* method)
 {
   m_MethodMap->insert(MethodMap::value_type(method->GetName(), method));
 }
@@ -191,7 +208,7 @@ void WrapperBase::AddFunction(Method* method)
 /**
  * A subclass calls this to add a wrapped constructor.
  */
-void WrapperBase::AddFunction(Constructor* constructor)
+void ClassWrapper::AddFunction(Constructor* constructor)
 {
   m_Constructors.push_back(constructor);
 }
@@ -201,11 +218,12 @@ void WrapperBase::AddFunction(Constructor* constructor)
  * When an object name is given as a command with no arguments, no method
  * name has been specified.  This is called to generate the error message.
  */
-void WrapperBase::NoMethodSpecified() const
+void ClassWrapper::NoMethodSpecified() const
 {
+  String wrappedTypeName = m_WrappedTypeRepresentation->Name();
   String errorMessage =
-    "No method specified: "+m_WrappedTypeName+"::???";
-  this->ReportErrorMessage(errorMessage);
+    "No method specified: "+wrappedTypeName+"::???";
+  m_WrapperFacility->ReportErrorMessage(errorMessage);
 }
 
 
@@ -213,10 +231,11 @@ void WrapperBase::NoMethodSpecified() const
  * When an unknown constructor is encountered by the wrapper, this is called
  * to generate the error message.
  */
-void WrapperBase::UnknownConstructor(const CvQualifiedTypes& argumentTypes) const
+void ClassWrapper::UnknownConstructor(const CvQualifiedTypes& argumentTypes) const
 {
+  String wrappedTypeName = m_WrappedTypeRepresentation->Name();
   String errorMessage = "No constructor matches ";
-  errorMessage += m_WrappedTypeName + "::" + m_ConstructorName + "(";
+  errorMessage += wrappedTypeName + "::" + m_ConstructorName + "(";
   CvQualifiedTypes::const_iterator arg = argumentTypes.begin();
   while(arg != argumentTypes.end())
     {
@@ -238,7 +257,7 @@ void WrapperBase::UnknownConstructor(const CvQualifiedTypes& argumentTypes) cons
       }
     }
   
-  this->ReportErrorMessage(errorMessage);
+  m_WrapperFacility->ReportErrorMessage(errorMessage);
 }
 
 
@@ -246,9 +265,9 @@ void WrapperBase::UnknownConstructor(const CvQualifiedTypes& argumentTypes) cons
  * When an unknown method is encountered by the wrapper, this is called
  * to generate the error message.
  */
-void WrapperBase::UnknownMethod(const String& methodName,
-                                const CvQualifiedTypes& argumentTypes,
-                                const CandidateFunctions& candidates) const
+void ClassWrapper::UnknownMethod(const String& methodName,
+                                 const CvQualifiedTypes& argumentTypes,
+                                 const CandidateFunctions& candidates) const
 {
   String errorMessage = "No method matches ";
   CvQualifiedTypes::const_iterator arg = argumentTypes.begin();
@@ -285,18 +304,7 @@ void WrapperBase::UnknownMethod(const String& methodName,
       }
     }
   
-  this->ReportErrorMessage(errorMessage);
-}
-
-
-/**
- * This is called to report an error message to the Tcl interpreter.
- */
-void WrapperBase::ReportErrorMessage(const String& errorMessage) const
-{
-  Tcl_ResetResult(m_Interpreter);
-  Tcl_AppendToObj(Tcl_GetObjResult(m_Interpreter),
-                  const_cast<char*>(errorMessage.c_str()), -1);
+  m_WrapperFacility->ReportErrorMessage(errorMessage);
 }
 
 
@@ -305,7 +313,7 @@ void WrapperBase::ReportErrorMessage(const String& errorMessage) const
  * a command associated with the wrapped class name.
  */
 int
-WrapperBase
+ClassWrapper
 ::ClassWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
 {
   try{
@@ -314,7 +322,7 @@ WrapperBase
   if(objc > 1)
     {
     String methodName = Tcl_GetStringFromObj(objv[1], NULL);
-    const WrapperBase* wrapper = this->FindMethodWrapper(methodName);
+    const ClassWrapper* wrapper = this->FindMethodWrapper(methodName);
     if(wrapper)
       {
       // We have found a wrapper that knows about the method.  Call it.
@@ -349,14 +357,14 @@ WrapperBase
   // Catch any TclException that was thrown this method.
   catch (TclException e)
     {
-    this->ReportErrorMessage(e.GetExceptionMessage());
+    m_WrapperFacility->ReportErrorMessage(e.GetExceptionMessage());
     return TCL_ERROR;
     }
   // We must catch any C++ exception to prevent it from unwinding the
   // call stack back through the Tcl interpreter's C code.
   catch (...)
     {
-    this->ReportErrorMessage("Caught unknown exception!!");
+    m_WrapperFacility->ReportErrorMessage("Caught unknown exception!!");
     return TCL_ERROR;
     }
 }
@@ -366,7 +374,7 @@ WrapperBase
 /**
  * Dispatch function to find a wrapper that knows about the method called.
  */
-int WrapperBase::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
+int ClassWrapper::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
 {
   try{
   // Make sure we have a method name.
@@ -381,7 +389,7 @@ int WrapperBase::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
   
   // See if any wrapper in our class hierarchy knows about a method
   // with this name.
-  const WrapperBase* wrapper = this->FindMethodWrapper(methodName);
+  const ClassWrapper* wrapper = this->FindMethodWrapper(methodName);
   if(wrapper)
     {
     // We have found a wrapper that knows about the method.  Call it.
@@ -407,14 +415,14 @@ int WrapperBase::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
   // Catch any TclException that was thrown this method.
   catch (TclException e)
     {
-    this->ReportErrorMessage(e.GetExceptionMessage());
+    m_WrapperFacility->ReportErrorMessage(e.GetExceptionMessage());
     return TCL_ERROR;
     }
   // We must catch any C++ exception to prevent it from unwinding the
   // call stack back through the Tcl interpreter's C code.
   catch (...)
     {
-    this->ReportErrorMessage("Caught unknown exception!!");
+    m_WrapperFacility->ReportErrorMessage("Caught unknown exception!!");
     return TCL_ERROR;
     }
 }
@@ -425,7 +433,7 @@ int WrapperBase::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
  * may involve chaining up the class hierarchy.  If no wrapper knows about
  * the method, NULL is returned.
  */
-const WrapperBase* WrapperBase::FindMethodWrapper(const String& name) const
+const ClassWrapper* ClassWrapper::FindMethodWrapper(const String& name) const
 {  
   // A queue to do a BFS of this class and its parents.
   std::queue<const ClassType*> classQueue;
@@ -438,7 +446,7 @@ const WrapperBase* WrapperBase::FindMethodWrapper(const String& name) const
     const ClassType* curClass = classQueue.front(); classQueue.pop();
     
     // If the class has a wrapper, see if it knows about the method.
-    const WrapperBase* wrapper = m_WrapperFacility->GetWrapper(curClass);
+    const ClassWrapper* wrapper = m_WrapperFacility->GetClassWrapper(curClass);
     if(wrapper && wrapper->HasMethod(name))
       {
       return wrapper;
@@ -460,7 +468,7 @@ const WrapperBase* WrapperBase::FindMethodWrapper(const String& name) const
 /**
  * Return whether this Wrapper knows about a method with the given name.
  */
-bool WrapperBase::HasMethod(const String& name) const
+bool ClassWrapper::HasMethod(const String& name) const
 {
   return (m_MethodMap->count(name) > 0);
 }
@@ -471,8 +479,8 @@ bool WrapperBase::HasMethod(const String& name) const
  * the method being invoked.  Here we use a FunctionSelector to get
  * the correct method wrapper, and call it.
  */
-int WrapperBase::CallWrappedFunction(int objc, Tcl_Obj* CONST objv[],
-                                     bool staticOnly) const
+int ClassWrapper::CallWrappedFunction(int objc, Tcl_Obj* CONST objv[],
+                                      bool staticOnly) const
 {  
   MethodSelector methodSelector(m_WrapperFacility, objc, objv);
   
@@ -515,15 +523,15 @@ int WrapperBase::CallWrappedFunction(int objc, Tcl_Obj* CONST objv[],
  * This dispatches the call to the Wrapper of this type for the interpreter
  * that made the call-back.
  */
-int WrapperBase::ClassWrapperDispatchFunction(ClientData clientData,
-                                              Tcl_Interp* interp,
-                                              int objc,
-                                              Tcl_Obj* CONST objv[])
+int ClassWrapper::ClassWrapperDispatchFunction(ClientData clientData,
+                                               Tcl_Interp* interp,
+                                               int objc,
+                                               Tcl_Obj* CONST objv[])
 {  
-  // The client data is the pointer to the instance of the WrapperBase
+  // The client data is the pointer to the instance of the ClassWrapper
   // subclass that registered the comand.
-  return static_cast<WrapperBase*>(clientData)->ClassWrapperDispatch(objc,
-                                                                     objv);
+  return static_cast<ClassWrapper*>(clientData)->ClassWrapperDispatch(objc,
+                                                                      objv);
 }
 
 
@@ -531,18 +539,18 @@ int WrapperBase::ClassWrapperDispatchFunction(ClientData clientData,
  * The function called back from a Tcl interpreter when a command
  * referring to an instance of or pointer to the wrapped type is invoked.
  *
- * This dispatches the call to the Wrapper of this type for the interpreter
- * that made the call-back.
+ * This dispatches the call to the ClassWrapper of this type for the
+ * interpreter that made the call-back.
  */
-int WrapperBase::ObjectWrapperDispatchFunction(ClientData clientData,
-                                               Tcl_Interp* interp,
-                                               int objc,
-                                               Tcl_Obj* CONST objv[])
+int ClassWrapper::ObjectWrapperDispatchFunction(ClientData clientData,
+                                                Tcl_Interp* interp,
+                                                int objc,
+                                                Tcl_Obj* CONST objv[])
 {
-  // The client data is the pointer to the instance of the WrapperBase
-  // subclass that registered the comand.
-  return static_cast<WrapperBase*>(clientData)->ObjectWrapperDispatch(objc,
-                                                                      objv);
+  // The client data is the pointer to the instance of the
+  // ClassWrapper that registered the comand.
+  return static_cast<ClassWrapper*>(clientData)->ObjectWrapperDispatch(objc,
+                                                                       objv);
 }
 
 

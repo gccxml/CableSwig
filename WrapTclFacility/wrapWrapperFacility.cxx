@@ -49,7 +49,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapTclCxxObject.h"
 #include "wrapTypeInfo.h"
 #include "wrapConverters.h"
-#include "wrapWrapperBase.h"
+#include "wrapClassWrapper.h"
 
 #include "cableVersion.h"
 
@@ -76,12 +76,12 @@ namespace _wrap_
 {
 
 // Map from type to the wrapper class for it.
-typedef std::map<const Type*, WrapperBase*>  WrapperMapBase;
-struct WrapperFacility::WrapperMap: public WrapperMapBase
+typedef std::map<const ClassType*, ClassWrapper*>  ClassWrapperMapBase;
+struct WrapperFacility::ClassWrapperMap: public ClassWrapperMapBase
 {
-  typedef WrapperMapBase::iterator iterator;
-  typedef WrapperMapBase::const_iterator const_iterator;
-  typedef WrapperMapBase::value_type value_type;
+  typedef ClassWrapperMapBase::iterator iterator;
+  typedef ClassWrapperMapBase::const_iterator const_iterator;
+  typedef ClassWrapperMapBase::value_type value_type;
 };
 
 ///! Internal class used to store an enumeration value instance.
@@ -192,7 +192,7 @@ Tcl_Interp* WrapperFacility::GetInterpreter() const
 WrapperFacility::WrapperFacility(Tcl_Interp* interp):
   m_Interpreter(interp),
   m_EnumMap(new EnumMap),
-  m_WrapperMap(new WrapperMap),
+  m_ClassWrapperMap(new ClassWrapperMap),
   m_DeleteFunctionMap(new DeleteFunctionMap),
   m_CxxObjectMap(new CxxObjectMap),
   m_CxxFunctionMap(new CxxFunctionMap),
@@ -239,14 +239,14 @@ WrapperFacility::~WrapperFacility()
     this->DeleteObject(e->second.m_Object, e->second.m_Type);
     }
   
-  // Delete class wrapper objects.
-  for(WrapperMap::const_iterator w = m_WrapperMap->begin();
-      w != m_WrapperMap->end(); ++w)
+  // Delete ClassWrapper objects.
+  for(ClassWrapperMap::const_iterator w = m_ClassWrapperMap->begin();
+      w != m_ClassWrapperMap->end(); ++w)
     {
     delete w->second;
     }
   
-  delete m_WrapperMap;
+  delete m_ClassWrapperMap;
   delete m_EnumMap;
   delete m_DeleteFunctionMap;
   delete m_CxxObjectMap;
@@ -367,7 +367,7 @@ int WrapperFacility::ListMethodsCommand(int objc, Tcl_Obj* CONST objv[]) const
     {
     // Get the next class off the stack.
     const ClassType* curClass = outputStack.top(); outputStack.pop();
-    const WrapperBase* wrapper = this->GetWrapper(curClass);
+    const ClassWrapper* wrapper = this->GetClassWrapper(curClass);
     // If the class has a wrapper, list its methods.
     if(wrapper)
       {
@@ -671,44 +671,50 @@ Argument WrapperFacility::GetObjectArgument(Tcl_Obj* obj) const
 
 
 /**
- * Return whether a wrapper for the given type exists.
+ * This is called to report an error message to the Tcl interpreter.
  */
-bool WrapperFacility::WrapperExists(const Type* type) const
+void WrapperFacility::ReportErrorMessage(const String& errorMessage) const
 {
-  return (m_WrapperMap->count(type) > 0);
+  Tcl_ResetResult(m_Interpreter);
+  Tcl_AppendToObj(Tcl_GetObjResult(m_Interpreter),
+                  const_cast<char*>(errorMessage.c_str()), -1);
 }
-  
+
 
 /**
- * Register a wrapper for the given type.
+ * Create a new ClassWrapper for the given ClassType.  If one already
+ * exists, NULL is returned.  It can be retrieved with
+ * WrapperFacility::GetClassWrapper().
  */
-void WrapperFacility::SetWrapper(const Type* type, WrapperBase* wrapper)
+ClassWrapper* WrapperFacility::CreateClassWrapper(const ClassType* type)
 {
-  // Delete any existing Wrapper for the type.
-  WrapperMap::const_iterator w = m_WrapperMap->find(type);
-  if(w != m_WrapperMap->end())
-    {
-    delete w->second;
-    }
+  // Check if there is an existing wrapper for the type.
+  ClassWrapperMap::const_iterator w = m_ClassWrapperMap->find(type);
+  if(w != m_ClassWrapperMap->end()) { return 0; }
   
-  // Set the new Wrapper for the type.
-  m_WrapperMap->insert(WrapperMap::value_type(type, wrapper));
+  // Create a new ClassWrapper for the type.
+  ClassWrapper* newClassWrapper = new ClassWrapper(this, type);
+  
+  // Save the new ClassWrapper.
+  m_ClassWrapperMap->insert(
+    ClassWrapperMap::value_type(type, newClassWrapper));
+  
+  return newClassWrapper;
 }
   
  
 /**
- * Retrieve the wrapper for the given type.  If none exists, NULL is
- * returned.
+ * Retrieve the ClassWrapper for the given ClassType.  If none exists,
+ * NULL is returned. 
  */
-WrapperBase*
-WrapperFacility::GetWrapper(const Type* type) const
+ClassWrapper* WrapperFacility::GetClassWrapper(const ClassType* type) const
 {
-  WrapperMap::const_iterator i = m_WrapperMap->find(type);
-  if(i != m_WrapperMap->end())
+  ClassWrapperMap::const_iterator i = m_ClassWrapperMap->find(type);
+  if(i != m_ClassWrapperMap->end())
     {
     return i->second;
     }
-  return NULL;
+  return 0;
 }
 
 

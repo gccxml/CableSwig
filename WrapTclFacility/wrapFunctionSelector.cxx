@@ -42,6 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapFunctionSelector.h"
 #include "wrapTypeInfo.h"
 #include "wrapFunctionBase.h"
+#include "wrapFunction.h"
 #include "wrapConstructor.h"
 #include "wrapMethod.h"
 #include "wrapStaticMethod.h"
@@ -55,7 +56,7 @@ namespace _wrap_
 /**
  *
  */
-FunctionSelector::FunctionSelector(const WrapperFacility* facility,
+FunctionSelectorBase::FunctionSelectorBase(const WrapperFacility* facility,
                                    int objc, Tcl_Obj*CONST objv[],
                                    unsigned int argumentCount):
   m_WrapperFacility(facility),
@@ -69,7 +70,7 @@ FunctionSelector::FunctionSelector(const WrapperFacility* facility,
 /**
  *
  */
-FunctionSelector::~FunctionSelector()
+FunctionSelectorBase::~FunctionSelectorBase()
 {
   // Make sure all array arguments are freed.
   for(std::vector<Argument*>::const_iterator i = m_ArrayArguments.begin();
@@ -79,7 +80,7 @@ FunctionSelector::~FunctionSelector()
     }
 }
 
-CvQualifiedTypes FunctionSelector::GetArgumentTypes() const
+CvQualifiedTypes FunctionSelectorBase::GetArgumentTypes() const
 {
   CvQualifiedTypes argumentTypes;
   for(Arguments::const_iterator arg = m_Arguments.begin();
@@ -90,13 +91,13 @@ CvQualifiedTypes FunctionSelector::GetArgumentTypes() const
   return argumentTypes;
 }
 
-const Arguments& FunctionSelector::GetArguments() const
+const Arguments& FunctionSelectorBase::GetArguments() const
 {
   return m_Arguments;
 }
 
 
-void FunctionSelector::SetImplicitArgument(bool staticOnly)
+void FunctionSelectorBase::SetImplicitArgument(bool staticOnly)
 {
   if(staticOnly)
     {
@@ -127,7 +128,7 @@ void FunctionSelector::SetImplicitArgument(bool staticOnly)
 }
 
 
-void FunctionSelector::AddCandidate(FunctionBase* candidate)
+void FunctionSelectorBase::AddCandidate(FunctionBase* candidate)
 {
   // 13.3.2/2
   // First, to be a viable function, a candidate function shall have enough
@@ -143,7 +144,7 @@ void FunctionSelector::AddCandidate(FunctionBase* candidate)
  * THIS IS A HACK VERSION!  It should be reimplemented to do full
  * overload resolution.
  */
-FunctionBase* FunctionSelector::ResolveOverload()
+FunctionBase* FunctionSelectorBase::ResolveOverload()
 {
   for(unsigned int candidateIndex = 0; candidateIndex < m_Candidates.size();
       ++candidateIndex)
@@ -161,7 +162,7 @@ FunctionBase* FunctionSelector::ResolveOverload()
  * THIS IS A HACK VERSION!  It should be reimplemented to do full
  * overload resolution.
  */
-FunctionBase* FunctionSelector::ResolveOverloadWithSeparateArguments()
+FunctionBase* FunctionSelectorBase::ResolveOverloadWithSeparateArguments()
 {
   for(unsigned int candidateIndex = 0; candidateIndex < m_Candidates.size();
       ++candidateIndex)
@@ -180,7 +181,7 @@ FunctionBase* FunctionSelector::ResolveOverloadWithSeparateArguments()
 /**
  * 13.3.2 Viable Functions
  */
-bool FunctionSelector::CandidateIsViable(unsigned int candidateIndex,
+bool FunctionSelectorBase::CandidateIsViable(unsigned int candidateIndex,
                                          const Arguments& arguments)
 {
   bool viable = true;
@@ -227,7 +228,7 @@ bool FunctionSelector::CandidateIsViable(unsigned int candidateIndex,
  * Called by ResolveOverload to determine if the given conversion can be
  * done for passing an argument to a parameter.
  */
-bool FunctionSelector::CxxConversionPossible(const CvQualifiedType& from,
+bool FunctionSelectorBase::CxxConversionPossible(const CvQualifiedType& from,
                                              const Type* to) const
 {
   // If the type is a reference, see if it can be bound.
@@ -289,7 +290,7 @@ bool FunctionSelector::CxxConversionPossible(const CvQualifiedType& from,
  */
 ConstructorSelector::ConstructorSelector(const WrapperFacility* facility,
                                          int objc, Tcl_Obj*CONST objv[]):
-  FunctionSelector(facility, objc, objv, objc-1)
+  FunctionSelectorBase(facility, objc, objv, objc-1)
 {
 }
 
@@ -303,7 +304,7 @@ ConstructorSelector::~ConstructorSelector()
 
 void ConstructorSelector::AddCandidate(Constructor* candidate)
 {
-  this->FunctionSelector::AddCandidate(candidate);
+  this->FunctionSelectorBase::AddCandidate(candidate);
 }
 
 Constructor* ConstructorSelector::Select()
@@ -342,7 +343,7 @@ void ConstructorSelector::GuessArguments()
  */
 MethodSelector::MethodSelector(const WrapperFacility* facility,
                                int objc, Tcl_Obj*CONST objv[]):
-  FunctionSelector(facility, objc, objv, objc-1)
+  FunctionSelectorBase(facility, objc, objv, objc-1)
 {
 }
 
@@ -357,7 +358,7 @@ MethodSelector::~MethodSelector()
 
 void MethodSelector::AddCandidate(Method* candidate)
 {
-  this->FunctionSelector::AddCandidate(candidate);
+  this->FunctionSelectorBase::AddCandidate(candidate);
 }
 
 
@@ -383,7 +384,7 @@ Method* MethodSelector::Select(bool staticOnly)
   return dynamic_cast<Method*>(this->ResolveOverloadWithSeparateArguments());
 }
 
-bool FunctionSelector::TryMagic(int candidateIndex)
+bool FunctionSelectorBase::TryMagic(int candidateIndex)
 {
   for(unsigned int parameterIndex = 0;
       parameterIndex != m_Arguments.size(); ++parameterIndex)
@@ -408,7 +409,7 @@ void MethodSelector::GuessArguments()
 }
 
 
-bool FunctionSelector::TryMagic(int candidateIndex, int parameterIndex)
+bool FunctionSelectorBase::TryMagic(int candidateIndex, int parameterIndex)
 {
   const FunctionBase::ParameterTypes&
     parameterTypes = m_Candidates[candidateIndex]->GetParameterTypes();
@@ -469,5 +470,59 @@ bool FunctionSelector::TryMagic(int candidateIndex, int parameterIndex)
   
   return false;
 }
+
+
+/**
+ *
+ */
+FunctionSelector::FunctionSelector(const WrapperFacility* facility,
+                                   int objc, Tcl_Obj*CONST objv[]):
+  FunctionSelectorBase(facility, objc, objv, objc-1)
+{
+}
+
+
+/**
+ *
+ */
+FunctionSelector::~FunctionSelector()
+{
+}
+
+void FunctionSelector::AddCandidate(Function* candidate)
+{
+  this->FunctionSelectorBase::AddCandidate(candidate);
+}
+
+Function* FunctionSelector::Select()
+{
+  // Guess the argument types and try to do C++ overload resolution.
+  // This should be successful most of the time.
+  this->GuessArguments();
+  FunctionBase* function = this->ResolveOverload();
+  // If a function was selected, return it.
+  if(function)
+    {
+    return dynamic_cast<Function*>(function);
+    }
+  // No methods matched.  Try some magic.
+  for(unsigned int candidateIndex = 0;
+      candidateIndex != m_Candidates.size(); ++candidateIndex)
+    {
+    m_CandidateArguments.push_back(m_Arguments);
+    this->TryMagic(candidateIndex);
+    }
+  return dynamic_cast<Function*>(this->ResolveOverloadWithSeparateArguments());
+}
+
+
+void FunctionSelector::GuessArguments()
+{
+  for(int i=1; i < m_Objc; ++i)
+    {
+    m_Arguments.push_back(m_WrapperFacility->GetObjectArgument(m_Objv[i]));
+    }  
+}
+
 
 } // namespace _wrap_

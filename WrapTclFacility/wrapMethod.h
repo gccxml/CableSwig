@@ -47,7 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace _wrap_
 {
 
-class WrapperBase;
 class WrapperFacility;
 
 /**
@@ -65,8 +64,9 @@ public:
   // Pull a typedef out of the superclass.
   typedef FunctionBase::ParameterTypes ParameterTypes;
   
-  Method(WrapperBase* wrapper,
+  Method(const WrapperFacility* wrapperFacility,
          MethodWrapper methodWrapper,
+         const ClassType* wrappedTypeRepresentation,
          const String& name,
          bool isConst, bool isOperator,
          const CvQualifiedType& returnType,
@@ -77,7 +77,8 @@ public:
   String GetCallName() const;
   void Call(const Arguments&) const;
 private:
-  const WrapperBase* m_Wrapper;
+  const ClassType* m_WrappedTypeRepresentation;
+  const WrapperFacility* m_WrapperFacility;
   MethodWrapper m_MethodWrapper;
   CvQualifiedType m_FunctionType;
   bool m_IsOperator;

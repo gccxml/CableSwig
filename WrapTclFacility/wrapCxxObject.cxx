@@ -1,5 +1,5 @@
 /*=========================================================================
-
+  
   Program:   Insight Segmentation & Registration Toolkit
   Module:    wrapCxxObject.cxx
   Language:  C++
@@ -40,7 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =========================================================================*/
 #include "wrapCxxObject.h"
 #include "wrapWrapperFacility.h"
-#include "wrapWrapperBase.h"
+#include "wrapClassWrapper.h"
 
 #include <stdio.h>
 #include <map>
@@ -227,7 +227,8 @@ void CxxObject::CreateTclCommand() const
   if(targetType->IsClassType())
     {
     // Try to get the wrapper for the given type.
-    WrapperBase* wrapper = m_WrapperFacility->GetWrapper(targetType);
+    ClassWrapper* wrapper = m_WrapperFacility->GetClassWrapper(
+      ClassType::SafeDownCast(targetType));
     if(wrapper)
       {
       char addrBuf[sizeof(CxxObject*)*2+7];

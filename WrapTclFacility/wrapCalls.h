@@ -41,15 +41,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _wrapCalls_h
 #define _wrapCalls_h
 
-#include "wrapWrapperBase.h"
-#include "wrapConstructor.h"
-#include "wrapMethod.h"
-#include "wrapStaticMethod.h"
 #include "wrapTclCxxObject.h"
-#include "wrapWrapperFacility.h"
-#include "wrapConverters.h"
-#include "wrapException.h"
 #include "wrapTypeInfo.h"
+#include "wrapWrapperFacility.h"
 
 namespace _wrap_
 {

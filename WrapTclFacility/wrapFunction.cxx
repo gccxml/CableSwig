@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Insight Segmentation & Registration Toolkit
-  Module:    wrapMethod.cxx
+  Module:    wrapFunction.cxx
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
@@ -39,7 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
 
-#include "wrapMethod.h"
+#include "wrapFunction.h"
 #include "wrapTypeInfo.h"
 
 namespace _wrap_
@@ -47,24 +47,20 @@ namespace _wrap_
 
 /**
  * The constructor passes the function name and pararmeter types down to
- * the FunctionBase.  It then adds the implicit object parameter to the
- * front of the parameter list.
+ * the FunctionBase.
  */
-Method::Method(const WrapperFacility* wrapperFacility,
-               MethodWrapper methodWrapper,
-               const ClassType* wrappedTypeRepresentation,
-               const String& name,
-               bool isConst, bool isOperator,
-               const CvQualifiedType& returnType,
-               const ParameterTypes& parameterTypes):
+Function::Function(const WrapperFacility* wrapperFacility,
+                   WrappedFunctionInvoker wrappedFunctionInvoker,
+                   const String& name,
+                   bool isOperator,
+                   const CvQualifiedType& returnType,
+                   const ParameterTypes& parameterTypes):
   FunctionBase(name, parameterTypes),
-  m_WrappedTypeRepresentation(wrappedTypeRepresentation),
   m_WrapperFacility(wrapperFacility),
-  m_MethodWrapper(methodWrapper),
+  m_WrappedFunctionInvoker(wrappedFunctionInvoker),
   m_IsOperator(isOperator)
 {
-  // Construct the function type associated with the method.  This does not
-  // include the implicit object parameter.
+  // Construct the function type.
   CvQualifiedTypes functionParameterTypes;  
   for(ParameterTypes::const_iterator arg = m_ParameterTypes.begin();
       arg != m_ParameterTypes.end(); ++arg)
@@ -72,56 +68,25 @@ Method::Method(const WrapperFacility* wrapperFacility,
     functionParameterTypes.push_back((*arg)->GetCvQualifiedType(false, false));
     }
   m_FunctionType = TypeInfo::GetFunctionType(returnType, functionParameterTypes,
-                                             isConst, false);
-
-  // Add the implicit object parameter to the front of the parameter list.
-  CvQualifiedType wrappedType = m_WrappedTypeRepresentation
-    ->GetCvQualifiedType(isConst, false);
-  const Type* implicit = TypeInfo::GetReferenceType(wrappedType).GetType();
-  m_ParameterTypes.insert(m_ParameterTypes.begin(), implicit);
-
+                                             false, false);
 }
 
-  
+
 /**
- * Return whether the method is static.
+ * Get a string representation of the function prototype.
  */
-bool Method::IsStatic() const
+String Function::GetPrototype() const
 {
-  return false;
-}
-
-/**
- * Get a string representation of the method's function prototype.
- */
-String Method::GetPrototype() const
-{
-  String name = m_WrappedTypeRepresentation->Name() + "::" + this->GetCallName();
-  String prototype = m_FunctionType.GenerateDeclaration(name);
-  if(this->IsStatic())
-    {
-    prototype = "static "+prototype;
-    }
-  return prototype;
-}
-
-String Method::GetInclassPrototype() const
-{
-  String prototype = m_FunctionType.GenerateDeclaration(this->GetCallName());
-  if(this->IsStatic())
-    {
-    prototype = "static "+prototype;
-    }
-  return prototype;
+  return m_FunctionType.GenerateDeclaration(this->GetCallName());
 }
 
 
 /**
- * Get the name of the method as it would be called with the standard
- * obj.method() syntax.  This is used to add the operator keyword to
+ * Get the name of the function as it would be called with the standard
+ * function_name(args) syntax.  This is used to add the operator keyword to
  * the name, if necessary.
  */
-String Method::GetCallName() const
+String Function::GetCallName() const
 {
   if(m_Name.length() == 0)
     {
@@ -139,13 +104,13 @@ String Method::GetCallName() const
 
 
 /**
- * Invokes a wrapped method.  This actually extracts the C++ objects
- * from the Tcl objects given as arguments and calls the method wrapper.
+ * Invokes a wrapped function.  This actually extracts the C++ objects
+ * from the Tcl objects given as arguments and calls the function wrapper.
  */
-void Method::Call(const Arguments& arguments) const
+void Function::Call(const Arguments& arguments) const
 {
-  // Call the method wrapper.
-  m_MethodWrapper(m_WrapperFacility, arguments);
+  // Call the function wrapper.
+  m_WrappedFunctionInvoker(m_WrapperFacility, arguments);
 }
 
 
