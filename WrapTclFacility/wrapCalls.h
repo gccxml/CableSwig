@@ -70,7 +70,7 @@ struct CvType;
 /**
  * Every enumeration type that is returned from a method should have a
  * specialization of this class the following member:
- *   static void From(const T& result, const WrapperBase* wrapper);
+ *   static void From(const T& result, const WrapperFacility* wrapperFacility);
  */
 template <typename T>
 struct ReturnEnum;
@@ -86,20 +86,20 @@ template <typename T>
 struct Return
 {
   typedef typename CvType<T>::NoCv NoCvT;
-  static void From(const T& result, const WrapperBase* wrapper)
+  static void From(const T& result, const WrapperFacility* wrapperFacility)
     {
-    Tcl_Interp* interp = wrapper->GetInterpreter();
+    Tcl_Interp* interp = wrapperFacility->GetInterpreter();
     CxxObject* cxxObject =
-      wrapper->GetWrapperFacility()->GetCxxObjectFor(Anything(new NoCvT(result)),
-                                                     CvType<T>::type.GetType());
+      wrapperFacility->GetCxxObjectFor(Anything(new NoCvT(result)),
+                                       CvType<T>::type.GetType());
     Tcl_SetObjResult(interp, Tcl_NewCxxObjectObj(cxxObject));
     }
-  static void FromConstructor(T* result, const WrapperBase* wrapper)
+  static void FromConstructor(T* result, const WrapperFacility* wrapperFacility)
     {
-    Tcl_Interp* interp = wrapper->GetInterpreter();
+    Tcl_Interp* interp = wrapperFacility->GetInterpreter();
     CxxObject* cxxObject =
-      wrapper->GetWrapperFacility()->GetCxxObjectFor(Anything(result),
-                                                     CvType<T>::type.GetType());
+      wrapperFacility->GetCxxObjectFor(Anything(result),
+                                       CvType<T>::type.GetType());
     Tcl_SetObjResult(interp, Tcl_NewCxxObjectObj(cxxObject));
     }
 };
@@ -110,7 +110,7 @@ struct Return
  */
 template <>
 struct Return<void>
-{ static _wrap_EXPORT void From(const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const WrapperFacility*); };
 
 
 /*@{
@@ -119,39 +119,39 @@ struct Return<void>
  */
 template <>
 struct Return<bool>
-{ static _wrap_EXPORT void From(bool result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(bool result, const WrapperFacility*); };
 
 template <>
 struct  Return<short>
-{ static _wrap_EXPORT void From(short result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(short result, const WrapperFacility*); };
 
 template <>
 struct  Return<unsigned short>
-{ static _wrap_EXPORT void From(unsigned short result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(unsigned short result, const WrapperFacility*); };
 
 template <>
 struct  Return<int>
-{ static _wrap_EXPORT void From(int result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(int result, const WrapperFacility*); };
 
 template <>
 struct  Return<unsigned int>
-{ static _wrap_EXPORT void From(unsigned int result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(unsigned int result, const WrapperFacility*); };
 
 template <>
 struct  Return<long>
-{ static _wrap_EXPORT void From(long result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(long result, const WrapperFacility*); };
 
 template <>
 struct Return<unsigned long>
-{ static _wrap_EXPORT void From(unsigned long result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(unsigned long result, const WrapperFacility*); };
 
 template <>
 struct  Return<float>
-{ static _wrap_EXPORT void From(float result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(float result, const WrapperFacility*); };
 
 template <>
 struct  Return<double>
-{ static _wrap_EXPORT void From(double result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(double result, const WrapperFacility*); };
 //@}
   
   
@@ -163,16 +163,16 @@ struct  Return<double>
 template <typename T>
 struct ReturnPointerTo
 {
-  static void From(T* result, const WrapperBase* wrapper)
+  static void From(T* result, const WrapperFacility* wrapperFacility)
     {
-    Tcl_Interp* interp = wrapper->GetInterpreter();
+    Tcl_Interp* interp = wrapperFacility->GetInterpreter();
     CxxObject* cxxObject = 
-      wrapper->GetWrapperFacility()->GetCxxObjectFor(Anything(result),
-                                                     CvType<T*>::type.GetType());
+      wrapperFacility->GetCxxObjectFor(Anything(result),
+                                       CvType<T*>::type.GetType());
     Tcl_SetObjResult(interp, Tcl_NewCxxObjectObj(cxxObject));
     }
 };
- 
+
 
 /**
  * A specialization of ReturnPointerTo for char* to convert to a Tcl String
@@ -180,7 +180,7 @@ struct ReturnPointerTo
  */
 template <>
 struct ReturnPointerTo<char>
-{ static _wrap_EXPORT void From(char* result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(char* result, const WrapperFacility*); };
 
 
 /**
@@ -189,7 +189,7 @@ struct ReturnPointerTo<char>
  */
 template <>
 struct ReturnPointerTo<const char>
-{ static _wrap_EXPORT void From(const char* result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const char* result, const WrapperFacility*); };
 
 
 /**
@@ -200,12 +200,12 @@ struct ReturnPointerTo<const char>
 template <typename T>
 struct ReturnReferenceTo
 {
-  static void From(T& result, const WrapperBase* wrapper)
+  static void From(T& result, const WrapperFacility* wrapperFacility)
     {
-    Tcl_Interp* interp = wrapper->GetInterpreter();
+    Tcl_Interp* interp = wrapperFacility->GetInterpreter();
     CxxObject* cxxObject =
-      wrapper->GetWrapperFacility()->GetCxxObjectFor(Anything(&result),
-                                                     CvType<T&>::type.GetType());
+      wrapperFacility->GetCxxObjectFor(Anything(&result),
+                                       CvType<T&>::type.GetType());
     Tcl_SetObjResult(interp, Tcl_NewCxxObjectObj(cxxObject));
     }
 };
@@ -217,39 +217,39 @@ struct ReturnReferenceTo
  */
 template <>
 struct ReturnReferenceTo<const bool>
-{ static _wrap_EXPORT void From(const bool& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const bool& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const short>
-{ static _wrap_EXPORT void From(const short& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const short& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const unsigned short>
-{ static _wrap_EXPORT void From(const unsigned short& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const unsigned short& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const int>
-{ static _wrap_EXPORT void From(const int& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const int& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const unsigned int>
-{ static _wrap_EXPORT void From(const unsigned int& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const unsigned int& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const long>
-{ static _wrap_EXPORT void From(const long& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const long& result, const WrapperFacility*); };
 
 template <>
 struct ReturnReferenceTo<const unsigned long>
-{ static _wrap_EXPORT void From(const unsigned long& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const unsigned long& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const float>
-{ static _wrap_EXPORT void From(const float& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const float& result, const WrapperFacility*); };
 
 template <>
 struct  ReturnReferenceTo<const double>
-{ static _wrap_EXPORT void From(const double& result, const WrapperBase* wrapper); };
+{ static _wrap_EXPORT void From(const double& result, const WrapperFacility*); };
 //@}
 
 
@@ -260,15 +260,16 @@ struct  ReturnReferenceTo<const double>
 class _wrap_EXPORT ArgumentAsInstanceBase
 {
 protected:
-  ArgumentAsInstanceBase(const WrapperBase* wrapper, const Type* type):
-    m_Wrapper(wrapper),
+  ArgumentAsInstanceBase(const WrapperFacility* wrapperFacility,
+                         const Type* type):
+    m_WrapperFacility(wrapperFacility),
     m_ConversionFunction(0),
     m_To(type) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   
-  ///! The Wrapper for which this is handling an argument.
-  const WrapperBase* m_Wrapper;
+  ///! The WrapperFacility for which this is handling an argument.
+  const WrapperFacility* m_WrapperFacility;
   
   ///! The target type to which a conversion is being performed.
   const Type* m_To;
@@ -285,15 +286,16 @@ protected:
 class _wrap_EXPORT ArgumentAsPointerBase
 {
 protected:
-  ArgumentAsPointerBase(const WrapperBase* wrapper, const Type* type):
-    m_Wrapper(wrapper),
+  ArgumentAsPointerBase(const WrapperFacility* wrapperFacility,
+                        const Type* type):
+    m_WrapperFacility(wrapperFacility),
     m_ConversionFunction(0),
     m_To(PointerType::SafeDownCast(type)) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   
   ///! The Wrapper for which this is handling an argument.
-  const WrapperBase* m_Wrapper;
+  const WrapperFacility* m_WrapperFacility;
   
   ///! The target type to which a conversion is being performed.
   const PointerType* m_To;
@@ -310,9 +312,10 @@ protected:
 class _wrap_EXPORT ArgumentAsPointerBase_array
 {
 protected:
-  ArgumentAsPointerBase_array(const WrapperBase* wrapper, const Type* type,
+  ArgumentAsPointerBase_array(const WrapperFacility* wrapperFacility,
+                              const Type* type,
                               const CvQualifiedType& elementType):
-    m_Wrapper(wrapper),
+    m_WrapperFacility(wrapperFacility),
     m_ConversionFunction(0),
     m_To(PointerType::SafeDownCast(type)),
     m_ElementType(elementType),
@@ -320,8 +323,8 @@ protected:
 
   bool FindConversionFunction(const CvQualifiedType& from);
   
-  ///! The Wrapper for which this is handling an argument.
-  const WrapperBase* m_Wrapper;
+  ///! The WrapperFacility for which this is handling an argument.
+  const WrapperFacility* m_WrapperFacility;
   
   ///! The target type to which a conversion is being performed.
   const PointerType* m_To;
@@ -344,16 +347,17 @@ protected:
 class _wrap_EXPORT ArgumentAsReferenceBase
 {
 protected:
-  ArgumentAsReferenceBase(const WrapperBase* wrapper, const Type* type):
-    m_Wrapper(wrapper),
+  ArgumentAsReferenceBase(const WrapperFacility* wrapperFacility,
+                          const Type* type):
+    m_WrapperFacility(wrapperFacility),
     m_ConversionFunction(0),
     m_To(ReferenceType::SafeDownCast(type)) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   bool FindDirectConversionFunction(const CvQualifiedType& from);
   
-  ///! The Wrapper for which this is handling an argument.
-  const WrapperBase* m_Wrapper;
+  ///! The WrapperFacility for which this is handling an argument.
+  const WrapperFacility* m_WrapperFacility;
   
   ///! The target type to which a conversion is being performed.
   const ReferenceType* m_To;
@@ -371,9 +375,9 @@ class _wrap_EXPORT ArgumentAsReferenceBase_const:
   public ArgumentAsReferenceBase
 {
 protected:
-  ArgumentAsReferenceBase_const(const WrapperBase* wrapper, const Type* type,
-                                const Type* tempType):
-    ArgumentAsReferenceBase(wrapper, type),
+  ArgumentAsReferenceBase_const(const WrapperFacility* wrapperFacility,
+                                const Type* type, const Type* tempType):
+    ArgumentAsReferenceBase(wrapperFacility, type),
     m_TempType(tempType),
     m_NeedTemporary(false) {}
 
@@ -394,8 +398,8 @@ template <typename T>
 class ArgumentAsInstanceOf: public ArgumentAsInstanceBase
 {
 public:
-  ArgumentAsInstanceOf(const WrapperBase* wrapper):
-    ArgumentAsInstanceBase(wrapper, CvType<T>::type.GetType()) {}
+  ArgumentAsInstanceOf(const WrapperFacility* wrapperFacility):
+    ArgumentAsInstanceBase(wrapperFacility, CvType<T>::type.GetType()) {}
   T operator()(const Argument&);
 };
 
@@ -407,8 +411,8 @@ template <typename T>
 class ArgumentAsPointerTo: public ArgumentAsPointerBase
 {
 public:
-  ArgumentAsPointerTo(const WrapperBase* wrapper):
-    ArgumentAsPointerBase(wrapper, CvType<T*>::type.GetType()) {}
+  ArgumentAsPointerTo(const WrapperFacility* wrapperFacility):
+    ArgumentAsPointerBase(wrapperFacility, CvType<T*>::type.GetType()) {}
   T* operator()(const Argument&);
 };
 
@@ -421,8 +425,8 @@ template <typename T>
 class ArgumentAsPointerTo_array: public ArgumentAsPointerBase_array
 {
 public:
-  ArgumentAsPointerTo_array(const WrapperBase* wrapper):
-    ArgumentAsPointerBase_array(wrapper,
+  ArgumentAsPointerTo_array(const WrapperFacility* wrapperFacility):
+    ArgumentAsPointerBase_array(wrapperFacility,
                                 CvType<T*>::type.GetType(),
                                 CvType<T>::type),
     m_Array(0) {}  
@@ -445,8 +449,8 @@ template <typename T>
 class ArgumentAsPointerToFunction: public ArgumentAsPointerBase
 {
 public:
-  ArgumentAsPointerToFunction(const WrapperBase* wrapper):
-    ArgumentAsPointerBase(wrapper, CvType<T*>::type.GetType()) {}
+  ArgumentAsPointerToFunction(const WrapperFacility* wrapperFacility):
+    ArgumentAsPointerBase(wrapperFacility, CvType<T*>::type.GetType()) {}
   T* operator()(const Argument&);
 };
 
@@ -458,8 +462,8 @@ template <typename T>
 class ArgumentAsReferenceTo: public ArgumentAsReferenceBase
 {
 public:
-  ArgumentAsReferenceTo(const WrapperBase* wrapper):
-    ArgumentAsReferenceBase(wrapper, CvType<T&>::type.GetType()) {}
+  ArgumentAsReferenceTo(const WrapperFacility* wrapperFacility):
+    ArgumentAsReferenceBase(wrapperFacility, CvType<T&>::type.GetType()) {}
   T& operator()(const Argument&);
 };
 
@@ -473,8 +477,8 @@ template <typename T>
 class ArgumentAsReferenceTo_const: public ArgumentAsReferenceBase_const
 {
 public:
-  ArgumentAsReferenceTo_const(const WrapperBase* wrapper):
-    ArgumentAsReferenceBase_const(wrapper,
+  ArgumentAsReferenceTo_const(const WrapperFacility* wrapperFacility):
+    ArgumentAsReferenceBase_const(wrapperFacility,
                                   CvType<const T&>::type.GetType(),
                                   CvType<T>::type.GetType()),
     m_Temporary(0) {}

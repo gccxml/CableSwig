@@ -48,11 +48,12 @@ namespace _wrap_
 {
 
 class WrapperBase;
+class WrapperFacility;
 
 /**
  * Pointer to a function that implements a wrapped method.
  */
-typedef void (*MethodWrapper)(const WrapperBase*, const Arguments&);
+typedef void (*MethodWrapper)(const WrapperFacility*, const Arguments&);
   
 /**
  * The subclass of FunctionBase which is used for method

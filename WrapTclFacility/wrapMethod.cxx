@@ -144,7 +144,7 @@ String Method::GetCallName() const
 void Method::Call(const Arguments& arguments) const
 {
   // Call the method wrapper.
-  m_MethodWrapper(m_Wrapper, arguments);
+  m_MethodWrapper(m_Wrapper->GetWrapperFacility(), arguments);
 }
 
 

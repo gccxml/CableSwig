@@ -147,7 +147,7 @@ struct VoidPointerCompare
 #ifdef _wrap_DEBUG_SUPPORT
 #  include <strstream>
 #  define _wrap_DEBUG_OUTPUT(wf, x)             \
-  { if(wf->DebugIsOn())                         \
+  { if((wf)->DebugIsOn())                       \
       { std::ostrstream msg;                    \
         msg << x << std::ends;                  \
         wf->OutputDebugText(msg.str());         \

@@ -360,7 +360,7 @@ TclGenerator
           "void\n"
           "Wrapper< " << cName.c_str() << " >\n"
           "::StaticMethod_" << m << "_" << methods[m]->GetName().c_str()
-                 << "(const WrapperBase* wrapper, const Arguments& arguments)\n"
+                 << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
           "{\n";
         
         this->WriteReturnBegin(methods[m]);
@@ -382,7 +382,7 @@ TclGenerator
           "void\n"
           "Wrapper< " << cName.c_str() << " >\n"
           "::Method_" << m << "_" << methods[m]->GetName().c_str()
-                 << "(const WrapperBase* wrapper, const Arguments& arguments)\n"
+                 << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
           "{\n";
         
         this->WriteImplicitArgument(c, methods[m]);
@@ -408,7 +408,7 @@ TclGenerator
           "void\n"
           "Wrapper< " << cName.c_str() << " >\n"
           "::StaticOperator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str()
-                 << "(const WrapperBase* wrapper, const Arguments& arguments)\n"
+                 << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
           "{\n";
         
         this->WriteReturnBegin(methods[m]);
@@ -430,7 +430,7 @@ TclGenerator
           "void\n"
           "Wrapper< " << cName.c_str() << " >\n"
           "::Operator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str()
-                 << "(const WrapperBase* wrapper, const Arguments& arguments)\n"
+                 << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
           "{\n";
       
         this->WriteImplicitArgument(c, methods[m]);
@@ -453,14 +453,14 @@ TclGenerator
       m_Output <<
         "void\n"
         "Wrapper< " << cName.c_str() << " >\n"
-        "::Constructor_" << m << "(const WrapperBase* wrapper, const Arguments& arguments)\n"
+        "::Constructor_" << m << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
         "{\n"
         "  Return< " << cName.c_str() << " >::FromConstructor(\n"
         "    new " << cName.c_str() << "(";
       
       this->WriteArgumentList(methods[m]->GetArguments(), 0, methods[m].GetArgumentCount());
       
-      m_Output << "), wrapper);\n"
+      m_Output << "), wrapperFacility);\n"
         "}\n"
         "\n";
       }
@@ -682,12 +682,12 @@ TclGenerator
         if(methods[m]->IsStatic())
           {
           m_Output <<
-            "  static void StaticMethod_" << m << "_" << methods[m]->GetName().c_str() << "(const WrapperBase*, const Arguments&)";
+            "  static void StaticMethod_" << m << "_" << methods[m]->GetName().c_str() << "(const WrapperFacility*, const Arguments&)";
           }
         else
           {
           m_Output <<
-            "  static void Method_" << m << "_" << methods[m]->GetName().c_str() << "(const WrapperBase*, const Arguments&)";
+            "  static void Method_" << m << "_" << methods[m]->GetName().c_str() << "(const WrapperFacility*, const Arguments&)";
           }
         }
       if(methods[m]->IsOperatorMethod())
@@ -695,18 +695,18 @@ TclGenerator
         if(methods[m]->IsStatic())
           {
           m_Output <<
-            "  static void StaticOperator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str() << "(const WrapperBase*, const Arguments&)";
+            "  static void StaticOperator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str() << "(const WrapperFacility*, const Arguments&)";
           }
         else
           {
           m_Output <<
-            "  static void Operator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str() << "(const WrapperBase*, const Arguments&)";
+            "  static void Operator_" << m << "_" << this->GetOperatorName(methods[m]->GetName()).c_str() << "(const WrapperFacility*, const Arguments&)";
           }
         }
       else if(methods[m]->IsConstructor())
         {
         m_Output <<
-          "  static void Constructor_" << m << "(const WrapperBase*, const Arguments&)";
+          "  static void Constructor_" << m << "(const WrapperFacility*, const Arguments&)";
         }
       if(++m != methods.size())
         {
@@ -766,7 +766,7 @@ void TclGenerator::WriteImplicitArgument(const source::Class* c, const source::M
     implicit = "const "+implicit;
     }
   m_Output <<
-    "  " << implicit.c_str() << "& instance = ArgumentAsReferenceTo< " << implicit.c_str() << " >(wrapper)(arguments[0]);\n";
+    "  " << implicit.c_str() << "& instance = ArgumentAsReferenceTo< " << implicit.c_str() << " >(wrapperFacility)(arguments[0]);\n";
 }
 
 void TclGenerator::WriteReturnBegin(const source::Function* f) const
@@ -807,11 +807,11 @@ void TclGenerator::WriteReturnEnd(const source::Function* f) const
   if(this->ReturnsVoid(f))
     {
     m_Output << ");\n"
-      "  Return<void>::From(wrapper";
+      "  Return<void>::From(wrapperFacility";
     }
   else
     {
-    m_Output << "), wrapper";
+    m_Output << "), wrapperFacility";
     }
 }
 
@@ -830,14 +830,14 @@ void TclGenerator::WriteArgumentList(const source::ArgumentContainer& arguments,
     m_Output << "\n";
     m_Output <<
       "    CvType< " << this->GetCxxType((*a)->GetType()).GetName() <<
-      " >::ArgumentFor(wrapper)(arguments[" << (argCount++ + offset) << "])";
+      " >::ArgumentFor(wrapperFacility)(arguments[" << (argCount++ + offset) << "])";
     
     for(++a; (argCount < count) && (a != arguments.end()); ++a)
       {
       m_Output << ",\n";
       m_Output <<
         "    CvType< " << this->GetCxxType((*a)->GetType()).GetName() <<
-        " >::ArgumentFor(wrapper)(arguments[" << (argCount++ + offset) << "])";
+        " >::ArgumentFor(wrapperFacility)(arguments[" << (argCount++ + offset) << "])";
       }
     }
 }
@@ -994,7 +994,7 @@ void TclGenerator::WriteReturnEnumClasses() const
       "struct ReturnEnum< "<< typeName.c_str() << " >\n"
       "{\n"
       "  static void From(const " << typeName.c_str() << "& result,\n"
-      "                   const WrapperBase* wrapper)\n"
+      "                   const WrapperFacility* wrapperFacility)\n"
       "    {\n"
       "    const char* name=0;\n"
       "    switch (result)\n"
@@ -1009,7 +1009,7 @@ void TclGenerator::WriteReturnEnumClasses() const
       }
     m_Output <<
       "      }\n"
-      "    Tcl_SetObjResult(wrapper->GetInterpreter(),\n"
+      "    Tcl_SetObjResult(wrapperFacility->GetInterpreter(),\n"
       "                     Tcl_NewStringObj(const_cast<char*>(name), -1));\n"
       "    }\n"
       "};\n";    

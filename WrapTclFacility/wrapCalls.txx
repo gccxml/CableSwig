@@ -103,7 +103,7 @@ T* ArgumentAsPointerTo_array<T>::operator()(const Argument& argument)
     m_Array = new NoCvT[length];
     for(unsigned int i = 0; i < length; ++i)
       {
-      m_Array[i] = ElementFor(m_Wrapper)(elements[i]);
+      m_Array[i] = ElementFor(m_WrapperFacility)(elements[i]);
       }
     return m_Array;
     }

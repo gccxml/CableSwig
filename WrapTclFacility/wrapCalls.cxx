@@ -45,124 +45,124 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace _wrap_
 {
 
-void Return<void>::From(const WrapperBase* wrapper)
+void Return<void>::From(const WrapperFacility* wrapperFacility)
 {
-  Tcl_ResetResult(wrapper->GetInterpreter());
+  Tcl_ResetResult(wrapperFacility->GetInterpreter());
 }
 
-void Return<bool>::From(bool result, const WrapperBase* wrapper)
+void Return<bool>::From(bool result, const WrapperFacility* wrapperFacility)
 {
   int boolValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewBooleanObj(boolValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewBooleanObj(boolValue));
 }
 
-void Return<short>::From(short result, const WrapperBase* wrapper)
+void Return<short>::From(short result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void Return<unsigned short>::From(unsigned short result, const WrapperBase* wrapper)
+void Return<unsigned short>::From(unsigned short result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void Return<int>::From(int result, const WrapperBase* wrapper)
+void Return<int>::From(int result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(result));
 }
 
-void Return<unsigned int>::From(unsigned int result, const WrapperBase* wrapper)
+void Return<unsigned int>::From(unsigned int result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void Return<long>::From(long result, const WrapperBase* wrapper)
+void Return<long>::From(long result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewLongObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewLongObj(result));
 }
 
-void Return<unsigned long>::From(unsigned long result, const WrapperBase* wrapper)
+void Return<unsigned long>::From(unsigned long result, const WrapperFacility* wrapperFacility)
 {
   long longValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewLongObj(longValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewLongObj(longValue));
 }
 
-void Return<float>::From(float result, const WrapperBase* wrapper)
+void Return<float>::From(float result, const WrapperFacility* wrapperFacility)
 {
   double doubleValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewDoubleObj(doubleValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewDoubleObj(doubleValue));
 }  
 
-void Return<double>::From(double result, const WrapperBase* wrapper)
+void Return<double>::From(double result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewDoubleObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewDoubleObj(result));
 }
   
-void ReturnPointerTo<char>::From(char* result, const WrapperBase* wrapper)
+void ReturnPointerTo<char>::From(char* result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewStringObj(result, -1));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewStringObj(result, -1));
 }
 
 void ReturnPointerTo<const char>::From(const char* result,
-                                       const WrapperBase* wrapper)
+                                       const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(),
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(),
                    Tcl_NewStringObj(const_cast<char*>(result), -1));
 }
 
 
-void ReturnReferenceTo<const bool>::From(const bool& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const bool>::From(const bool& result, const WrapperFacility* wrapperFacility)
 {
   int boolValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewBooleanObj(boolValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewBooleanObj(boolValue));
 }
 
-void ReturnReferenceTo<const short>::From(const short& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const short>::From(const short& result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void ReturnReferenceTo<const unsigned short>::From(const unsigned short& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const unsigned short>::From(const unsigned short& result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void ReturnReferenceTo<const int>::From(const int& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const int>::From(const int& result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(result));
 }
 
-void ReturnReferenceTo<const unsigned int>::From(const unsigned int& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const unsigned int>::From(const unsigned int& result, const WrapperFacility* wrapperFacility)
 {
   int intValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewIntObj(intValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewIntObj(intValue));
 }
 
-void ReturnReferenceTo<const long>::From(const long& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const long>::From(const long& result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewLongObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewLongObj(result));
 }
 
-void ReturnReferenceTo<const unsigned long>::From(const unsigned long& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const unsigned long>::From(const unsigned long& result, const WrapperFacility* wrapperFacility)
 {
   long longValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewLongObj(longValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewLongObj(longValue));
 }
 
-void ReturnReferenceTo<const float>::From(const float& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const float>::From(const float& result, const WrapperFacility* wrapperFacility)
 {
   double doubleValue = result;
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewDoubleObj(doubleValue));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewDoubleObj(doubleValue));
 }  
 
-void ReturnReferenceTo<const double>::From(const double& result, const WrapperBase* wrapper)
+void ReturnReferenceTo<const double>::From(const double& result, const WrapperFacility* wrapperFacility)
 {
-  Tcl_SetObjResult(wrapper->GetInterpreter(), Tcl_NewDoubleObj(result));
+  Tcl_SetObjResult(wrapperFacility->GetInterpreter(), Tcl_NewDoubleObj(result));
 }
 
 
@@ -185,7 +185,7 @@ ArgumentAsInstanceBase
     {
     // We don't have a trivial conversion.  Try to lookup the
     // conversion function.
-    m_ConversionFunction = m_Wrapper->GetConversionFunction(from, m_To);
+    m_ConversionFunction = m_WrapperFacility->GetConversion(from, m_To);
     }  
 
   if(!m_ConversionFunction)
@@ -220,7 +220,7 @@ ArgumentAsPointerBase
     {
     // We don't have a trivial conversion.  Try to lookup the
     // conversion function.
-    m_ConversionFunction = m_Wrapper->GetConversionFunction(from, m_To);
+    m_ConversionFunction = m_WrapperFacility->GetConversion(from, m_To);
     }
 
   if(!m_ConversionFunction)
@@ -264,7 +264,7 @@ ArgumentAsPointerBase_array
     {
     // We don't have a trivial conversion.  Try to lookup the
     // conversion function.
-    m_ConversionFunction = m_Wrapper->GetConversionFunction(from, m_To);
+    m_ConversionFunction = m_WrapperFacility->GetConversion(from, m_To);
     }
 
   if(!m_ConversionFunction)
@@ -330,7 +330,7 @@ ArgumentAsReferenceBase
     {
     // We don't have a trivial conversion.  Try to lookup the
     // conversion function.
-    m_ConversionFunction = m_Wrapper->GetConversionFunction(from, m_To);
+    m_ConversionFunction = m_WrapperFacility->GetConversion(from, m_To);
     return false;
     }  
 }
@@ -355,7 +355,7 @@ ArgumentAsReferenceBase_const
     {
     // There is no direct conversion function.  Try to lookup one
     // that uses a temporary.
-    m_ConversionFunction = m_Wrapper->GetConversionFunction(from, m_TempType);
+    m_ConversionFunction = m_WrapperFacility->GetConversion(from, m_TempType);
     m_NeedTemporary = true;
     }
 

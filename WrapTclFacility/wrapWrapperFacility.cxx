@@ -990,6 +990,16 @@ WrapperFacility::GetConversion(const CvQualifiedType& from,
   return NULL;
 }
 
+
+/**
+ * Test whether the debug output flag is currently on.
+ */
+bool WrapperFacility::DebugIsOn() const
+{
+  return m_Debug;
+}
+
+
 // Macro to shorten InitializePredefinedConversions function body.
 #define _wrap_REGISTER_FUNDAMENTAL_TYPE_CONVERSIONS(T1, T2) \
 this->SetConversion(CvPredefinedType<const T1>::type, \
@@ -1053,37 +1063,35 @@ void WrapperFacility::ClassInitialize()
 } // namespace _wrap_
 
 #ifdef _wrap_DEBUG_SUPPORT
-
-#ifdef _WIN32
-#  include "wrapWin32OutputWindow.h"
-#else
-#  include <iostream>
+#  ifdef _WIN32
+#   include "wrapWin32OutputWindow.h"
+#  else
+#    include <iostream>
+#  endif
 #endif
 
 namespace _wrap_
 {
 
 /**
- * Test whether the debug output flag is currently on.
- */
-bool WrapperFacility::DebugIsOn() const
-{
-  return m_Debug;
-}
-
-
-/**
  * Write the given text to the debug output buffer.
  */
+#ifdef _wrap_DEBUG_SUPPORT
 void WrapperFacility::OutputDebugText(const char* text) const
 {
+  // Debug support.
 #ifdef _WIN32
   Win32OutputWindow::GetInstance()->DisplayText(text);
 #else
   std::cout << text;
 #endif
 }
+#else
+void WrapperFacility::OutputDebugText(const char*) const
+{
+  // No debug support.
+}
+#endif
 
 } // namespace _wrap_
-#endif
 

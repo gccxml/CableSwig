@@ -100,22 +100,25 @@ void CvTypeGenerator::Add(const cxx::CvQualifiedType& cvType)
   // If the type has already been added to the list, we are done.
   if(m_TypesAdded.find(cvType) != m_TypesAdded.end())
     { return; }
-     
-  // First, recursively add any "inner" types.
+
   const cxx::Type* type = cvType.GetType();
+  
+  // Make sure the cv-unqualified version comes first.
+  if(cvType.IsConst() || cvType.IsVolatile())
+    {
+    this->Add(type->GetCvQualifiedType(false, false));
+    }
+  
+  // Recursively add any "inner" types.
   switch (type->GetRepresentationType())
     {
     case cxx::ArrayType_id:
       this->Add(cxx::ArrayType::SafeDownCast(type)->GetElementType());
       break;
     case cxx::ClassType_id:
-      // Make sure the cv-unqualified version comes first.
-      if(cvType.IsConst() || cvType.IsVolatile())
-        {
-        this->Add(type->GetCvQualifiedType(false, false));
-        }
-      // Make sure any superclasses come first.
-      else
+      // Make sure any superclasses come first.  Only need this for
+      // cv-unqualified version.
+      if(!cvType.IsConst() && !cvType.IsVolatile())
         {
         const cxx::ClassType* classType = cxx::ClassType::SafeDownCast(type);
         for(cxx::ClassTypes::const_iterator p = classType->ParentsBegin();

@@ -87,6 +87,8 @@ public:
   bool CxxObjectExists(const CxxObject*) const;
   void SetConversion(const CvQualifiedType&, const Type*, ConversionFunction) const;
   ConversionFunction GetConversion(const CvQualifiedType&, const Type*) const;
+  bool DebugIsOn() const;
+  void OutputDebugText(const char*) const;
   
 private:
   WrapperFacility(Tcl_Interp*);
@@ -140,20 +142,12 @@ private:
   struct ConversionMap;
   ///! Map from conversion from/to pair to a conversion function.
   ConversionMap* m_ConversionMap;
-  
+
+  ///! Debug flag.  For consistency, included whether debug support is built.
+  bool m_Debug;
 public:
   void InitializePredefinedConversions() const;
   static void ClassInitialize();
-private:
-  
-  // Include debugging-related code if debug support is on.
-#ifdef _wrap_DEBUG_SUPPORT
-private:
-  bool m_Debug;
-public:
-  bool DebugIsOn() const;
-  void OutputDebugText(const char*) const;
-#endif
 };
 
 

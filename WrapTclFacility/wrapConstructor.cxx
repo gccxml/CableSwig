@@ -91,7 +91,7 @@ String Constructor::GetPrototype() const
 void Constructor::Call(const Arguments& arguments) const
 {
   // Call the constructor wrapper.
-  m_ConstructorWrapper(m_Wrapper, arguments);
+  m_ConstructorWrapper(m_Wrapper->GetWrapperFacility(), arguments);
 }
 
 
