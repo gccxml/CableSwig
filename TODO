@@ -3,4 +3,8 @@
 - missing class files
 - mark if a class has a public constructor in the idx file
 - force template instances for return types in gcc
-
+- get rid of sizeof stuff  
+- depend problem for cable config files
+- namespace change
+- add a -cable option to cswig and process those files with cswig and any other
+  input with regular swig
