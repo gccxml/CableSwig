@@ -770,10 +770,11 @@ void TclGenerator::WriteEnumValueRegistration() const
     const Enumeration* enumeration = *e;
     String typeName = enumeration->GetQualifiedName();
     String prefix = enumeration->GetContext()->GetQualifiedName();
+    if(prefix != "::") { prefix += "::"; }
     for(Enumeration::Iterator v = enumeration->Begin();
         v != enumeration->End(); ++v)
       {
-      String value = prefix+"::"+*v;
+      String value = prefix+*v;
       os <<
         "  wrapperFacility->SetEnumerationConstant(\n" <<
         "    \"" << value.c_str() << "\", new " << typeName.c_str() <<
