@@ -496,17 +496,6 @@ void
 dbxout_start_new_source_file (filename)
      const char *filename ATTRIBUTE_UNUSED;
 {
-#ifdef DBX_USE_BINCL
-  struct dbx_file *n = (struct dbx_file *) xmalloc (sizeof *n);
-
-  n->next = current_file;
-  n->file_number = next_file_number++;
-  n->next_type_number = 1;
-  current_file = n;
-  fprintf (asmfile, "%s", ASM_STABS_OP);
-  output_quoted_string (asmfile, filename);
-  fprintf (asmfile, ",%d,0,0,0\n", N_BINCL);
-#endif
 }
 
 /* Revert to reading a previous source file.  Generate a N_EINCL stab.  */
@@ -514,14 +503,6 @@ dbxout_start_new_source_file (filename)
 void
 dbxout_resume_previous_source_file ()
 {
-#ifdef DBX_USE_BINCL
-  struct dbx_file *next;
-
-  fprintf (asmfile, "%s%d,0,0,0\n", ASM_STABN_OP, N_EINCL);
-  next = current_file->next;
-  free (current_file);
-  current_file = next;
-#endif
 }
 
 /* Output debugging info to FILE to switch to sourcefile FILENAME.  */
