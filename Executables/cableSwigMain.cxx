@@ -174,14 +174,6 @@ void SWIG_config_cppext(const char *ext) {
   cpp_extension = (char *) ext;
 }
 
-static Node *new_node(const String_or_char *tag) {
-  Node *n = NewHash();
-  set_nodeType(n,tag);
-//  Setfile(n,cparse_file);
-//  Setline(n,cparse_line);
-  return n;
-}
-
 extern  "C" Node *Swig_cparse(File *);
 extern  "C" void  Swig_cparse_cplusplus(int);
 extern  "C" void  Swig_cparse_debug_templates(int);
