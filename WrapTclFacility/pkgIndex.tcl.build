@@ -1,11 +1,5 @@
 package ifneeded WrapTclFacility 1.0 {
-  global tcl_platform
-  if {$tcl_platform(platform) == "unix"} {
-    set libPrefix "lib"
-  } else {
-    set libPrefix ""
-  }
-
+  set libPrefix "${CABLE_LIBNAME_PREFIX}"
   set libPath [file join "${CABLE_WRAPTCLFACILITY_DIR}" "${CABLE_MSDEV_CONFIG_DIR}"]
   set libName "WrapTclFacility"
   set libExt [info sharedlibextension]
