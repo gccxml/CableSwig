@@ -1,4 +1,4 @@
-package ifneeded cable ${CABLE_VERSION_STRING} {
+package ifneeded cable @CABLE_VERSION_MAJOR@.@CABLE_VERSION_MINOR@ {
   set libPrefix "${CABLE_LIBNAME_PREFIX}"
   set libPath "${CABLE_TCLFACILITY_DIR}"
   set libName "CableTclFacility"
