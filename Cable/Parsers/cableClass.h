@@ -19,6 +19,7 @@
 
 #include "cableContext.h"
 
+#include <vector>
 namespace _cxx_ { class ClassType; class TypeSystem; }
 
 namespace cable
@@ -59,6 +60,13 @@ public:
       class.  */
   bool IsCopyConstructor(const Method* m) const;
   
+  /** Return the list of base classes for this Class. */
+  void GetBaseClasses(std::vector<Class*>&) const;
+
+  /** Return the list of base classes for this Class and its super classes. */
+  void GetAllBaseClasses(std::vector<Class*>&) const;
+
+
 protected:
   Class();
   ~Class();

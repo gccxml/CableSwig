@@ -21,7 +21,6 @@
 #include "cableClassType.h"
 #include "cxxTypeSystem.h"
 
-#include <vector>
 
 namespace cable
 {
@@ -146,6 +145,24 @@ bool Class::IsCopyConstructor(const Method* m) const
   if(!ct) { return false; }
   if(ct->GetClass() != this) { return false; }  
   return true;
+}
+
+void Class::GetBaseClasses(std::vector<Class*>& b) const
+{
+  for(BaseClassVector::const_iterator i = m_BaseClassVector.begin();
+      i != m_BaseClassVector.end(); ++i)
+    {
+    b.push_back(*i);
+    }
+}
+void Class::GetAllBaseClasses(std::vector<Class*>& b)  const
+{
+  this->GetBaseClasses(b);
+  for(BaseClassVector::const_iterator i = m_BaseClassVector.begin();
+      i != m_BaseClassVector.end(); ++i)
+    {
+    (*i)->GetAllBaseClasses(b);
+    }
 }
 
 } // namespace cable
