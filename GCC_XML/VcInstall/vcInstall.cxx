@@ -15,7 +15,7 @@
 
 bool InstallSupport(const char* patchCommand, const char* patchFile,
                     const char* sourcePath, const char* destPath);
-bool FindPatch(std::string& result);
+bool FindPatch(std::string& result, const char* patchDir);
 
 //----------------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
   // Need to install at least one of the support directories.  We need
   // to find the patch executable.
   std::string patchCommand;
-  if(!FindPatch(patchCommand))
+  if(!FindPatch(patchCommand, patchDir.c_str()))
     {
     std::cerr << "Cannot find patch executable.\n";
     return 1;
@@ -226,10 +226,18 @@ bool InstallSupport(const char* patchCommand, const char* patchFile,
 }
 
 //----------------------------------------------------------------------------
-bool FindPatch(std::string& result)
+bool FindPatch(std::string& result, const char* patchDir)
 {
+  // check for vcPatch.exe in the source directory
+  std::string patchCommand = patchDir;
+  patchCommand += "/vcPatch.exe";
+  if(gxSystemTools::FileExists(patchCommand.c_str()))
+    {
+    result = patchCommand;
+    return true;
+    }
   // Find the patch executable.
-  std::string patchCommand = "patch.exe";
+  patchCommand = "patch.exe";
   if(gxSystemTools::FileExists(patchCommand.c_str()))
     {
     result = patchCommand;
@@ -239,9 +247,12 @@ bool FindPatch(std::string& result)
     {
     // The registry key to use to find the patch executable from
     // cygwin.
-    const char* cygwinRegistry =
+    const char* cygwinRegistry1 =
       "HKEY_LOCAL_MACHINE\\SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/usr/bin;native";
-    if(gxSystemTools::ReadRegistryValue(cygwinRegistry, patchCommand) &&
+    const char* cygwinRegistry2 =
+      "HKEY_CURRENT_USER\\Software\\Cygnus Solutions\\Cygwin\\mounts v2\\/usr/bin;native";
+    if((gxSystemTools::ReadRegistryValue(cygwinRegistry1, patchCommand) ||
+        gxSystemTools::ReadRegistryValue(cygwinRegistry2, patchCommand)) &&
        gxSystemTools::FileExists((patchCommand+"/patch.exe").c_str()))
       {
       // Found the binary location from cygwin's registry entry.
@@ -249,7 +260,7 @@ bool FindPatch(std::string& result)
       result = patchCommand;
       return true;
       }
-    else
+   else
       {
       // Try to find it in the path.
       patchCommand = gxSystemTools::FindProgram("patch");
@@ -260,5 +271,6 @@ bool FindPatch(std::string& result)
         }
       }
     }
+  
   return false;
 }
