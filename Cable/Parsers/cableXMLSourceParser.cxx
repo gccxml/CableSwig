@@ -50,6 +50,9 @@
 using std::strstream;
 #elif defined(_MSC_VER) && (_MSC_VER >= 1200)
 # include <strstrea.h>
+#elif defined(__GNUC__) && (__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)
+# include <strstream>
+using std::strstream;
 #else
 # include <strstream.h>
 #endif
