@@ -16,6 +16,7 @@ ENDIF(CableSwig_SOURCE_DIR)
 IF(EXECUTABLE_OUTPUT_PATH)
   SET(GCCXML_EXECUTABLE_DIR ${EXECUTABLE_OUTPUT_PATH})
 ELSE(EXECUTABLE_OUTPUT_PATH)
+  SET(EXECUTABLE_OUTPUT_PATH ${GCCXML_BINARY_DIR})
   SET(GCCXML_EXECUTABLE_DIR ${GCCXML_BINARY_DIR})
 ENDIF(EXECUTABLE_OUTPUT_PATH)
 CONFIGURE_FILE(${GCCXML_SOURCE_DIR}/GXFront/gxConfigure.h.in
@@ -58,14 +59,13 @@ ENDIF(CMAKE_GENERATOR MATCHES "Visual Studio 7 .NET 2003")
 
 IF(UNIX)
   # Installation rules for UNIX.
-  SET(GCCXML_ROOT ${GCCXML_SOURCE_DIR})
+  SET(GCCXML_ROOT ${GCCXML_SOURCE_DIR}/Support)
   SET(GCCXML_SHARE "/share/gccxml-${GCCXML_VERSION}")
   SET(GCCXML_DOC "/share/doc/gccxml-${GCCXML_VERSION}")
   INSTALL_TARGETS(/bin gccxml)
-  INSTALL_PROGRAMS(${GCCXML_SHARE} gccxml_find_flags)
   INSTALL_FILES(/man/man1 .1 gccxml)
   INSTALL_FILES(${GCCXML_DOC} .txt Copyright)
-  SUBDIRS (GccInclude MproInclude)
+  SUBDIRS (Support)
 ELSE(UNIX)
   # Include file patch program for Windows.
   SET(GCCXML_ROOT ${GCCXML_EXECUTABLE_DIR})
@@ -73,17 +73,36 @@ ELSE(UNIX)
   ADD_EXECUTABLE(vcInstall VcInstall/vcInstall.cxx GXFront/gxSystemTools.cxx)
   UTILITY_SOURCE(GCCXML_VCINSTALL_EXE vcInstall .)
   MARK_AS_ADVANCED(GCCXML_VCINSTALL_EXE)
-
+  
+  # Use a dummy executable to enforce dependencies on generation
+  # of patched compiler headers.  This is necessary to get around
+  # dependency limitations on custom targets in CMake 1.6.  Later
+  # cmakes do not have this limitation.
+  ADD_EXECUTABLE(vcInstallPatch ${GCCXML_BINARY_DIR}/vcInstall_stamp.c)
+  SET_SOURCE_FILES_PROPERTIES(${GCCXML_BINARY_DIR}/vcInstall_stamp.c
+    PROPERTIES GENERATED 1)
+  
   # Create the MSVC support directories.
   # This will just execute on every build because we don't know
   # what files and directories it may create.
-  ADD_CUSTOM_TARGET(vcInstallPatch ALL ${GCCXML_VCINSTALL_EXE}
-    ${GCCXML_SOURCE_DIR}/VcInstall
-    ${GCCXML_ROOT})
-
-  ADD_DEPENDENCIES(vcInstallPatch vcInstall)
+  ADD_CUSTOM_COMMAND(TARGET vcInstallPatch
+    SOURCE ${GCCXML_SOURCE_DIR}/VcInstall/vcPatch.readme.txt
+    COMMAND ${GCCXML_VCINSTALL_EXE}
+    ARGS ${GCCXML_SOURCE_DIR}/VcInstall ${GCCXML_ROOT}
+         ${GCCXML_BINARY_DIR}/vcInstall_stamp.c
+    OUTPUTS ${GCCXML_BINARY_DIR}/vcInstall_stamp.c
+    DEPENDS ${GCCXML_VCINSTALL_EXE}
+    ${GCCXML_SOURCE_DIR}/VcInstall/vc6Include.patch
+    ${GCCXML_SOURCE_DIR}/VcInstall/vc7Include.patch
+    ${GCCXML_SOURCE_DIR}/VcInstall/vc7PlatformSDK.patch
+    ${GCCXML_SOURCE_DIR}/VcInstall/vc71Include.patch
+    ${GCCXML_SOURCE_DIR}/VcInstall/vc71PlatformSDK.patch
+    )
+  
   ADD_DEPENDENCIES(gccxml vcInstallPatch)
-  ADD_DEPENDENCIES(gccxml gccxml_cc1plus)
+  IF(CableSwig_SOURCE_DIR)
+    ADD_DEPENDENCIES(gccxml gccxml_cc1plus)
+  ENDIF(CableSwig_SOURCE_DIR)
 ENDIF(UNIX)
 
 # Create a configuration file for use from the build directory.
