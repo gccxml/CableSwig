@@ -6,6 +6,7 @@ ADD_LIBRARY(CableGenerators STATIC
   cableCvTypeWriter.cxx
   cableGenerator.cxx
   cableTclGenerator.cxx
+  cableSystemTools.cxx
 )
 
 TARGET_LINK_LIBRARIES(CableGenerators CableParsers CxxTypes CableExpat)
