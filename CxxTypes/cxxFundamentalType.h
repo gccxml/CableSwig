@@ -37,7 +37,8 @@ public:
   enum Id { UnsignedChar, UnsignedShortInt, UnsignedInt, UnsignedLongInt,
             UnsignedLongLongInt, SignedChar, Char, ShortInt, Int, LongInt,
             LongLongInt, WChar_t, Bool, Float, Double, LongDouble,
-            ComplexLongDouble, Void, NumberOfTypes };
+            ComplexFloat, ComplexDouble, ComplexLongDouble, Void,
+            NumberOfTypes };
   
   virtual RepresentationType GetRepresentationType() const;
   static FundamentalType* SafeDownCast(Type*);
@@ -66,6 +67,8 @@ public:
   bool IsFloat() const               { return (m_Id == Float); }
   bool IsDouble() const              { return (m_Id == Double); }
   bool IsLongDouble() const          { return (m_Id == LongDouble); }
+  bool IsComplexFloat() const        { return (m_Id == ComplexFloat); }
+  bool IsComplexDouble() const       { return (m_Id == ComplexDouble); }
   bool IsComplexLongDouble() const   { return (m_Id == ComplexLongDouble); }
   bool IsVoid() const                { return (m_Id == Void); }
   //@}
