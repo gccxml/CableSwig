@@ -156,6 +156,15 @@ CxxObject* CxxObject::GetFromStringRepresentation(const char* stringRep)
 {
   CxxObject* cxxObject = 0;
   sscanf(stringRep, "_cxx%p", &cxxObject);
+  
+  // Make sure the new object pointer converts back to the original
+  // string representation.  Otherwise, the stringRep may have just
+  // happened to begin in the correct form.  This can happen when
+  // there is a Tcl list of CxxObject instances.
+  if(cxxObject && cxxObject->GetStringRepresentation() != stringRep)
+    {
+    return 0;
+    }
   return cxxObject;
 }
 
