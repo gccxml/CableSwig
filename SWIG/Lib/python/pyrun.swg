@@ -112,6 +112,20 @@ swig_varlink_setattr(swig_varlinkobject *v, char *n, PyObject *p) {
   return 1;
 }
 
+// The following macro is used to supress missing initializer
+// warnings.  Python documentation says these should not be necessary.
+// We define it as a macro in case the length needs to change across
+// python versions.
+#if (PY_MAJOR_VERSION == 2) && (PY_MINOR_VERSION == 2)
+#define SWIG_PYTHON_UTIL_SUPRESS_UNINITIALIZED \
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+#elif (PY_MAJOR_VERSION == 2) && (PY_MINOR_VERSION == 1)
+#define SWIG_PYTHON_UTIL_SUPRESS_UNINITIALIZED \
+  0,0,0,0,0,0,0,0,0,0,0,0
+#else
+#define SWIG_PYTHON_UTIL_SUPRESS_UNINITIALIZED
+#endif
+
 statichere PyTypeObject varlinktype = {
   PyObject_HEAD_INIT(0)              
   0,
@@ -127,6 +141,7 @@ statichere PyTypeObject varlinktype = {
   0,                                  /* tp_as_number */
   0,                                  /* tp_as_mapping*/
   0,                                  /* tp_hash      */
+  SWIG_PYTHON_UTIL_SUPRESS_UNINITIALIZED
 };
 
 /* Create a variable linking object for use later */
