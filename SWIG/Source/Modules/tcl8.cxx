@@ -24,7 +24,7 @@ char cvsroot_tcl8_cxx[] = "/cvsroot/SWIG/Source/Modules/tcl8.cxx,v 1.10 2004/01/
 
 #include "swigmod.h"
 
-static const char *usage = (char*)"\
+static const char *usage = (const char*)"\
 Tcl 8 Options (available with -tcl)\n\
      -itcl           - Enable ITcl support\n\
      -ldflags        - Print runtime libraries to link with\n\
@@ -33,46 +33,46 @@ Tcl 8 Options (available with -tcl)\n\
      -namespace      - Build module into a Tcl 8 namespace\n\
      -pkgversion     - Set package version\n\n";
 
-static String     *cmd_tab = 0;                    /* Table of command names    */
-static String     *var_tab = 0;                    /* Table of global variables */
-static String     *const_tab = 0;                  /* Constant table            */
-static String     *methods_tab = 0;                /* Methods table             */
-static String     *attr_tab = 0;                   /* Attribute table           */
-static String     *prefix = 0;
-static String     *module = 0;
+static String     *cmd_tab = NULL;                    /* Table of command names    */
+static String     *var_tab = NULL;                    /* Table of global variables */
+static String     *const_tab = NULL;                  /* Constant table            */
+static String     *methods_tab = NULL;                /* Methods table             */
+static String     *attr_tab = NULL;                   /* Attribute table           */
+static String     *prefix = NULL;
+static String     *module = NULL;
 static int         nspace = 0;
-static String     *init_name = 0;
-static String     *ns_name = 0;
+static String     *init_name = NULL;
+static String     *ns_name = NULL;
 static int         have_constructor;
 static int         have_destructor;
 static int         have_base_classes;
-static String     *destructor_action = 0;
-static String     *version = (String *) "0.0";
-static String     *class_name = 0;
+static String     *destructor_action = NULL;
+static String     *version =  NULL;//"0.0";
+static String     *class_name = NULL;
 
 static int    have_attributes;
 static int    have_methods;
 static int    nosafe = 0;
 
-static File       *f_header  = 0;
-static File       *f_wrappers = 0;
-static File       *f_init = 0;
-static File       *f_runtime = 0;
+static File       *f_header  = NULL;
+static File       *f_wrappers = NULL;
+static File       *f_init = NULL;
+static File       *f_runtime = NULL;
 
 
 //  Itcl support
 static int    itcl = 0;
-static File   *f_shadow = 0;
-static File   *f_shadow_stubs = 0;
+static File   *f_shadow = NULL;
+static File   *f_shadow_stubs = NULL;
 
-static String *constructor = 0;
+static String *constructor = NULL;
 //static String *destructor = 0;
-static String *base_classes = 0;
-static String *base_class_init = 0;
+static String *base_classes = NULL;
+static String *base_class_init = NULL;
 //static String *methods = 0;
-static String *imethods = 0;
-static String *attributes = 0;
-static String *attribute_traces = 0;
+static String *imethods = NULL;
+static String *attributes = NULL;
+static String *attribute_traces = NULL;
 //static String *iattribute_traces = 0;
 
 
@@ -210,7 +210,13 @@ public:
     } else {
       Printf(f_header,"#define SWIG_prefix  \"%s\"\n", prefix);
     }
-    Printf(f_header,"#define SWIG_version \"%s\"\n", version);
+    if(version == NULL)
+    {
+      Printf(f_header,"#define SWIG_version \"%s\"\n", "0.0");
+    } else {
+      Printf(f_header,"#define SWIG_version \"%s\"\n", version);
+    }
+
     
     Printf(cmd_tab,   "\nstatic swig_command_info swig_commands[] = {\n");
     Printf(var_tab,   "\nstatic swig_var_info swig_variables[] = {\n");
@@ -505,7 +511,7 @@ public:
 	Printf(df->code,"Tcl_Obj *CONST *argv = objv+1; (void)argv;\n");
 	Printf(df->code,"int argc = objc-1; (void)argc;\n");
 	Printv(df->code,dispatch,"\n",NIL);
-	Printf(df->code,"Tcl_SetResult(interp,(char *) \"No matching function for overloaded '%s'\", TCL_STATIC);\n", iname);
+	Printf(df->code,"Tcl_SetResult(interp, \"No matching function for overloaded '%s'\", TCL_STATIC);\n", iname);
 	Printf(df->code,"return TCL_ERROR;\n");
 	Printv(df->code,"}\n",NIL);
 	Wrapper_print(df,f_wrappers);
@@ -603,7 +609,7 @@ public:
       if (!readonlywrap) {
 	Wrapper *ro = NewWrapper();
 	Printf(ro->def, "static const char *swig_readonly(ClientData clientData, Tcl_Interp *interp, char *name1, char *name2, int flags) {");
-	Printv(ro->code, "return (char*) \"Variable is read-only\";\n", "}\n", NIL);
+	Printv(ro->code, "return \"Variable is read-only\";\n", "}\n", NIL);
 	Wrapper_print(ro,f_wrappers);
 	readonlywrap = 1;
 	DelWrapper(ro);
@@ -738,7 +744,7 @@ public:
 	if (CPlusPlus) {
 	  Printv(f_wrappers,"    delete (", SwigType_str(rt,0), ") obj;\n",NIL);
 	} else {
-	  Printv(f_wrappers,"    free((char *) obj);\n",NIL);
+	  Printv(f_wrappers,"    free(obj);\n",NIL);
 	}
       }
       Printf(f_wrappers,"}\n");
