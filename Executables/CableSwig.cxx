@@ -545,7 +545,6 @@ Node* CableSwig::CreateSwigClassInNamespace(const Class*c, const char* td,
 bool CableSwig::ParseName(const char* name, std::string& result)
 {
   std::string group = name;
-  std::cout << "Parsename " << name << "\n";
   std::string::size_type l = group.find('"');
   std::string::size_type r = group.rfind('"');
   if((l != std::string::npos) && (r != std::string::npos) && (r > l))
@@ -1145,7 +1144,10 @@ int CableSwig::ParseFile(const char* input_file, Node* top,
   const char* cableGCCXML = 0;
   std::string gccxmlOptions = m_IncludeFlags;
 
-  this->ReadMasterIndexFile();
+  if(!this->ReadMasterIndexFile())
+    {
+      return 1;
+    }
    
   if(!inFileName)
     {
@@ -1350,22 +1352,35 @@ void CableSwig::ParseIndexInformation(const char* s)
   p1 = packageInfo.find("{", p2);
   p2 = packageInfo.find("}", p1);
   std::string package = packageInfo.substr(p1+1, p2 - p1-1);
-  
   m_ClassGroupLookup[qualifiedName] = package;
   m_ImportTypedefLookup[qualifiedName] = typeDef;
 }
 
-void CableSwig::ReadMasterIndexFile()
+bool CableSwig::ReadMasterIndexFile()
 {
   for(std::vector<std::string>::iterator i = m_MasterIndexFiles.begin();
       i != m_MasterIndexFiles.end(); ++i)
     {
     std::ifstream fin(i->c_str());
+    if(!fin)
+      {
+	std::cerr << "error can not open " << *i << "\n";
+	return false;
+      }
     char buffer[5000];
     while(fin)
       {
       fin.getline(buffer, 5000);
+      if(strlen(buffer) == 0)
+	{
+	  continue;
+	}
       std::ifstream idxIn(buffer);
+      if(!idxIn)
+	{
+	  std::cerr << "error can not open " << buffer << '\n';
+	  return false;
+	}
       while(idxIn)
         {
         idxIn.getline(buffer, 5000);
@@ -1373,6 +1388,7 @@ void CableSwig::ReadMasterIndexFile()
         }
       }
     }
+  return true;
 }
 
 

@@ -101,7 +101,7 @@ private:
   void ProcessIncludedClasses(Node* top, Node* module);
   bool FindClassGroup(const char* className, std::string* group = 0);
   bool FindImportTypedef(const char* className, std::string* typeName = 0);
-  void ReadMasterIndexFile();
+  bool ReadMasterIndexFile();
   void AddClassToBeImported(cable::Class*);
 private:
   std::string m_IncludeFlags;
