@@ -83,6 +83,15 @@ ENDIF(NOT KWSYS_NAMESPACE)
 # The project name is that of the specified namespace.
 PROJECT(${KWSYS_NAMESPACE})
 
+# Enable testing if building standalone.
+IF(KWSYS_STANDALONE)
+  INCLUDE(${CMAKE_ROOT}/Modules/Dart.cmake)
+  MARK_AS_ADVANCED(BUILD_TESTING DART_ROOT TCL_TCLSH)
+  IF(BUILD_TESTING)
+    ENABLE_TESTING()
+  ENDIF(BUILD_TESTING)
+ENDIF(KWSYS_STANDALONE)
+
 # Do full dependency headers.
 INCLUDE_REGULAR_EXPRESSION("^.*$")
 
@@ -373,4 +382,12 @@ IF(KWSYS_STANDALONE)
   TARGET_LINK_LIBRARIES(testIOS ${KWSYS_NAMESPACE})
   TARGET_LINK_LIBRARIES(testProcess ${KWSYS_NAMESPACE})
   TARGET_LINK_LIBRARIES(test1 ${KWSYS_NAMESPACE})
+
+  IF(BUILD_TESTING)
+    ADD_TEST(testProcess-1 testProcess 1)
+    ADD_TEST(testProcess-2 testProcess 2)
+    ADD_TEST(testProcess-3 testProcess 3)
+    ADD_TEST(testProcess-4 testProcess 4)
+    ADD_TEST(testProcess-5 testProcess 5)
+  ENDIF(BUILD_TESTING)
 ENDIF(KWSYS_STANDALONE)
