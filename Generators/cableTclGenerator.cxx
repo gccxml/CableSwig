@@ -542,7 +542,6 @@ void TclGenerator::FindArgumentCvTypes(const Type* argument)
   // If the argument type is an enumeration type or a reference to
   // const enumeration type, we want to make sure the enumeration
   // value objects are provided.
-  const Type* type = argument;
   const EnumerationType* et = EnumerationType::SafeDownCast(argument);
   const ReferenceType* rt = ReferenceType::SafeDownCast(argument);
   if(rt)
@@ -956,7 +955,6 @@ void TclGenerator::WriteClassWrappers() const
 void TclGenerator::WriteClassWrapper(const Class* c,
                                      const StringVector& names) const
 {
-  std::ostream& os = *m_Stream;
   String cName = c->GetQualifiedName();
   
   // List this class wrapper.
