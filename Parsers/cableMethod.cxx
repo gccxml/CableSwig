@@ -26,6 +26,8 @@ Method::Method()
 {
   m_Static = false;
   m_Const = false;
+  m_PureVirtual = false;
+  m_Virtual = false;
 }
 
 //----------------------------------------------------------------------------
@@ -64,6 +66,30 @@ void Method::SetConst(bool c)
 }  
 
 //----------------------------------------------------------------------------
+bool Method::GetVirtual() const
+{
+  return m_Virtual;
+}
+
+//----------------------------------------------------------------------------
+void Method::SetVirtual(bool s)
+{
+  m_Virtual = s;
+}
+
+//----------------------------------------------------------------------------
+bool Method::GetPureVirtual() const
+{
+  return m_PureVirtual;
+}
+
+//----------------------------------------------------------------------------
+void Method::SetPureVirtual(bool s)
+{
+  m_PureVirtual = s;
+}
+
+//----------------------------------------------------------------------------
 void Method::Print(std::ostream& os, Indent indent) const
 {
   if(m_FunctionType && m_FunctionType->GetCxxType().GetType())
@@ -73,7 +99,10 @@ void Method::Print(std::ostream& os, Indent indent) const
     String declaration = cvType.GenerateDeclaration(m_Name);
     os << indent;
     if(m_Static) { os << "static "; }
-    os << declaration.c_str() << ";\n";
+    if(m_Virtual) { os << "virtual "; }
+    os << declaration.c_str();
+    if(m_PureVirtual) { os << " = 0 "; }
+    os << ";\n";
     }
   else
     {

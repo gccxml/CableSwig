@@ -25,7 +25,9 @@ SET(CableTclFacility_SRCS
 )
 
 IF (WIN32)
-  SET(CableTclFacility_SRCS ${CableTclFacility_SRCS} ctWin32OutputWindow.cxx)
+  IF(NOT CYGWIN)
+    SET(CableTclFacility_SRCS ${CableTclFacility_SRCS} ctWin32OutputWindow.cxx)
+  ENDIF(NOT CYGWIN)
 ENDIF (WIN32)
 
 ADD_DEFINITIONS(-DCxxTypes_EXPORTS)

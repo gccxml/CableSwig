@@ -35,7 +35,15 @@ public:
   /** Get/Set whether the method is static.  */
   bool GetStatic() const;
   void SetStatic(bool s);
-  
+
+  /** Get/Set whether the method is virtual.  */
+  bool GetVirtual() const;
+  void SetVirtual(bool s);
+
+    /** Get/Set whether the method is pure virtual.  */
+  bool GetPureVirtual() const;
+  void SetPureVirtual(bool s);
+
   /** Get/Set whether the method is const.  */
   bool GetConst() const;
   void SetConst(bool c);
@@ -47,9 +55,15 @@ protected:
   Method();
   ~Method();
   
+  // Whether or not the method is pure virtual.
+  bool m_PureVirtual;
+
+  // Whether or not the method is virtual.
+  bool m_Virtual;
+
   // Whether or not the method is static.
   bool m_Static;
-  
+
   // Whether or not the method is const.
   bool m_Const;  
   
