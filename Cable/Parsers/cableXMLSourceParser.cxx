@@ -45,17 +45,6 @@
 #include "cableOffsetType.h"
 #include "cableEnumerationType.h"
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1310)
-# include <strstream>
-using std::strstream;
-#elif defined(_MSC_VER) && (_MSC_VER >= 1200)
-# include <strstrea.h>
-#elif defined(__GNUC__) && (__GNUC__ == 3) && (__GNUC_MINOR__ >= 3)
-# include <strstream>
-using std::strstream;
-#else
-# include <strstream.h>
-#endif
 #include <map>
 #include <stdio.h>
 
@@ -157,13 +146,10 @@ SourceRepresentation* XMLSourceParser::GetSourceRepresentation()
 //----------------------------------------------------------------------------
 String XMLSourceParser::GetErrorPrefix() const
 {
-  strstream prefix;
-  prefix << "Input line " << this->GetXMLLineNumber()
-         << ", column " << this->GetXMLColumnNumber()
-         << ":\n";
-  String s = prefix.str();
-  delete [] prefix.str();
-  return s;
+  char prefix[256];
+  sprintf(prefix, "Input line %lu, column %lu:\n", this->GetXMLLineNumber(),
+          this->GetXMLColumnNumber());
+  return prefix;
 }
 
 //----------------------------------------------------------------------------
