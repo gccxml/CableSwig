@@ -269,10 +269,10 @@ SWIG_FloatCast(double value)
 {
   float f = 0;
   if (!PyErr_Occurred()) {
-    if (value < FLT_MIN) {
+    if (value < -FLT_MAX) {
       PyObject *err = 
-        PyString_FromFormat("value %g is less than float minimum %g", 
-			    value, FLT_MIN);
+        PyString_FromFormat("value %g is less than most negative float %g",
+			    value, -FLT_MAX);
       PyErr_SetObject(PyExc_OverflowError, err);
       Py_DECREF(err);
     } else if (value > FLT_MAX) {
