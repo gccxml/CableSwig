@@ -1,2 +1,2 @@
-INCLUDE_REGULAR_EXPRESSION("^[^g].*|^g[^e].*|^ge[^n].*|^gen[^r].*|^genr[^t].*")
+INCLUDE_REGULAR_EXPRESSION("^[^ig].*|^i[^ne].*|^in[^sn].*|^ins[^nr].*|^insn[^-t].*")
 ADD_EXECUTABLE(gengenrtl ${GCC_SOURCE_DIR}/gcc/gengenrtl.c)
