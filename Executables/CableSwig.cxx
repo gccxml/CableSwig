@@ -239,7 +239,12 @@ std::string CableSwig::ToSwigType(cxx::CvQualifiedType const&  t)
       {
       cxx::PointerType const* p
         = cxx::PointerType::SafeDownCast(t.GetType());
-      std::string n = "p.";
+      std::string n;
+      if(t.IsConst())
+        {
+        n += "q(const).";
+        }
+      n += "p.";
       n += this->ToSwigType(p->GetPointedToType());
       return n;
       }
