@@ -1,13 +1,17 @@
+# Restore the real executable output path.  We want to put our executable
+# there.
+SET(EXECUTABLE_OUTPUT_PATH ${GCC_EXECUTABLE_OUTPUT_PATH})
+
 #-----------------------------------------------------------------------------
 # C++ Compiler Executable
 
 IF(CMAKE_SYSTEM MATCHES "HP-UX")
   IF(CMAKE_C_COMPILER MATCHES "(^cc$|/cc$)")
-    SET_SOURCE_FILES_PROPERTIES(../c-opts.c PROPERTIES COMPILE_FLAGS "-Wp,-H,11000")
+    SET_SOURCE_FILES_PROPERTIES(../c-opts.c PROPERTIES COMPILE_FLAGS "-Wp,-H,20000")
   ENDIF(CMAKE_C_COMPILER MATCHES "(^cc$|/cc$)")
 ENDIF(CMAKE_SYSTEM MATCHES "HP-UX")
 
-ADD_EXECUTABLE(cc1plus
+ADD_EXECUTABLE(gccxml_cc1plus
   call.c decl.c expr.c pt.c typeck2.c class.c decl2.c error.c lex.c
   parse.c ptree.c rtti.c spew.c typeck.c cvt.c except.c friend.c init.c
   method.c search.c semantics.c tree.c repo.c dump.c optimize.c mangle.c
@@ -19,4 +23,7 @@ ADD_EXECUTABLE(cc1plus
   xml.c
   )
 
-TARGET_LINK_LIBRARIES(cc1plus backend cpp iberty)
+TARGET_LINK_LIBRARIES(gccxml_cc1plus backend cpp iberty)
+
+# Install gccxml_cc1plus next to the gccxml executable.
+INSTALL_TARGETS(${GCCXML_INSTALL_ROOT}/bin gccxml_cc1plus)
