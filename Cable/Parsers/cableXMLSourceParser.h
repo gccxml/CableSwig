@@ -90,6 +90,7 @@ protected:
   void Start_EnumValue(const char** atts);
   void Start_File(const char** atts);
   void Start_Unimplemented(const char** atts);
+  void Start_CvQualifiedType(const char** atts);
   void StartOther(const char* name, const char** atts);
   
   // End handlers for each element type.
@@ -99,6 +100,7 @@ protected:
   void End_EnumValue();
   void End_File();
   void End_Unimplemented();
+  void End_CvQualifiedType();
   void EndOther();
   
   // Override XMLParser methods.

@@ -208,6 +208,7 @@ void XMLSourceParser::StartElement(const char *name, const char **atts)
     }
   else if(n == "File")             { this->Start_File(atts); }
   else if(n == "Unimplemented")    { this->Start_Unimplemented(atts); }
+  else if(n == "CvQualifiedType")  { this->Start_CvQualifiedType(atts); }
   else if(n == "Namespace")        { this->StartOther(name, atts); }
   else if(n == "NamespaceAlias")   { this->StartOther(name, atts); }
   else if(n == "FundamentalType")  { this->StartOther(name, atts); }
@@ -264,6 +265,7 @@ void XMLSourceParser::EndElement(const char *name)
   else if(n == "EnumValue")        { this->End_EnumValue(); }
   else if(n == "File")             { this->End_File(); }
   else if(n == "Unimplemented")    { this->End_Unimplemented(); }
+  else if(n == "CvQualifiedType")  { this->End_CvQualifiedType(); }
   else if(n == "Namespace")        { this->EndOther(); }
   else if(n == "NamespaceAlias")   { this->EndOther(); }
   else if(n == "FundamentalType")  { this->EndOther(); }
@@ -395,6 +397,16 @@ void XMLSourceParser::Start_Unimplemented(const char**)
 
 //----------------------------------------------------------------------------
 void XMLSourceParser::End_Unimplemented()
+{
+}
+
+//----------------------------------------------------------------------------
+void XMLSourceParser::Start_CvQualifiedType(const char**)
+{
+}
+
+//----------------------------------------------------------------------------
+void XMLSourceParser::End_CvQualifiedType()
 {
 }
 
