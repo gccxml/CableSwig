@@ -56,6 +56,7 @@ protected:
   // Find configuration settings from the source representation.
   bool FindConfiguration();
   bool FindWrappers(const Namespace* cns);
+  bool FindWrappers(const Namespace* wns, const char* prefix);
   
   // Methods to walk the wrappers and collect the types used.
   void FindCvTypes();

@@ -332,8 +332,16 @@ bool TclGenerator::FindWrappers(const Namespace* cns)
     }
   
   // Look for entries in the wrappers namespace.
+  return this->FindWrappers(wns, "");
+}
+
+//----------------------------------------------------------------------------
+bool TclGenerator::FindWrappers(const Namespace* wns, const char* prefix)
+{
+  // Look for entries in this namespace.
   for(Context::Iterator w = wns->Begin(); w != wns->End(); ++w)
     {
+    Namespace* ns = Namespace::SafeDownCast(*w);
     Typedef* td = Typedef::SafeDownCast(*w);
     if(td)
       {
@@ -341,7 +349,9 @@ bool TclGenerator::FindWrappers(const Namespace* cns)
       if(ct)
         {
         const Class* c = ct->GetClass();
-        m_ClassWrapperMap[c].push_back(td->GetName());
+        String name = prefix;
+        name += td->GetName();
+        m_ClassWrapperMap[c].push_back(name.c_str());
         }
       else
         {
@@ -350,9 +360,19 @@ bool TclGenerator::FindWrappers(const Namespace* cns)
         return false;
         }
       }
+    else if(ns)
+      {
+      String newPrefix = prefix;
+      newPrefix += ns->GetName();
+      newPrefix += "::";
+      if(!this->FindWrappers(ns, newPrefix.c_str()))
+        {
+        return false;
+        }
+      }
     else
       {
-      cableWarningMacro("Ignoring non-typedef entry \""
+      cableWarningMacro("Ignoring entry \"" << prefix
                         << (*w)->GetName() << "\" in wrappers namespace.");
       }
     }
