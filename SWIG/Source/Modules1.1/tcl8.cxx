@@ -669,7 +669,7 @@ public:
 	  continue;
 	}
 	String *bmangle = Swig_name_mangle(bname);
-	Printv(f_wrappers,"extern swig_class _wrap_class_", bmangle, ";\n", NIL);
+	Printv(f_wrappers,"SWIGIMPORT(swig_class) _wrap_class_", bmangle, ";\n", NIL);
 	Printf(base_class,"&_wrap_class_%s",bmangle);
 	base = Nextitem(baselist);
 	Putc(',',base_class);
@@ -680,7 +680,7 @@ public:
     Printv(f_wrappers,"static swig_class *swig_",mangled_classname,"_bases[] = {", base_class,"0};\n", NIL);
     Delete(base_class);
 
-    Printv(f_wrappers, "swig_class _wrap_class_", mangled_classname, " = { \"", class_name,
+    Printv(f_wrappers, "SWIGEXPORT(swig_class) _wrap_class_", mangled_classname, " = { \"", class_name,
 	   "\", &SWIGTYPE", SwigType_manglestr(t), ",",NIL);
   
     if (have_constructor) {

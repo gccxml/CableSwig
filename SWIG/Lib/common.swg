@@ -22,7 +22,7 @@
 #                       define SWIGIMPORT(a) extern a
 #               else
 #                       define SWIGEXPORT(a) __declspec(dllexport) a
-#                       define SWIGIMPORT(a) extern a
+#                       define SWIGIMPORT(a) __declspec(dllimport) a
 #               endif
 #       else
 #               if defined(__BORLANDC__)
