@@ -1253,6 +1253,16 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
       }
     if(javaWrap)
       {
+      // Make sure the loader classes are recompiled correctly.
+      for(std::vector<std::string>::iterator i = m_Loaders.begin();
+          i != m_Loaders.end(); ++i)
+        {
+        javaCode += "o = new ";
+        std::string loader = *i;
+        loader = loader.substr(0, loader.rfind('.'));
+        javaCode += loader;
+        javaCode += "();\n";
+        }
       javaInitDone = true;
       javaCode += "}\n";
       Node* java = new_node("pragma");
