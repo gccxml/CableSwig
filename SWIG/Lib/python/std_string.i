@@ -38,11 +38,6 @@ SWIG_CheckStdString(PyObject* obj) {
   char* buf = 0 ; size_t size = 0;
   return SWIG_TryStdString(obj, buf, size);
 }
-%}
-
-
-%fragment("SWIG_AsStdString","header",
-	  fragment="SWIG_TryStdString") %{
 SWIGSTATICINLINE(std::string)
 SWIG_AsStdString(PyObject* obj) {
   char* buf = 0 ; size_t size = 0;
@@ -53,6 +48,11 @@ SWIG_AsStdString(PyObject* obj) {
     return std::string();
   }
 }
+%}
+
+
+%fragment("SWIG_AsStdString","header",
+	  fragment="SWIG_TryStdString") %{
 %}
 
 %fragment("SWIG_FromStdString","header",
