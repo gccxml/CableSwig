@@ -125,6 +125,7 @@ SET_SOURCE_FILES_PROPERTIES(${GCC_backend_SRCS}
                             OBJECT_DEPENDS "${GCC_backend_GENHEADERS}")
 
 ADD_LIBRARY(backend ${GCC_backend_SRCS})
+ADD_DEPENDENCIES(cpp backend)
 
 
 
