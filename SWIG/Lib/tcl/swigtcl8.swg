@@ -539,7 +539,7 @@ SWIG_Tcl_MethodCommand(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_
       else
         base_name = 0;
       if(base_name)
-        cls = (swig_class *) SWIG_TypeQuery(base_name);
+        cls = (swig_class *) SWIG_TypeQuery(base_name)->clientdata;
       else
         cls = 0;
       if (cls) {
@@ -662,7 +662,7 @@ SWIG_Tcl_MethodCommand(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_
       bi++;
     }
     if(base_name)
-      cls = (swig_class *) SWIG_TypeQuery(base_name);
+      cls = (swig_class *) SWIG_TypeQuery(base_name)->clientdata;
     else
       cls = 0;
   }
