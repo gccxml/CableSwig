@@ -47,21 +47,10 @@
 
 #include <sstream>
 #include <map>
+#include <stdio.h>
 
 namespace cable
 {
-
-namespace
-{
-  template <typename From, typename To>
-  bool StreamConvert(const From& from, To& to)
-  {
-    std::stringstream str;
-    str << from;
-    str >> to;
-    return !!str;
-  }
-}
 
 typedef std::map<String, String> FileMapBase;
 class XMLSourceParser::FileMap: public FileMapBase
@@ -546,7 +535,7 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
       String lineStr = loc.substr(pos+1);
       unsigned long line;
       named->SetFile(this->GetSourceFile(fid.c_str()));
-      if(StreamConvert(lineStr.c_str(), line)) { named->SetLine(line); }
+      if(sscanf(lineStr.c_str(), "%ul", &line) == 1) { named->SetLine(line); }
       else { ok = false; }
       }
     else { ok = false; }
@@ -673,14 +662,20 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
   const char* abstract = element->GetAttribute("abstract");
   if(abstract && String(abstract) == "1") { c->SetAbstract(true); }
   
+  // Parse the space-separated list of bases.
   const char* bases = element->GetAttribute("bases");
   if(bases)
     {
-    String id;
-    std::stringstream baseStream;
-    baseStream << bases;
-    while(baseStream >> id)
+    String baseString = bases;
+    String::size_type l = baseString.find_first_not_of(" ");
+    while(l < baseString.length())
       {
+      String::size_type r = baseString.find_first_of(" ", l);
+      if(r == String::npos)
+        {
+        r = baseString.length();
+        }
+      String id = baseString.substr(l, r-l);
       // Base class is public if there is no ':'.
       String::size_type pos = id.find(':');
       if(pos == String::npos)
@@ -698,6 +693,12 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
           return false;
           }
         }
+      r = baseString.find_first_not_of(" ", r);
+      if(r == String::npos)
+        {
+        r = baseString.length();
+        }
+      l = r;
       }
     }
   
@@ -998,10 +999,10 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
     cableErrorMacro("No max attribute on ArrayType " << element->GetId());
     return 0;
     }
-  long max = 0;
+  unsigned long max = 0;
   if(String(maxStr).length() > 0)
     {
-    if(!StreamConvert(maxStr, max))
+    if(sscanf(maxStr, "%ul", &max) != 1)
       {
       cableErrorMacro("Cannot convert max=\"" << maxStr << "\" to integer "
                       "on ArrayType " << element->GetId());
@@ -1124,7 +1125,7 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
         return 0;
         }
       int init;
-      if(!StreamConvert(initStr, init))
+      if(sscanf(initStr, "%d", &init) != 1)
         {
         cableErrorMacro("Invalid init " << initStr << " on EnumValue " << i
                         << " in Enumeration " << element->GetId());
