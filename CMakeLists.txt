@@ -51,7 +51,8 @@ LINK_DIRECTORIES(
         ${CABLE_BIN}/Generators
         ${CABLE_BIN}/Parsers
         )
-LINK_LIBRARIES(
+ADD_EXECUTABLE( cswig CableSwig.cxx cableSwigMain.cxx)
+TARGET_LINK_LIBRARIES(cswig
         modules11 
         cparse
         cpp
@@ -62,4 +63,10 @@ LINK_LIBRARIES(
         CableExpat 
         CxxTypes 
         )
-ADD_EXECUTABLE( cswig CableSwig.cxx cableSwigMain.cxx)
+ADD_EXECUTABLE( cableidx cableidx.cxx)
+TARGET_LINK_LIBRARIES(cableidx
+        CableGenerators
+        CableParsers
+        CableExpat 
+        CxxTypes 
+        )
