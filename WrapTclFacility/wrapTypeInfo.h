@@ -74,8 +74,9 @@ public:
                                          bool isConst, bool isVolatile);
   static CvQualifiedType GetReferenceType(const CvQualifiedType& referencedType);
 private:
-  static TypeSystem typeSystem;
+  static TypeSystem* typeSystem;
   static void ClassInitialize();
+  static void ClassExitHanlder(ClientData);
   friend class WrapperFacility;
 };
 

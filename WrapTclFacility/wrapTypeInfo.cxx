@@ -93,7 +93,7 @@ CvQualifiedType
 TypeInfo::GetArrayType(const CvQualifiedType& elementType,
                        unsigned long size)
 {
-  return typeSystem.GetArrayType(elementType, size)
+  return typeSystem->GetArrayType(elementType, size)
     ->GetCvQualifiedType(false, false);
 }
 
@@ -107,7 +107,7 @@ TypeInfo::GetClassType(const String& name,
                        bool isConst, bool isVolatile,
                        bool isAbstract, const ClassTypes& parents)
 {
-  return typeSystem.GetClassType(name, isAbstract, parents)
+  return typeSystem->GetClassType(name, isAbstract, parents)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -119,7 +119,7 @@ CvQualifiedType
 TypeInfo::GetEnumerationType(const String& name,
                              bool isConst, bool isVolatile)
 {
-  return typeSystem.GetEnumerationType(name)
+  return typeSystem->GetEnumerationType(name)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -133,7 +133,7 @@ TypeInfo::GetFunctionType(const CvQualifiedType& returnType,
                           const CvQualifiedTypes& argumentTypes,
                           bool isConst, bool isVolatile)
 {
-  return typeSystem.GetFunctionType(returnType, argumentTypes)
+  return typeSystem->GetFunctionType(returnType, argumentTypes)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -148,7 +148,7 @@ TypeInfo::GetFundamentalType(FundamentalType::Id id,
 #ifdef _wrap_NO_WCHAR_T
   if(id == FundamentalType::WChar_t) { id = FundamentalType::UnsignedShortInt; }
 #endif
-  return typeSystem.GetFundamentalType(id)
+  return typeSystem->GetFundamentalType(id)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -161,7 +161,7 @@ CvQualifiedType
 TypeInfo::GetPointerType(const CvQualifiedType& referencedType,
                          bool isConst, bool isVolatile)
 {
-  return typeSystem.GetPointerType(referencedType)
+  return typeSystem->GetPointerType(referencedType)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -175,7 +175,7 @@ TypeInfo::GetPointerToMemberType(const CvQualifiedType& referencedType,
                                  const ClassType* classScope,
                                  bool isConst, bool isVolatile)
 {
-  return typeSystem.GetPointerToMemberType(referencedType, classScope)
+  return typeSystem->GetPointerToMemberType(referencedType, classScope)
     ->GetCvQualifiedType(isConst, isVolatile);
 }
 
@@ -186,7 +186,7 @@ TypeInfo::GetPointerToMemberType(const CvQualifiedType& referencedType,
 CvQualifiedType
 TypeInfo::GetReferenceType(const CvQualifiedType& referencedType)
 {
-  return typeSystem.GetReferenceType(referencedType)
+  return typeSystem->GetReferenceType(referencedType)
     ->GetCvQualifiedType(false, false);
 }
 
@@ -195,7 +195,7 @@ TypeInfo::GetReferenceType(const CvQualifiedType& referencedType)
  * There is exactly one TypeSystem in the wrapper facility.
  * This is it.
  */
-TypeSystem TypeInfo::typeSystem;
+TypeSystem* TypeInfo::typeSystem = 0;
 
   
 // A macro to generate all cv-qualifier combinations for generating a
@@ -212,6 +212,8 @@ CvPredefinedType<const volatile T>::type = GetFundamentalType(FundamentalType::I
  */
 void TypeInfo::ClassInitialize()
 {
+  Tcl_CreateExitHandler(TypeInfo::ClassExitHanlder, 0);
+  TypeInfo::typeSystem = new TypeSystem;
 #ifdef _wrap_NO_CV_VOID
   CvPredefinedType<void>::type = GetFundamentalType(FundamentalType::Void, false, false);
 #else
@@ -239,6 +241,18 @@ void TypeInfo::ClassInitialize()
   CvPredefinedType<const char*>::type  = GetPointerType(CvPredefinedType<const char>::type, false, false);
   CvPredefinedType<volatile char*>::type  = GetPointerType(CvPredefinedType<volatile char>::type, false, false);
   CvPredefinedType<const volatile char*>::type  = GetPointerType(CvPredefinedType<const volatile char>::type, false, false);
+}
+
+
+/**
+ * Registered with Tcl to be called just before exit.
+ */
+void TypeInfo::ClassExitHanlder(ClientData)
+{
+  if(TypeInfo::typeSystem)
+    {
+    delete TypeInfo::typeSystem;
+    }
 }
 
 } // namespace _wrap_
