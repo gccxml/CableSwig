@@ -9,7 +9,9 @@ FOREACH(g
 
   SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/insn-config.h)
   IF(WIN32)
-    STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+    IF(NOT CYGWIN)
+      STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+    ENDIF(NOT CYGWIN)
   ENDIF(WIN32)
   ADD_CUSTOM_COMMAND(TARGET genextract
                      SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
