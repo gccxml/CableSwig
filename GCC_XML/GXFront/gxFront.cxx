@@ -140,7 +140,7 @@ int main(int argc, char** argv)
     return 1;
     }
   
-#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(GCCXML_NATIVE_BUILD)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(GCCXML_NATIVE_CC1PLUS)
   // Make sure a cygwin1.dll is available.
   std::string cyg = gxSystemTools::GetFilenamePath(cGCCXML_EXECUTABLE.c_str());
   cyg += "/cygwin1.dll";
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
   
   // Run the patched GCC C++ parser.
   int result = 0;
-  if((result = GXSpawn(cGCCXML_EXECUTABLE.c_str(), args)) < 0)
+  if((result = GXSpawn(cge.c_str(), args)) < 0)
     {
     result = errno;
     std::cerr << "Error executing " << cGCCXML_EXECUTABLE.c_str() << "\n";
