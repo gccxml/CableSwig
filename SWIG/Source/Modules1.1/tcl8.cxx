@@ -426,8 +426,8 @@ public:
 	       "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
                "(void)clientData; (void)interp; (void)objc; (void)objv;",
 	       NIL);
-	Printf(df->code,"Tcl_Obj *CONST *argv = objv+1;\n");
-	Printf(df->code,"int argc = objc-1;\n");
+	Printf(df->code,"Tcl_Obj *CONST *argv = objv+1; (void)argv;\n");
+	Printf(df->code,"int argc = objc-1; (void)argc;\n");
 	Printv(df->code,dispatch,"\n",NIL);
 	Printf(df->code,"Tcl_SetResult(interp,(char *) \"No matching function for overloaded '%s'\", TCL_STATIC);\n", iname);
 	Printf(df->code,"return TCL_ERROR;\n");
