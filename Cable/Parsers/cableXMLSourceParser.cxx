@@ -45,7 +45,11 @@
 #include "cableOffsetType.h"
 #include "cableEnumerationType.h"
 
-#include <strstream.h>
+#if defined(_MSC_VER)
+#  include <strstrea.h>
+#else
+#  include <strstream.h>
+#endif
 #include <map>
 #include <stdio.h>
 
@@ -153,6 +157,7 @@ String XMLSourceParser::GetErrorPrefix() const
          << ":\n";
   String s = prefix.str();
   delete [] prefix.str();
+  return s;
 }
 
 //----------------------------------------------------------------------------

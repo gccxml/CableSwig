@@ -76,19 +76,7 @@
 namespace _cxx_
 {
 
-#ifndef _cxx_NEED_DLL_ALLOCATOR
-/**
- * Define the type "String" to be just like the STL "string".  In UNIX,
- * there are no problems with this in shared libraries.
- */
 typedef std::string  StringBase;
-#else
-/**
- * Define the type "String" to be just like the STL "string", but with our
- * DLL-boundary-safe allocator for the Win32 version.
- */
-typedef std::basic_string<char, std::_cxx_char_traits<char>, DllAllocator<char> >  StringBase;
-#endif
 
 /** Wrapper around standard string class.  Keeps name short.  */
 class String: public StringBase

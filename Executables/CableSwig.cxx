@@ -1273,7 +1273,7 @@ std::string CableSwig::findXMLFileName(const char* inFileName)
     }
   else
     {
-    file = ifn;
+    file = ifn.c_str();
     }
   file += ".xml";
   return file;

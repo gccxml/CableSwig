@@ -68,7 +68,7 @@ MACRO(GCCXML_CREATE_XML_FILE Source Bin Input Output Library)
    ADD_CUSTOM_COMMAND(
    SOURCE ${Source}/${Input}
    COMMAND ${GCCXML}
-   ARGS -fxml-start=_cable_ -DCABLE_CONFIGURATION ${Source}/${Input} -fxml=${Bin}/${Output} ${SWIG_INC}
+   ARGS -fxml-start=_cable_ -DCSWIG -DCABLE_CONFIGURATION ${Source}/${Input} -fxml=${Bin}/${Output} ${SWIG_INC}
    TARGET ${Library}
    OUTPUTS ${Bin}/${Output} )
 ENDMACRO(GCCXML_CREATE_XML_FILE)
