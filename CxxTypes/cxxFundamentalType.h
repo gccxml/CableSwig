@@ -75,7 +75,7 @@ public:
   
 protected:
   FundamentalType(Id);
-  FundamentalType(const Self&) {}
+  FundamentalType(const Self&): Type() {}
   void operator=(const Self&) {}
   virtual ~FundamentalType() {}
   

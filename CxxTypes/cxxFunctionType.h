@@ -50,7 +50,7 @@ protected:
   
   FunctionType(const CvQualifiedType& returnType,
                const CvQualifiedTypes& arguments);
-  FunctionType(const Self&): m_ReturnType(NULL) {}
+  FunctionType(const Self&): Type(), m_ReturnType(NULL) {}
   void operator=(const Self&) {}
   virtual ~FunctionType() {}
   

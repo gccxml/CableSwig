@@ -38,7 +38,7 @@ public:
   virtual String GenerateName(const String&, bool, bool) const;
 protected:
   EnumerationType(const String&);
-  EnumerationType(const Self&) {}
+  EnumerationType(const Self&): Type() {}
   void operator=(const Self&) {}
   virtual ~EnumerationType() {}
   

@@ -57,7 +57,7 @@ public:
   virtual String GenerateName(const String&, bool, bool) const;
 protected:
   ClassType(const String&, bool isCopyable, const ClassTypes&);
-  ClassType(const Self&) {}
+  ClassType(const Self&): Type() {}
   void operator=(const Self&) {}
   virtual ~ClassType() {}
   

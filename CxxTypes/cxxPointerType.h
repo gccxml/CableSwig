@@ -41,7 +41,7 @@ public:
   
 protected:
   PointerType(const CvQualifiedType&);
-  PointerType(const Self&): m_PointedToType(NULL) {}
+  PointerType(const Self&): Type(), m_PointedToType(NULL) {}
   void operator=(const Self&) {}
   virtual ~PointerType() {}
   

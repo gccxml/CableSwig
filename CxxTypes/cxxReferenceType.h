@@ -41,7 +41,7 @@ public:
 
 protected:  
   ReferenceType(const CvQualifiedType&);
-  ReferenceType(const Self&): m_ReferencedType(NULL) {}
+  ReferenceType(const Self&): Type(), m_ReferencedType(NULL) {}
   void operator=(const Self&) {}
   virtual ~ReferenceType() {}
   
