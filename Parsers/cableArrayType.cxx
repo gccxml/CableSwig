@@ -40,8 +40,14 @@ Type::TypeIdType ArrayType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool ArrayType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   // Make sure there is a valid target type.
-  if(!m_Target || !m_Target->GetCxxType().GetType())
+  if(!m_Target || !m_Target->CreateCxxType(ts))
     {
     cableErrorMacro("Invalid target type for ArrayType.");
     return false;

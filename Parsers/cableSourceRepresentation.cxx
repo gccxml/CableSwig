@@ -17,6 +17,7 @@
 #include "cableSourceRepresentation.h"
 #include "cableSourceObject.h"
 #include "cableNamespace.h"
+#include "cableType.h"
 
 #include "cxxTypeSystem.h"
 
@@ -118,6 +119,23 @@ void SourceRepresentation::Print(std::ostream& os) const
   const Namespace* gns = this->GetGlobalNamespace();
   if(!gns) { return; }
   gns->Print(os, Indent());
+}
+
+//----------------------------------------------------------------------------
+bool SourceRepresentation::CreateCxxTypes()
+{
+  for(SourceObjectMap::iterator i = m_SourceObjectMap.begin();
+      i != m_SourceObjectMap.end(); ++i)
+    {
+    if(Type* t = Type::SafeDownCast(i->second))
+      {
+      if(!t->CreateCxxType(m_TypeSystem))
+        {
+        return false;
+        }
+      }
+    }
+  return true;
 }
 
 } // namespace cable

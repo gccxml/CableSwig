@@ -39,6 +39,12 @@ Type::TypeIdType FundamentalType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool FundamentalType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   const cxx::FundamentalType* t = 0;
   const String& n = m_TypeName;
   if(n == "unsigned char")

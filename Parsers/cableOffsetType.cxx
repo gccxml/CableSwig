@@ -42,8 +42,14 @@ Type::TypeIdType OffsetType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool OffsetType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   // Make sure there is a valid member type.
-  if(!m_MemberType || !m_MemberType->GetCxxType().GetType())
+  if(!m_MemberType || !m_MemberType->CreateCxxType(ts))
     {
     cableErrorMacro("Invalid member type for OffsetType.");
     return false;

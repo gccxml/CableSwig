@@ -56,6 +56,12 @@ Type::TypeIdType FunctionType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool FunctionType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   const cxx::FunctionType* t = this->GetCxxFunctionType(ts);
   if(t)
     {
@@ -120,7 +126,7 @@ Type* FunctionType::GetArgument(unsigned int index) const
 const cxx::FunctionType*
 FunctionType::GetCxxFunctionType(cxx::TypeSystem* ts) const
 {
-  if(!m_Returns)
+  if(!m_Returns || !m_Returns->CreateCxxType(ts))
     {
     cableErrorMacro("No return type set.");
     return 0;
@@ -130,6 +136,11 @@ FunctionType::GetCxxFunctionType(cxx::TypeSystem* ts) const
   for(ArgumentTypeVector::const_iterator i = m_ArgumentTypeVector.begin();
       i != m_ArgumentTypeVector.end(); ++i)
     {
+    if(!(*i)->CreateCxxType(ts))
+      {
+      cableErrorMacro("Invalid argument type.");
+      return 0;
+      }
     arguments.push_back((*i)->GetCxxType());
     }
   

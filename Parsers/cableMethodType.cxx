@@ -43,6 +43,12 @@ Type::TypeIdType MethodType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool MethodType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   if(!m_Class)
     {
     cableErrorMacro("No class set.");

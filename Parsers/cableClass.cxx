@@ -99,7 +99,9 @@ const cxx::ClassType* Class::GetCxxClassType(cxx::TypeSystem* ts) const
     {
     bases.push_back((*i)->GetCxxClassType(ts));
     }
-  return ts->GetClassType(this->GetQualifiedName(), m_Abstract, bases);
+  
+  bool isCopyable = !m_Abstract && this->HasPublicCopyConstructor();
+  return ts->GetClassType(this->GetQualifiedName(), isCopyable, bases);
 }
 
 //----------------------------------------------------------------------------

@@ -41,6 +41,12 @@ Type::TypeIdType EnumerationType::GetTypeId() const
 //----------------------------------------------------------------------------
 bool EnumerationType::CreateCxxType(cxx::TypeSystem* ts)
 {
+  // Make sure we haven't already created the type.
+  if(m_CxxType.GetType())
+    {
+    return true;
+    }
+  
   if(m_Enumeration)
     {
     const cxx::EnumerationType* t = m_Enumeration->GetCxxEnumerationType(ts);

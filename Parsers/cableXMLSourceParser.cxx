@@ -455,7 +455,7 @@ bool XMLSourceParser::ConstructSourceRepresentation()
       }
     }
   
-  return true;
+  return m_SourceRepresentation->CreateCxxTypes();
 }
 
 //----------------------------------------------------------------------------
@@ -701,10 +701,6 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
       }
     }
   
-  // Finish the ClassType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ct->CreateCxxType(ts)) { return false; }
-  
   // Add the ClassType element with a dummy id.
   String cid = element->GetId();
   cid += "_t";
@@ -748,12 +744,6 @@ Type* XMLSourceParser::GetConstructorReturnType()
   if(tobj) { return Type::SafeDownCast(tobj); }
   FundamentalType::Pointer type = FundamentalType::New();
   type->SetTypeName("void");
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
-  if(!type->CreateCxxType(ts))
-    {
-    cableErrorMacro("Error creating Type void for constructor return type.");
-    return 0;
-    }
   m_SourceRepresentation->SetSourceObject("crt", type);
   return type;
 }
@@ -877,9 +867,6 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
     return 0;
     }
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
-  if(!newType->CreateCxxType(ts)) { return 0; }
-  
   m_SourceRepresentation->SetSourceObject(tid, newType);  
   return newType;
 }
@@ -938,11 +925,8 @@ SourceObject* XMLSourceParser::AddFundamentalType(XMLSourceElement* element)
     return 0;
     }
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  
   FundamentalType::Pointer type = FundamentalType::New();
   type->SetTypeName(name);
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -964,11 +948,8 @@ SourceObject* XMLSourceParser::AddPointerType(XMLSourceElement* element)
     return 0;
     }
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  
   PointerType::Pointer type = PointerType::New();
   type->SetTarget(target);
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -990,11 +971,8 @@ SourceObject* XMLSourceParser::AddReferenceType(XMLSourceElement* element)
     return 0;
     }
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  
   ReferenceType::Pointer type = ReferenceType::New();
   type->SetTarget(target);
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1035,12 +1013,9 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
     max = -1;
     }
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  
   ArrayType::Pointer type = ArrayType::New();
   type->SetTarget(target);
   type->SetLength(max+1);
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1050,8 +1025,6 @@ SourceObject* XMLSourceParser::AddFunctionType(XMLSourceElement* element)
 {
   FunctionType::Pointer type = FunctionType::New();
   if(!this->SetupFunctionType(element, type)) { return 0; }
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1077,8 +1050,6 @@ SourceObject* XMLSourceParser::AddMethodType(XMLSourceElement* element)
   if(!this->SetupFunctionType(element, type)) { return 0; }
   type->SetClass(c);
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1117,8 +1088,6 @@ SourceObject* XMLSourceParser::AddOffsetType(XMLSourceElement* element)
   type->SetClass(c);
   type->SetMemberType(mtype);
   
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
-  if(!type->CreateCxxType(ts)) { return 0; }
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1171,10 +1140,6 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
       return false;
       }
     }  
-  
-  // Finish the EnumerationType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!et->CreateCxxType(ts)) { return 0; }
   
   // Add the EnumerationType element with a dummy id.
   String eid = element->GetId();
@@ -1263,10 +1228,6 @@ SourceObject* XMLSourceParser::AddFunction(XMLSourceElement* element)
   if(!this->SetupFunctionType(element, ft)) { return 0; }  
   f->SetFunctionType(ft);
   
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
-  
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
@@ -1302,10 +1263,6 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
   m->SetConst(isConst);
   m->SetStatic(isStatic);
   
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
-  
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
@@ -1325,10 +1282,6 @@ SourceObject* XMLSourceParser::AddConstructor(XMLSourceElement* element)
   FunctionType::Pointer ft = FunctionType::New();
   if(!this->SetupFunctionType(element, ft)) { return 0; }  
   m->SetFunctionType(ft);
-  
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
   
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
@@ -1350,10 +1303,6 @@ SourceObject* XMLSourceParser::AddDestructor(XMLSourceElement* element)
   if(!this->SetupFunctionType(element, ft)) { return 0; }  
   m->SetFunctionType(ft);
   
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
-  
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
@@ -1373,10 +1322,6 @@ SourceObject* XMLSourceParser::AddOperatorFunction(XMLSourceElement* element)
   FunctionType::Pointer ft = FunctionType::New();
   if(!this->SetupFunctionType(element, ft)) { return 0; }  
   f->SetFunctionType(ft);
-  
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
   
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
@@ -1413,10 +1358,6 @@ SourceObject* XMLSourceParser::AddOperatorMethod(XMLSourceElement* element)
   m->SetConst(isConst);
   m->SetStatic(isStatic);
   
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
-  
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
@@ -1441,10 +1382,6 @@ SourceObject* XMLSourceParser::AddConverter(XMLSourceElement* element)
   if(!this->SetupFunctionType(element, ft)) { return 0; }  
   m->SetFunctionType(ft);
   m->SetConst(isConst);
-  
-  // Finish the FunctionType.
-  cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
-  if(!ft->CreateCxxType(ts)) { return 0; }
   
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();

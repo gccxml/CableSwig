@@ -36,7 +36,10 @@ public:
   
   /** Get/Set the source object corresponding to an identifier.  */
   SourceObject* GetSourceObject(const char* id) const;
-  void SetSourceObject(const char* id, SourceObject* object);
+  void SetSourceObject(const char* id, SourceObject* object);  
+  
+  /** Create the CxxTypes library representation for all types.  */
+  bool CreateCxxTypes();
   
   /** Get the CxxTypes TypeSystem representing types.  */
   cxx::TypeSystem* GetTypeSystem() const;
