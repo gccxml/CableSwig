@@ -1,7 +1,10 @@
 #ifndef foo_h
 #define foo_h
 
-class foo
+#undef CABLE_CONFIGURATION
+#include <bar.h>
+
+class foo : public bar
 {
 public:
   int DoNothing(int i) 
@@ -10,7 +13,7 @@ public:
     }
 };
 
-
+#define CABLE_CONFIGURATION
 #ifdef CABLE_CONFIGURATION
 namespace _cable_
 {
@@ -21,10 +24,5 @@ namespace _cable_
   }
 }
 
-void cable_instantiate()
-{
-  using namespace _cable_::wrappers;
-  sizeof(::foo);
-}
 #endif
 #endif

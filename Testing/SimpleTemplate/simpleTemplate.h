@@ -24,8 +24,8 @@ class A
 {
 public:
   A(int) {};
+  A() {};
   ~A(){};
-private:
   A(A const& ){};
 };
 
@@ -85,6 +85,7 @@ void cable_instantiate()
 {
   using namespace _cable_::wrappers;
   sizeof(intfoo);
+  sizeof(intbar);
 }
 #endif
 #endif

@@ -1,2 +1,2 @@
 SET(SRCS  expr.c cpp.c)
-ADD_LIBRARY(cpp)
+ADD_LIBRARY(cpp ${SRCS})

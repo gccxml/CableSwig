@@ -1,3 +1,6 @@
+#ifndef a_h
+#define a_h
+
 namespace Foo
 {
   class Car
@@ -7,5 +10,10 @@ namespace Foo
       {
         return i;
       }
+    void CarFun()
+      {
+      }
+    
   };
 }
+#endif

@@ -3,7 +3,7 @@ MACRO(CSWIG_WRAP_FILE Source Bin Input Output Library)
    SOURCE ${Source}/${Input}
    COMMAND ${CSWIG}
    ARGS -o ${Bin}/${Output}
-          -tcl -c++ ${Source}/${Input}
+         -I${Source} -tcl -c++ ${Source}/${Input}
   TARGET ${Library}
   OUTPUTS ${Bin}/${Output} )
 ENDMACRO(CSWIG_WRAP_FILE)
@@ -20,8 +20,29 @@ FIND_PROGRAM(CSWIG
   /usr/bin 
   /usr/local/bin
 )
+
+FIND_PROGRAM(GCCXML
+  NAMES 
+  gccxml
+  PATH
+  ${CYGWIN_INSTALL_PATH}/bin
+  /bin
+  /usr/bin 
+  /usr/local/bin
+)
+
+FIND_PROGRAM(CABLE_INDEX
+  NAMES 
+  cableidx
+  PATH
+  ${CSWIG}
+  ${CYGWIN_INSTALL_PATH}/bin
+  /bin
+  /usr/bin 
+  /usr/local/bin
+)
 IF(NOT CSWIG)
   MESSAGE(SEND_ERROR "CSWIG Must be specified")
 ENDIF(NOT CSWIG)
 
-SUBDIRS(SimpleTemplate String Module itkTest)
+SUBDIRS(SimpleTemplate String import Module itkTest)

@@ -1,6 +1,11 @@
+#ifndef B_H
+#define B_H
+
+//#include "namespace2.h"
+
 namespace Foo
 {
-  class Bar
+  class Bar //: public Car
   {
   public:
     int DoNothing(int i) 
@@ -9,21 +14,17 @@ namespace Foo
       }
   };
 }
-#ifdef CABLE_CONFIGURATION
-#include "namespace2.h"
-namespace _cable_
-{
-  const char* const group="NameSpace";
-  namespace wrappers
-  {
-    typedef Foo::Bar Bar;
-    typedef Foo::Car Car;
-  }
-}
 
-void cable_instantiate()
+namespace Foo
 {
-  using namespace _cable_::wrappers;
-  sizeof(Bar);
+  class Bill //: public Car
+  {
+  public:
+    Foo::Bar DoStuff(int i) 
+      {
+        Foo::Bar b;
+        return b;
+      }
+  };
 }
 #endif

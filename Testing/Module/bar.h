@@ -21,10 +21,5 @@ namespace _cable_
   }
 }
 
-void cable_instantiate()
-{
-  using namespace _cable_::wrappers;
-  sizeof(::bar);
-}
 #endif
 #endif
