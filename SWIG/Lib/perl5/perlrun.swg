@@ -20,7 +20,12 @@ extern "C" {
 /* Get rid of free and malloc defined by perl */
 #undef free
 #undef malloc
-
+/* get rid of some more junk that perl defines */
+#undef eof
+#undef write
+#undef read
+#undef bool
+#undef close
 #ifndef pTHX_
 #define pTHX_
 #endif
