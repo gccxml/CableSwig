@@ -74,6 +74,8 @@
 # define XML_PRE_3_4_TREE_VIA_PUBLIC
 #endif
 
+#define GCC_XML_C_VERSION "$Revision: 1.80 $"
+
 /* A "dump node" corresponding to a particular tree node.  */
 typedef struct xml_dump_node
 {
@@ -175,6 +177,24 @@ extern int errorcount;
     xml_add_node(xdi, node, complete))
 #endif
 
+/* Get the revision number of this source file.  */
+const char* xml_get_xml_c_version()
+{
+  const char* revision = GCC_XML_C_VERSION;
+  char* version = (char*)xmalloc(strlen(revision)+1);
+  const char* in=revision;
+  char* out = version;
+  while(*in && *in != ':') { ++in; }
+  if(*in) { ++in; }
+  while(*in && *in == ' ') { ++in; }
+  while(*in && *in != ' ' && *in != '$')
+    {
+    *out++ = *in++;
+    }
+  *out = 0;
+  return version;
+}
+
 /* Main XML output function.  Called by parser at the end of a translation
    unit.  Walk the entire translation unit starting at the global
    namespace.  Output all declarations.  */
@@ -234,11 +254,12 @@ do_xml_output (const char* filename)
 
   /* Start dump.  */
   fprintf (file, "<?xml version=\"1.0\"?>\n");
+  fprintf (file, "<GCC_XML");
 #if defined(GCCXML_VERSION_FULL)
-  fprintf (file, "<GCC_XML version=\"" GCCXML_VERSION_FULL "\">\n");
-#else
-  fprintf (file, "<GCC_XML>\n");
+  fprintf (file, " version=\"" GCCXML_VERSION_FULL "\"");
 #endif
+  fprintf (file, " cvs_revision=\"%s\"", xml_get_xml_c_version());
+  fprintf (file, ">\n");
 
   /* Dump the complete nodes.  */
   xml_dump (&xdi);
@@ -876,10 +897,12 @@ xml_output_unimplemented (xml_dump_info_p xdi, tree t, xml_dump_node_p dn,
                           const char* where)
 {
   int tree_code = TREE_CODE (t);
-  fprintf (xdi->file,
-           "  <Unimplemented id=\"_%d\" tree_code=\"%d\""
-           " tree_code_name=\"%s\" node=\"%p\"",
-           (dn? dn->index : 0),
+  fprintf (xdi->file, "  <Unimplemented");
+  if(dn)
+    {
+    fprintf (xdi->file, " id=\"_%d\"", dn->index);
+    }
+  fprintf (xdi->file, " tree_code=\"%d\" tree_code_name=\"%s\" node=\"%p\"",
            tree_code, tree_code_name [tree_code], t);
   if (where)
     {
@@ -1400,7 +1423,7 @@ xml_output_method_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   /* Prepare to iterator through argument list.  */
   arg_type = TYPE_ARG_TYPES (t);
 
-  /* We need to find out if the implicity argument points to a CV
+  /* We need to find out if the implicit argument points to a CV
      qualified type. */
   this_type = TREE_TYPE(TREE_VALUE (arg_type));
   if (this_type)
@@ -1495,15 +1518,25 @@ xml_output_enumeral_type (xml_dump_info_p xdi, tree t, xml_dump_node_p dn)
   xml_print_access_attribute (xdi, TYPE_NAME (t));
   xml_print_location_attribute (xdi, TYPE_NAME (t));
   xml_print_attributes_attribute (xdi, TYPE_ATTRIBUTES(t), 0);
+  xml_print_artificial_attribute (xdi, TYPE_NAME (t));
   fprintf (xdi->file, ">\n");
 
   /* Output the list of possible values for the enumeration type.  */
   for (tv = TYPE_VALUES (t); tv ; tv = TREE_CHAIN (tv))
     {
-    int value = TREE_INT_CST_LOW (TREE_VALUE (tv));
-    fprintf (xdi->file,
-             "    <EnumValue name=\"%s\" init=\"%d\"/>\n",
-             xml_get_encoded_string ( TREE_PURPOSE(tv)), value);
+    if(TREE_CODE (TREE_VALUE (tv)) == INTEGER_CST)
+      {
+      int value = TREE_INT_CST_LOW (TREE_VALUE (tv));
+      fprintf (xdi->file,
+               "    <EnumValue name=\"%s\" init=\"%d\"/>\n",
+               xml_get_encoded_string ( TREE_PURPOSE(tv)), value);
+      }
+    else
+      {
+      fprintf (xdi->file, "  ");
+      xml_output_unimplemented (xdi, TREE_VALUE (tv), 0,
+                                "xml_output_enumeral_type");
+      }
     }
 
   fprintf (xdi->file, "  </Enumeration>\n");
@@ -1754,6 +1787,87 @@ xml_add_overload (xml_dump_info_p xdi, tree o, int complete)
   return 0;
 }
 
+/* Recursively search a type node for template parameters.  */
+static int
+xml_find_template_parm (tree t)
+{
+  if(!t)
+    {
+    return 0;
+    }
+
+  switch (TREE_CODE (t))
+    {
+    /* A vector of template arguments on a instantiation.  */
+    case TREE_VEC:
+      {
+      int i;
+      for(i=0; i < TREE_VEC_LENGTH (t); ++i)
+        {
+        if(xml_find_template_parm (TREE_VEC_ELT (t, i)))
+          {
+          return 1;
+          }
+        }
+      } break;
+
+    /* Template parameter types.  */
+    case TEMPLATE_TYPE_PARM: return 1;
+    case TEMPLATE_PARM_INDEX: return 1;
+
+    /* Types with nested types.  */
+    case METHOD_TYPE:
+    case FUNCTION_TYPE:
+      {
+      tree arg_type = TYPE_ARG_TYPES (t);
+      if(xml_find_template_parm (TREE_TYPE (t)))
+        {
+        return 1;
+        }
+      while (arg_type && (arg_type != void_list_node))
+        {
+        if(xml_find_template_parm (arg_type))
+          {
+          return 1;
+          }
+        arg_type = TREE_CHAIN (arg_type);
+        }
+      } break;
+    case UNION_TYPE:
+    case RECORD_TYPE:
+      {
+      if ((TREE_CODE (t) == RECORD_TYPE) && TYPE_PTRMEMFUNC_P (t))
+        {
+        return xml_find_template_parm(TYPE_PTRMEMFUNC_FN_TYPE (t));
+        }
+      if (CLASSTYPE_TEMPLATE_INFO (t))
+        {
+        return xml_find_template_parm (CLASSTYPE_TI_ARGS (t));
+        }
+      }
+    case REFERENCE_TYPE: return xml_find_template_parm (TREE_TYPE (t));
+    case POINTER_TYPE: return xml_find_template_parm (TREE_TYPE (t));
+    case ARRAY_TYPE: return xml_find_template_parm (TREE_TYPE (t));
+    case OFFSET_TYPE:
+      {
+      return (xml_find_template_parm(TYPE_OFFSET_BASETYPE (t)) ||
+              xml_find_template_parm (TREE_TYPE (t)));
+      }
+    /* Fundamental types have no nested types.  */
+    case BOOLEAN_TYPE: return 0;
+    case COMPLEX_TYPE: return 0;
+    case ENUMERAL_TYPE: return 0;
+    case INTEGER_TYPE: return 0;
+    case LANG_TYPE: return 0;
+    case REAL_TYPE: return 0;
+    case VOID_TYPE: return 0;
+    default:
+      fprintf(stderr, "xml_find_template_parm encountered unsupported type %s\n",
+              tree_code_name[TREE_CODE (t)]);
+    }
+  return 0;
+}
+
 /* Dump for a TEMPLATE_DECL.  The set of specializations (including
    instantiations) is dumped.  */
 static int
@@ -1789,8 +1903,7 @@ xml_add_template_decl (xml_dump_info_p xdi, tree td, int complete)
       {
       case TYPE_DECL:
         /* Add the instantiation only if it is real.  */
-        if (TREE_CODE(TREE_VEC_ELT(TYPE_TI_ARGS(TREE_TYPE(ts)), 0)) != TEMPLATE_TYPE_PARM &&
-            TREE_CODE(TREE_VEC_ELT(TYPE_TI_ARGS(TREE_TYPE(ts)), 0)) != TEMPLATE_PARM_INDEX)
+        if (!xml_find_template_parm (TYPE_TI_ARGS(TREE_TYPE(ts))))
           {
           xml_add_node (xdi, ts, complete);
           }

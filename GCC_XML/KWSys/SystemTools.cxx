@@ -158,14 +158,25 @@ SystemTools::GetTime(void)
 }
 
 // adds the elements of the env variable path to the arg passed in
-void SystemTools::GetPath(kwsys_stl::vector<kwsys_stl::string>& path)
+void SystemTools::GetPath(kwsys_stl::vector<kwsys_stl::string>& path, const char* env)
 {
 #if defined(_WIN32) && !defined(__CYGWIN__)
   const char* pathSep = ";";
 #else
   const char* pathSep = ":";
 #endif
-  kwsys_stl::string pathEnv = getenv("PATH");
+  if(!env)
+    {
+    env = "PATH";
+    }
+  const char* cpathEnv = SystemTools::GetEnv(env);
+  if ( !cpathEnv )
+    {
+    return;
+    }
+
+  kwsys_stl::string pathEnv = cpathEnv;
+   
   // A hack to make the below algorithm work.  
   if(pathEnv[pathEnv.length()-1] != ':')
     {
@@ -1281,7 +1292,12 @@ int SystemTools::ChangeDirectory(const char *dir)
 kwsys_stl::string SystemTools::GetCurrentWorkingDirectory()
 {
   char buf[2048];
-  kwsys_stl::string path = Getcwd(buf, 2048);
+  const char* cwd = Getcwd(buf, 2048);
+  kwsys_stl::string path;
+  if ( cwd )
+    {
+    path = cwd;
+    }
   return path;
 }
 
