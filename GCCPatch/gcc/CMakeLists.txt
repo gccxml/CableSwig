@@ -126,98 +126,56 @@ SET_SOURCE_FILES_PROPERTIES(${GCC_backend_SRCS}
 
 ADD_LIBRARY(backend ${GCC_backend_SRCS})
 
+
+
+SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/tree-check.h)
+IF(WIN32)
+  STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+ENDIF(WIN32)
 ADD_CUSTOM_COMMAND(TARGET backend
                    SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
                    COMMAND ${GCC_gencheck_EXE}
-                   ARGS > ${GCC_BINARY_DIR}/gcc/tree-check.h
+                   ARGS > ${OUTPUT_FILE}
                    OUTPUTS ${GCC_BINARY_DIR}/gcc/tree-check.h
                    DEPENDS ${GCC_gencheck_EXE})
 
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genattr_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-attr.h
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-attr.h
-                   DEPENDS ${GCC_genattr_EXE})
 
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_gencodes_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-codes.h
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-codes.h
-                   DEPENDS ${GCC_gencodes_EXE})
+FOREACH(gen attr codes flags  )
+  SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/insn-${gen}.h)
+  IF(WIN32)
+    STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+  ENDIF(WIN32)
+  ADD_CUSTOM_COMMAND(TARGET backend
+    SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
+    COMMAND ${GCC_gen${gen}_EXE}
+    ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md > ${OUTPUT_FILE}
+    OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-${gen}.h
+    DEPENDS ${GCC_gen${gen}_EXE})
+ENDFOREACH(gen)
 
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genflags_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-flags.h
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-flags.h
-                   DEPENDS ${GCC_genflags_EXE})
+FOREACH(gen peep opinit recog extract output emit attrtab )
+  SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/insn-${gen}.c)
+  IF(WIN32)
+    STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+  ENDIF(WIN32)
+  ADD_CUSTOM_COMMAND(TARGET backend
+    SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
+    COMMAND ${GCC_gen${gen}_EXE}
+    ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md > ${OUTPUT_FILE}
+    OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-${gen}.c
+    DEPENDS ${GCC_gen${gen}_EXE})
+ENDFOREACH(gen)
 
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genpeep_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-peep.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-peep.c
-                   DEPENDS ${GCC_genpeep_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genopinit_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-opinit.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-opinit.c
-                   DEPENDS ${GCC_genopinit_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genrecog_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-recog.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-recog.c
-                   DEPENDS ${GCC_genrecog_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genextract_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-extract.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-extract.c
-                   DEPENDS ${GCC_genextract_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genoutput_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-output.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-output.c
-                   DEPENDS ${GCC_genoutput_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genemit_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-emit.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-emit.c
-                   DEPENDS ${GCC_genemit_EXE})
-
-ADD_CUSTOM_COMMAND(TARGET backend
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                   COMMAND ${GCC_genattrtab_EXE}
-                   ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
-                        > ${GCC_BINARY_DIR}/gcc/insn-attrtab.c
-                   OUTPUTS ${GCC_BINARY_DIR}/gcc/insn-attrtab.c
-                   DEPENDS ${GCC_genattrtab_EXE})
+SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/genrtl.c)
+IF(WIN32)
+  STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
+ENDIF(WIN32)
 
 ADD_CUSTOM_COMMAND(TARGET backend
                    SOURCE ${GCC_SOURCE_DIR}/gcc/rtl.def
                    COMMAND ${GCC_gengenrtl_EXE}
                    DEPENDS ${GCC_BINARY_DIR}/gcc/genrtl.h
-                   ARGS > ${GCC_BINARY_DIR}/gcc/genrtl.c
+                   ARGS > ${OUTPUT_FILE}
                    OUTPUTS ${GCC_BINARY_DIR}/gcc/genrtl.c
                    DEPENDS ${GCC_gengenrtl_EXE})
 
