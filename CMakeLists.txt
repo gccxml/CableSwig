@@ -49,7 +49,7 @@ SET(CABLE_NO_INSTALL_FACILITIES 1)
 # Tell GCC-XML where to install.
 SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
 
-SUBDIRS(SWIG Cable GCCPatch GCC_XML Executables)
+SUBDIRS(SWIG Cable GCC GCC_XML Executables)
 
 #-----------------------------------------------------------------------------
 # Create the CableSwigConfig.cmake files for external projects to use.

@@ -16,5 +16,4 @@ mkheaders.in     crlf=input
 mkinstalldirs    crlf=input
 mklibgcc.in      crlf=input
 move-if-change   crlf=input
-regress-demangle  crlf=input
 sort-protos      crlf=input
