@@ -73,6 +73,7 @@ Tcl_Obj* SwigString_FromString(std::string s) {
 int SwigString_AsString(Tcl_Interp *interp, Tcl_Obj *o, std::string *val) {
     int len;
     const char* temp = Tcl_GetStringFromObj(o, &len);
+    (void)interp;
     if(temp == NULL)
         return TCL_ERROR;
     *val = temp;
