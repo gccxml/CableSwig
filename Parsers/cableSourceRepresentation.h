@@ -308,16 +308,18 @@ typedef SmartPointer<Method>      MethodPointer;
 typedef SmartPointer<BaseClass>   BaseClassPointer;
 
 typedef std::vector<ArgumentPointer>                  ArgumentContainer;
-typedef std::set<NamedPointer, NamedCompare>          DeclarationsContainer;
-typedef std::multiset<FunctionPointer, NamedCompare>  FunctionContainer;
+typedef std::multiset<NamedPointer, NamedCompare>     DeclarationsContainer;
 typedef std::multiset<MethodPointer, NamedCompare>    MethodContainer;
 typedef std::vector<BaseClassPointer>                 BaseClassContainer;
 
 typedef ArgumentContainer::const_iterator     ArgumentsIterator;
 typedef DeclarationsContainer::const_iterator DeclarationsIterator;
-typedef FunctionContainer::const_iterator     FunctionsIterator;
 typedef MethodContainer::const_iterator       MethodsIterator;
 typedef BaseClassContainer::const_iterator    BaseClassesIterator;
+
+typedef std::pair<DeclarationsContainer::const_iterator,
+                  DeclarationsContainer::const_iterator>  DeclarationRange;
+  
 
 /**
  * A singe instance of the TypeSystem will be used to register all
@@ -679,9 +681,9 @@ public:
 
   bool ParseQualifiedName(const String&, QualifiersInserter) const;
   
-  Named* LookupName(const String&) const;
   Class* LookupClass(const String&) const;
-  virtual Named* LookupName(QualifiersConstIterator,QualifiersConstIterator) const;
+  Named* LookupName(const String&) const;
+  bool LookupName(const String&, DeclarationRange&) const;
 protected:
   Context(const String& name): Named(name) {}
   Context(const Self&): Named("") {}
@@ -689,6 +691,9 @@ protected:
   virtual ~Context() { }
   
 protected:
+  bool LookupName(QualifiersConstIterator, QualifiersConstIterator,
+                  DeclarationRange&) const;
+  
   DeclarationsContainer m_Declarations;
   Pointer               m_Context;
 };
@@ -976,19 +981,19 @@ public:
     { in_namespace->SetContext(this); m_Declarations.insert(in_namespace); }
   
   void AddFunction(Function* function)
-    { function->SetContext(this); m_Functions.insert(function); }
+    { function->SetContext(this); m_Declarations.insert(function); }
   
   typedef Context::Qualifiers  Qualifiers;
   typedef Context::QualifiersConstIterator QualifiersConstIterator;
   typedef Context::QualifiersInserter QualifiersInserter;  
+  
+  typedef std::set<Function*> FunctionSet;
+  FunctionSet LookupFunction(const String&);
 protected:
   Namespace(const String& name): Context(name) {}
   Namespace(const Self&): Context("") {}
   void operator=(const Self&) {}
   virtual ~Namespace() {}
-  
-private:
-  FunctionContainer m_Functions;
 };
 
 

@@ -924,46 +924,17 @@ Context
 
 
 /**
- * Lookup the given qualified name starting in this context.
- */
-Named*
-Context
-::LookupName(const String& name) const
-{
-  // Parse the name into its qualifiers.
-  Qualifiers qualifierList;
-  
-  if(this->ParseQualifiedName(name, std::back_inserter(qualifierList)))
-    {
-    // The name was valid, but may or may not exist.  Try to look it up.
-    QualifiersConstIterator qBegin = qualifierList.begin();
-    // Skip over empty starting qualifier if it exists and we are in the
-    // global namespace.
-    if((m_Context == NULL) && (qBegin != qualifierList.end()) && (qBegin->length() == 0))
-      {
-      ++qBegin;
-      }
-    return this->LookupName(qBegin, qualifierList.end());
-    }
-  else
-    {
-    std::cerr << "Couldn't parse qualified name: " << name << std::endl;
-    // The name was invalid, and failed to parse.
-    return NULL;
-    }
-}
-
-
-/**
  * Lookup the given class starting in this context's scope.
  */
 Class*
 Context
 ::LookupClass(const String& name) const
 {
-  Named* result = this->LookupName(name);
-  if(result)
+  DeclarationRange resultRange;
+  if(this->LookupName(name, resultRange))
     {
+    // Only one declaration can have a class name.
+    Named* result = *resultRange.first;
     TypeOfObject resultType = result->GetTypeOfObject();
     if((resultType == Class_id) || (resultType == Struct_id) || (resultType == Union_id))
       {
@@ -982,20 +953,80 @@ Context
 
 
 /**
- * Lookup the given name starting in this namespace's scope.
- *
- * This internal version takes iterators into a Qualifiers describing
- * the name.
+ * Lookup the given qualified name starting in this context.  Only the
+ * first matching declaration will be returned. This is sufficient for
+ * every type of declaration at a namespace level except a function
+ * name.
  */
 Named*
 Context
+::LookupName(const String& name) const
+{
+  DeclarationRange resultRange;
+  if(this->LookupName(name, resultRange))
+    {
+    // Only return the first declaration.
+    return *resultRange.first;
+    }
+  return NULL;
+}
+
+
+/**
+ * Lookup the given name starting in this namespace's scope.
+ *
+ * This takes a DeclarationRange which will be set with a range of
+ * iterators bounding the matching declarations.
+ *
+ * It returns whether or not any matching declarations were found.
+ */
+bool
+Context
+::LookupName(const String& name, DeclarationRange& result) const
+{
+  // Parse the name into its qualifiers.
+  Qualifiers qualifierList;
+  
+  if(this->ParseQualifiedName(name, std::back_inserter(qualifierList)))
+    {
+    // The name was valid, but may or may not exist.  Try to look it up.
+    QualifiersConstIterator qBegin = qualifierList.begin();
+    // Skip over empty starting qualifier if it exists and we are in the
+    // global namespace.
+    if((m_Context == NULL) && (qBegin != qualifierList.end()) && (qBegin->length() == 0))
+      {
+      ++qBegin;
+      }
+    return this->LookupName(qBegin, qualifierList.end(), result);
+    }
+  else
+    {
+    std::cerr << "Couldn't parse qualified name: " << name << std::endl;
+    // The name was invalid, and failed to parse.
+    return false;
+    }
+}
+
+
+/**
+ * Lookup the given name starting in this namespace's scope.
+ *
+ * This internal version takes iterators into a Qualifiers describing
+ * the name.  It also takes a DeclarationRange which will be set
+ * with a range of iterators bounding the matching declarations.
+ *
+ * It returns whether or not any matching declarations were found.
+ */
+bool
+Context
 ::LookupName(QualifiersConstIterator first,
-             QualifiersConstIterator last) const
+             QualifiersConstIterator last,
+             DeclarationRange& result) const
 {
   // If there is no name, we cannot look it up.
   if(first == last)
     {
-    return NULL;
+    return false;
     }
   
   // Get an iterator to the second member of the list (may be the end).
@@ -1003,25 +1034,29 @@ Context
   
   // Try looking up a class with that name.
   Named::Pointer key = Named::New(*first);
-  DeclarationsContainer::const_iterator declsIter = m_Declarations.find(key);
-  if(declsIter != m_Declarations.end())
+
+  DeclarationRange equalRange = m_Declarations.equal_range(key);
+  if(equalRange.first != equalRange.second)
     {
     // We have the name.
-    Named* n = declsIter->RealPointer();
     if(second == last)
       {
       // This was the last qualifier.  This is the target.
-      return n;
+      result = equalRange;
+      return true;
       }
     else
       {
+      // There should be only one nested context with this name.
+      Named* n = equalRange.first->RealPointer();
+      
       // Lookup the rest of the name in the nested context.
       TypeOfObject t = n->GetTypeOfObject();
       if((t == Class_id) || (t == Struct_id) || (t == Union_id)
          || (t == Namespace_id))
         {
         Context* c = dynamic_cast<Context*>(n);
-        return c->LookupName(second, last);
+        return c->LookupName(second, last, result);
         }
       else if(t == Typedef_id)
         {
@@ -1029,19 +1064,47 @@ Context
         Class* c = td->GetClass(this->GetGlobalNamespace());
         if(c)
           {
-          return c->LookupName(second, last);
+          return c->LookupName(second, last, result);
           }
         }
       else
         {
         // Found the qualifier, but it didn't refer to another context.
-        return NULL;
+        return false;
         }
       }
     }
 
   // Didn't find the first qualifier in our scope.
-  return NULL;
+  return false;
+}
+
+
+/**
+ * Lookup the given function starting in this namespace's scope.  A
+ * set of functions is returned containing all the overloads found.
+ */
+Namespace::FunctionSet
+Namespace
+::LookupFunction(const String& name)
+{
+  FunctionSet functionSet;
+  DeclarationRange resultRange;
+  if(this->LookupName(name, resultRange))
+    {
+    for(DeclarationsContainer::const_iterator declsIter = resultRange.first;
+        declsIter != resultRange.second; ++declsIter)
+      {
+      Named* decl = *declsIter;
+      TypeOfObject declType = decl->GetTypeOfObject();
+      if(declType == Function_id)
+        {
+        Function *f = dynamic_cast<Function*>(decl);
+        functionSet.insert(f);
+        }
+      }
+    }
+  return functionSet;
 }
 
 
