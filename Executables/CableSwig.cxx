@@ -208,6 +208,7 @@ std::string CableSwig::TemplateName(const char* s)
     }
   ReplaceString(name, "<", "<(");
   ReplaceString(name, ">", ")>");
+  ReplaceString(name, "> )", ">)");   
   // in order to following Swig convention, <int, 2> should be <int,2>
   // if this is not so, Swig and CableSwig type mangling yields different
   // results and ITK wrapped code created directly with Swig will not be
@@ -215,9 +216,10 @@ std::string CableSwig::TemplateName(const char* s)
   ReduceCommaSpace(name);
   // Once again, gcc_xml returns "short unsigned int", Swig convention is
   // "unsigned short".  For the same reason as above, we convert to Swig
-  // convention.
+  // convention.  The other translations are for the same reason.
   ReplaceString(name, "short unsigned int", "unsigned short");
-  ReplaceString(name, "> )", ">)");
+  ReplaceString(name, "long unsigned int", "unsigned long"); 
+
   return name;
 }
 
