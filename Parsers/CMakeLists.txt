@@ -38,3 +38,5 @@ ADD_LIBRARY(CableParsers STATIC
   cableXMLSourceElement.cxx
   cableXMLSourceParser.cxx
 )
+
+TARGET_LINK_LIBRARIES(CableParsers CxxTypes CableExpat)

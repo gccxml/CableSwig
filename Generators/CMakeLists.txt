@@ -7,3 +7,5 @@ ADD_LIBRARY(CableGenerators STATIC
   cableGenerator.cxx
   cableTclGenerator.cxx
 )
+
+TARGET_LINK_LIBRARIES(CableGenerators CableParsers CxxTypes CableExpat)
