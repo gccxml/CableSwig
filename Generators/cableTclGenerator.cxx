@@ -149,7 +149,10 @@ bool TclGenerator::GenerateWrappers()
   this->WriteHeaders();
   
   // Write the wrapper code.
-  this->WriteWrappers();
+  if(m_WriteGroup)
+    {
+    this->WriteWrappers();
+    }
   
   // Write package initialization code if requested.
   if(m_WritePackage)
