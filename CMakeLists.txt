@@ -69,7 +69,7 @@ IF(CABLE_MSDEV_CONFIG_DIRS)
       SET(CABLE_TCL_LIBRARY_FILE "${CABLE_TCL_LIBRARY_DIR}/${config}/CableTclFacility.lib")
     ENDIF(CABLE_TCL_FACILITY)
     CONFIGURE_FILE("${CABLE_SOURCE_DIR}/UseCABLE.cmake.in"
-                   "${CABLE_BINARY_DIR}/${config}/UseCABLE.cmake" IMMEDIATE)
+                   "${CABLE_BINARY_DIR}/${config}/UseCABLE.cmake" IMMEDIATE @ONLY)
   ENDFOREACH (config)
 ELSE(CABLE_MSDEV_CONFIG_DIRS)
   IF(WIN32)
@@ -84,7 +84,7 @@ ELSE(CABLE_MSDEV_CONFIG_DIRS)
     ENDIF(CABLE_TCL_FACILITY)
   ENDIF(WIN32)
   CONFIGURE_FILE("${CABLE_SOURCE_DIR}/UseCABLE.cmake.in"
-                 "${CABLE_BINARY_DIR}/UseCABLE.cmake" IMMEDIATE)
+                 "${CABLE_BINARY_DIR}/UseCABLE.cmake" IMMEDIATE @ONLY)
 ENDIF(CABLE_MSDEV_CONFIG_DIRS)
 
 #-----------------------------------------------------------------------------
@@ -106,5 +106,5 @@ IF(UNIX)
   ENDIF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
 
   CONFIGURE_FILE("${CABLE_SOURCE_DIR}/UseCABLE.cmake.in"
-                 "${CABLE_USECABLE_FOR_INSTALL}" IMMEDIATE)
+                 "${CABLE_USECABLE_FOR_INSTALL}" IMMEDIATE @ONLY)
 ENDIF(UNIX)
