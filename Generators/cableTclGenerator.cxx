@@ -789,6 +789,10 @@ void TclGenerator::WriteReturnEnumClasses() const
     const Enumeration* enumeration = *e;
     String typeName = enumeration->GetQualifiedName();
     String prefix = enumeration->GetContext()->GetQualifiedName();
+    if(prefix == "::")
+      {
+      prefix = "";
+      }
     os <<
       "\n"
       "template <>\n"
