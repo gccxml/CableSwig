@@ -50,6 +50,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapTypeInfo.h"
 #include "wrapConverters.h"
 #include "wrapClassWrapper.h"
+#include "wrapFunctionWrapper.h"
 
 #include "cableVersion.h"
 
@@ -82,6 +83,15 @@ struct WrapperFacility::ClassWrapperMap: public ClassWrapperMapBase
   typedef ClassWrapperMapBase::iterator iterator;
   typedef ClassWrapperMapBase::const_iterator const_iterator;
   typedef ClassWrapperMapBase::value_type value_type;
+};
+
+// Map from function name to the wrapper class for it.
+typedef std::map<String, FunctionWrapper*>  FunctionWrapperMapBase;
+struct WrapperFacility::FunctionWrapperMap: public FunctionWrapperMapBase
+{
+  typedef FunctionWrapperMapBase::iterator iterator;
+  typedef FunctionWrapperMapBase::const_iterator const_iterator;
+  typedef FunctionWrapperMapBase::value_type value_type;
 };
 
 ///! Internal class used to store an enumeration value instance.
@@ -193,6 +203,7 @@ WrapperFacility::WrapperFacility(Tcl_Interp* interp):
   m_Interpreter(interp),
   m_EnumMap(new EnumMap),
   m_ClassWrapperMap(new ClassWrapperMap),
+  m_FunctionWrapperMap(new FunctionWrapperMap),
   m_DeleteFunctionMap(new DeleteFunctionMap),
   m_CxxObjectMap(new CxxObjectMap),
   m_CxxFunctionMap(new CxxFunctionMap),
@@ -246,7 +257,15 @@ WrapperFacility::~WrapperFacility()
     delete w->second;
     }
   
+  // Delete FunctionWrapper objects.
+  for(FunctionWrapperMap::const_iterator w = m_FunctionWrapperMap->begin();
+      w != m_FunctionWrapperMap->end(); ++w)
+    {
+    delete w->second;
+    }
+  
   delete m_ClassWrapperMap;
+  delete m_FunctionWrapperMap;
   delete m_EnumMap;
   delete m_DeleteFunctionMap;
   delete m_CxxObjectMap;
@@ -711,6 +730,43 @@ ClassWrapper* WrapperFacility::GetClassWrapper(const ClassType* type) const
 {
   ClassWrapperMap::const_iterator i = m_ClassWrapperMap->find(type);
   if(i != m_ClassWrapperMap->end())
+    {
+    return i->second;
+    }
+  return 0;
+}
+
+
+/**
+ * Create a new FunctionWrapper for the given function name.  If one already
+ * exists, NULL is returned.  It can be retrieved with
+ * WrapperFacility::GetFunctionWrapper().
+ */
+FunctionWrapper* WrapperFacility::CreateFunctionWrapper(const String& name)
+{
+  // Check if there is an existing wrapper for the type.
+  FunctionWrapperMap::const_iterator w = m_FunctionWrapperMap->find(name);
+  if(w != m_FunctionWrapperMap->end()) { return 0; }
+  
+  // Create a new FunctionWrapper for the type.
+  FunctionWrapper* newFunctionWrapper = new FunctionWrapper(this, name);
+  
+  // Save the new FunctionWrapper.
+  m_FunctionWrapperMap->insert(
+    FunctionWrapperMap::value_type(name, newFunctionWrapper));
+  
+  return newFunctionWrapper;
+}
+  
+ 
+/**
+ * Retrieve the FunctionWrapper for the given function name.  If none
+ * exists, NULL is returned.
+ */
+FunctionWrapper* WrapperFacility::GetFunctionWrapper(const String& name) const
+{
+  FunctionWrapperMap::const_iterator i = m_FunctionWrapperMap->find(name);
+  if(i != m_FunctionWrapperMap->end())
     {
     return i->second;
     }

@@ -71,9 +71,12 @@ public:
   typedef int (*WrapperFunction)(ClientData, Tcl_Interp*, int, Tcl_Obj* CONST[]);
   WrapperFunction GetWrapperFunction() const;
   
+  void AddInterpreterClassCommand(const String&);
+  
+  void AddFunction(Function*);
+  
 protected:
   typedef std::vector<FunctionBase*> CandidateFunctions;
-  void AddFunction(Function*);
   void UnknownOverload(const CvQualifiedTypes& argumentTypes) const;
   int WrapperDispatch(int, Tcl_Obj* CONST[]) const;
   
@@ -90,6 +93,13 @@ protected:
   
   ///! The overloads available to this function wrapper.
   Functions m_Functions;
+
+  struct FunctionCommandSet;
+  /**
+   * The set of commands registered with the Tcl interpreter that will
+   * invoke the WrapperDispatchFunction callback.
+   */
+  FunctionCommandSet* m_FunctionCommandSet;
 };
 
 } // namespace _wrap_

@@ -49,6 +49,7 @@ namespace _wrap_
 
 class ConversionTable;
 class ClassWrapper;
+class FunctionWrapper;
 class CxxObject;
 
 /**
@@ -69,6 +70,8 @@ public:
   
   ClassWrapper* CreateClassWrapper(const ClassType*);
   ClassWrapper* GetClassWrapper(const ClassType*) const;
+  FunctionWrapper* CreateFunctionWrapper(const String&);
+  FunctionWrapper* GetFunctionWrapper(const String&) const;
   
   CvQualifiedType GetObjectType(Tcl_Obj* obj) const;
   Argument GetObjectArgument(Tcl_Obj* obj) const;
@@ -120,8 +123,12 @@ private:
   EnumMap* m_EnumMap;
 
   struct ClassWrapperMap;
-  ///! Map from type to wrapper function.
+  ///! Map from class type to wrapper instance.
   ClassWrapperMap* m_ClassWrapperMap;
+
+  struct FunctionWrapperMap;
+  ///! Map from function name to wrapper instance.
+  FunctionWrapperMap* m_FunctionWrapperMap;
 
   struct DeleteFunctionMap;
   ///! Table of registered delete functions.

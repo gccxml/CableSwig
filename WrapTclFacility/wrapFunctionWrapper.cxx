@@ -46,9 +46,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapWrapperFacility.h"
 #include "wrapException.h"
 
+#include <set>
 
 namespace _wrap_
 {
+
+// Store a set of strings.
+typedef std::set<String> FunctionCommandSetBase;
+struct FunctionWrapper::FunctionCommandSet: public FunctionCommandSetBase
+{
+  typedef FunctionCommandSetBase::iterator iterator;
+  typedef FunctionCommandSetBase::const_iterator const_iterator;
+  typedef FunctionCommandSetBase::value_type value_type;
+};
+
 
 /**
  * The constructor links this class to the given WrapperFacility.
@@ -56,8 +67,10 @@ namespace _wrap_
 FunctionWrapper::FunctionWrapper(WrapperFacility* wrapperFacility,
                                  const String& wrappedFunctionName):
   m_WrapperFacility(wrapperFacility),
-  m_WrappedFunctionName(wrappedFunctionName)
+  m_WrappedFunctionName(wrappedFunctionName),
+  m_FunctionCommandSet(new FunctionCommandSet)
 {
+  this->AddInterpreterClassCommand(wrappedFunctionName);
 }
 
 
@@ -72,6 +85,8 @@ FunctionWrapper::~FunctionWrapper()
     {
     delete (*i);
     }
+  
+  delete m_FunctionCommandSet;
 }
 
 
@@ -107,6 +122,26 @@ void FunctionWrapper::ListFunctions() const
 FunctionWrapper::WrapperFunction FunctionWrapper::GetWrapperFunction() const
 {
   return &FunctionWrapper::WrapperDispatchFunction;
+}
+
+
+/**
+ * Register a command with the Tcl interpreter to call back to the
+ * WrapperDispatchFunction.
+ */
+void FunctionWrapper::AddInterpreterClassCommand(const String& command)
+{
+  // Check if this command was already added.
+  FunctionCommandSet::const_iterator c = m_FunctionCommandSet->find(command);
+  if(c != m_FunctionCommandSet->end()) { return; }
+  
+  // Add the command to the set of registered commands.
+  m_FunctionCommandSet->insert(command);
+  
+  // Create the Tcl command.
+  Tcl_CreateObjCommand(m_WrapperFacility->GetInterpreter(),
+                       const_cast<char*>(command.c_str()),
+                       this->GetWrapperFunction(), this, 0);
 }
 
 
@@ -208,8 +243,7 @@ int FunctionWrapper::WrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
  * This dispatches the call to the FunctionWrapper instance.
  */
 int FunctionWrapper::WrapperDispatchFunction(ClientData clientData,
-                                             Tcl_Interp* interp,
-                                             int objc,
+                                             Tcl_Interp*, int objc,
                                              Tcl_Obj* CONST objv[])
 {  
   // The client data is the pointer to the instance of the
