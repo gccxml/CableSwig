@@ -45,10 +45,13 @@
 #include "cableOffsetType.h"
 #include "cableEnumerationType.h"
 
-#if defined(_MSC_VER)
-#  include <strstrea.h>
+#if defined(_MSC_VER) && (_MSC_VER >= 1310)
+# include <strstream>
+using std::strstream;
+#elif defined(_MSC_VER) && (_MSC_VER >= 1200)
+# include <strstrea.h>
 #else
-#  include <strstream.h>
+# include <strstream.h>
 #endif
 #include <map>
 #include <stdio.h>
