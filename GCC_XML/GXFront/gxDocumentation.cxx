@@ -59,7 +59,7 @@ const gxDocumentationEntry gxDocumentationDescription[] =
 const gxDocumentationEntry gxDocumentationCompilers[] =
 {
   {0, "GCC-XML can simulate any of the following compilers:", 0},
-  {"GCC", "Versions 3.2.x, 3.1.x, 3.0.x, and 2.95.x", 0},
+  {"GCC", "Versions 3.3.x, 3.2.x, 3.1.x, 3.0.x, and 2.95.x", 0},
   {"SGI MIPSpro", "Version 7.3x", 0},
   {"Visual C++", "Versions 7 and 6 (sp5)", 0},
   {"Intel C++", "Version 5.x (plugin to Visual Studio 6)", 0},
@@ -429,7 +429,7 @@ void gxDocumentation::PrintManPage(std::ostream& os)
 {
   os << ".TH GCC-XML 1 \""
      << gxSystemTools::GetCurrentDateTime("%B %d, %Y").c_str()
-     << "\" \"GCC-XML " GCCXML_VERSION_STRING "\"\n";
+     << "\" \"GCC-XML " GCCXML_VERSION_FULL "\"\n";
   os << ".SH NAME\n";
   gxDocumentationPrintManSection(os, gxDocumentationName);
   os << ".SH SYNOPSIS\n";
@@ -458,7 +458,7 @@ void gxDocumentation::PrintManPage(std::ostream& os)
 //----------------------------------------------------------------------------
 void gxDocumentation::PrintCopyright(std::ostream& os)
 {
-  os << "GCC-XML version " GCCXML_VERSION_STRING "\n";
+  os << "GCC-XML version " GCCXML_VERSION_FULL "\n";
   for(const gxDocumentationEntry* op = gxDocumentationCopyright;
       op->brief; ++op)
     {
