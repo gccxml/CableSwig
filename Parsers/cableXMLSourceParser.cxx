@@ -1020,12 +1020,19 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
     cableErrorMacro("No max attribute on ArrayType " << element->GetId());
     return 0;
     }
-  unsigned long max;
-  if(!StreamConvert(maxStr, max))
+  long max = 0;
+  if(String(maxStr).length() > 0)
     {
-    cableErrorMacro("Cannot convert max=\"" << maxStr << "\" to integer "
-                    "on ArrayType " << element->GetId());
-    return 0;
+    if(!StreamConvert(maxStr, max))
+      {
+      cableErrorMacro("Cannot convert max=\"" << maxStr << "\" to integer "
+                      "on ArrayType " << element->GetId());
+      return 0;
+      }
+    }
+  else
+    {
+    max = -1;
     }
   
   cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();
