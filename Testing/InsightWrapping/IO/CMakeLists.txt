@@ -24,7 +24,7 @@ ADD_LIBRARY(_ITKIOTcl MODULE ${WRAP_PYTHON_SOURCES})
 SET_TARGET_PROPERTIES( _ITKIOTcl PROPERTIES PREFIX "")
 
 TARGET_LINK_LIBRARIES(ITKIOTcl ITKIO VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimeTcl ${TCL_LIBRARY})
-TARGET_LINK_LIBRARIES(_ITKIOTcl ITKIO VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimePython ${PYTHON_LIBRARY})
+TARGET_LINK_LIBRARIES(_ITKIOTcl ITKIO SwigRuntimePython ${PYTHON_LIBRARY})
 
 CONFIGURE_FILE(
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
@@ -39,6 +39,7 @@ SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
 )
 
 FOREACH(Source ${WRAP_SOURCES})
+# tcl
   GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
                          ${WrapITK_BINARY_DIR}/IO ${Source}.cxx ${Source}.xml ITKIOTcl)
   CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx ITKIOTcl)
@@ -46,6 +47,10 @@ FOREACH(Source ${WRAP_SOURCES})
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKIOTcl
                             "${ALL_IDX_FILES}")
+# python
+  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
+                         ${WrapITK_BINARY_DIR}/IO ${Source}.cxx ${Source}.xml _ITKIOTcl)
+  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx _ITKIOTcl)
   CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/IO 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKIOTcl

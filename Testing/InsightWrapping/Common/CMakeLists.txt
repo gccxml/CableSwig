@@ -49,6 +49,7 @@ SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
 )
 # wrap each of the files
 FOREACH(Source ${WRAP_SOURCES})
+# tcl
   GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
                          ${WrapITK_BINARY_DIR}/Common ${Source}.cxx ${Source}.xml ITKCommonTcl)
   CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx ITKCommonTcl)
@@ -56,6 +57,10 @@ FOREACH(Source ${WRAP_SOURCES})
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKCommonTcl
                             "${ALL_IDX_FILES}")
+# python
+  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
+                         ${WrapITK_BINARY_DIR}/Common ${Source}.cxx ${Source}.xml _ITKCommonTcl)
+  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx _ITKCommonTcl)
   CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKCommonTcl

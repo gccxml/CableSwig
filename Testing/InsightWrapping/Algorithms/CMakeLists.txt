@@ -32,7 +32,7 @@ ADD_LIBRARY(_ITKAlgorithmsTcl MODULE ${WRAP_PYTHON_SOURCES})
 SET_TARGET_PROPERTIES( _ITKAlgorithmsTcl PROPERTIES PREFIX "")
 
 TARGET_LINK_LIBRARIES(ITKAlgorithmsTcl ITKAlgorithms VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimeTcl ${TCL_LIBRARY})
-TARGET_LINK_LIBRARIES(_ITKAlgorithmsTcl ITKAlgorithms VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimePython ${PYTHON_LIBRARY})
+TARGET_LINK_LIBRARIES(_ITKAlgorithmsTcl ITKAlgorithms SwigRuntimePython ${PYTHON_LIBRARY})
 
 CONFIGURE_FILE(
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
@@ -47,6 +47,7 @@ SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
 )
 
 FOREACH(Source ${WRAP_SOURCES})
+# tcl
   GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Algorithms 
                          ${WrapITK_BINARY_DIR}/Algorithms ${Source}.cxx ${Source}.xml ITKAlgorithmsTcl)
   CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Algorithms ${Source}.xml ${Source}.idx ITKAlgorithmsTcl)
@@ -54,6 +55,10 @@ FOREACH(Source ${WRAP_SOURCES})
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKAlgorithmsTcl
                             "${ALL_IDX_FILES}")
+# python 
+  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Algorithms 
+                         ${WrapITK_BINARY_DIR}/Algorithms ${Source}.cxx ${Source}.xml _ITKAlgorithmsTcl)
+  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Algorithms ${Source}.xml ${Source}.idx _ITKAlgorithmsTcl)
   CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/Algorithms 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKAlgorithmsTcl

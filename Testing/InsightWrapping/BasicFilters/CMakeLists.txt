@@ -46,7 +46,7 @@ ADD_LIBRARY(_ITKBasicFiltersTcl MODULE ${WRAP_PYTHON_SOURCES})
 SET_TARGET_PROPERTIES( _ITKBasicFiltersTcl PROPERTIES PREFIX "")
 
 TARGET_LINK_LIBRARIES(ITKBasicFiltersTcl VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimeTcl ${TCL_LIBRARY})
-TARGET_LINK_LIBRARIES(_ITKBasicFiltersTcl VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimePython ${PYTHON_LIBRARY})
+TARGET_LINK_LIBRARIES(_ITKBasicFiltersTcl ITKBasicFilters SwigRuntimePython ${PYTHON_LIBRARY})
 
 CONFIGURE_FILE(
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
@@ -60,6 +60,7 @@ SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
 )
 
 FOREACH(Source ${WRAP_SOURCES})
+#tcl
   GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/BasicFilters 
                          ${WrapITK_BINARY_DIR}/BasicFilters ${Source}.cxx ${Source}.xml ITKBasicFiltersTcl)
   CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/BasicFilters ${Source}.xml ${Source}.idx ITKBasicFiltersTcl)
@@ -67,6 +68,10 @@ FOREACH(Source ${WRAP_SOURCES})
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKBasicFiltersTcl
                             "${ALL_IDX_FILES}")
+# python
+  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/BasicFilters 
+                         ${WrapITK_BINARY_DIR}/BasicFilters ${Source}.cxx ${Source}.xml _ITKBasicFiltersTcl)
+  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/BasicFilters ${Source}.xml ${Source}.idx _ITKBasicFiltersTcl)
   CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/BasicFilters 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKBasicFiltersTcl

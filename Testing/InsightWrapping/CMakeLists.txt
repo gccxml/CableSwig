@@ -80,7 +80,9 @@ MACRO(CINDEX_CREATE_IDX_FILE Bin Input Output Library)
    COMMAND ${CABLE_INDEX}
    ARGS ${Bin}/${Input} ${Bin}/${Output}
    TARGET ${Library}
-   OUTPUTS ${Bin}/${Output} )
+   OUTPUTS ${Bin}/${Output} 
+   DEPENDS ${Bin}/${Input}
+)
 ENDMACRO(CINDEX_CREATE_IDX_FILE)
 
 MACRO(CSWIG_CREATE_TCL_CXX_FILE Bin MasterIdx InputIdx InputXml OutputTclCxx Library LibraryIndexFiles)
