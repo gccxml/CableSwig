@@ -293,7 +293,7 @@ int WrapperFacility::ListMethodsCommand(int objc, Tcl_Obj* CONST objv[]) const
     "Usage: ListMethods <id>\n"
     "  Where <id> is a C++ class type object, pointer, or reference.";
   
-  const Type* type = NULL;
+  const Type* type = 0;
   
   if(objc > 1)
     {
@@ -312,11 +312,11 @@ int WrapperFacility::ListMethodsCommand(int objc, Tcl_Obj* CONST objv[]) const
         type = cxxObject->GetType();
         }
       }
-    if(type->IsPointerType())
+    if(type && type->IsPointerType())
       {
       type = PointerType::SafeDownCast(type)->GetPointedToType().GetType();
       }
-    else if(type->IsReferenceType())
+    else if(type && type->IsReferenceType())
       {
       type = ReferenceType::SafeDownCast(type)->GetReferencedType().GetType();
       }
