@@ -228,9 +228,6 @@ public:
     Printf(f_header,"#define SWIG_init    init%s\n\n", module);
     Printf(f_header,"#define SWIG_name    \"%s\"\n", module);
 
-    Printf(f_wrappers,"#ifdef __cplusplus\n");
-    Printf(f_wrappers,"extern \"C\" {\n");
-    Printf(f_wrappers,"#endif\n");
     Printf(const_code,"static swig_const_info swig_const_table[] = {\n");
     Printf(methods,"static PyMethodDef SwigMethods[] = {\n");
 
@@ -248,9 +245,6 @@ public:
     Printf(f_wrappers,"%s\n",const_code);
     Printf(f_init,"}\n");
 
-    Printf(f_wrappers,"#ifdef __cplusplus\n");
-    Printf(f_wrappers,"}\n");
-    Printf(f_wrappers,"#endif\n");
 
     if (shadow) {
       Printv(f_shadow, f_shadow_stubs, "\n",NIL);
