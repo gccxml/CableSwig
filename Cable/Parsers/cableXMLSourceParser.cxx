@@ -45,7 +45,7 @@
 #include "cableOffsetType.h"
 #include "cableEnumerationType.h"
 
-#include <sstream>
+#include <strstream.h>
 #include <map>
 #include <stdio.h>
 
@@ -147,11 +147,12 @@ SourceRepresentation* XMLSourceParser::GetSourceRepresentation()
 //----------------------------------------------------------------------------
 String XMLSourceParser::GetErrorPrefix() const
 {
-  std::ostringstream prefix;
+  strstream prefix;
   prefix << "Input line " << this->GetXMLLineNumber()
          << ", column " << this->GetXMLColumnNumber()
          << ":\n";
-  return prefix.str().c_str();
+  String s = prefix.str();
+  delete [] prefix.str();
 }
 
 //----------------------------------------------------------------------------
