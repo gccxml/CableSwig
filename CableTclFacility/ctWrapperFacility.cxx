@@ -1221,7 +1221,7 @@ void WrapperFacility::OutputDebugText(const char* text) const
   Tcl_Channel channel = Tcl_GetStdChannel(TCL_STDOUT);
   Tcl_Write(channel,
             const_cast<char*>(text),
-            std::strlen(text));
+            strlen(text));
 #endif
 }
 #else
