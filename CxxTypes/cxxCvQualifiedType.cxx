@@ -179,8 +179,8 @@ bool CvQualifiedType::operator< (const Self& r) const
   else // if(Type::Equal(m_Type, r.m_Type))
     {
     // The base type is the same.  Compare the cv-qualifiers.
-    int lhs = (int(m_Const << 1) | int(m_Volatile));
-    int rhs = (int(r.m_Const << 1) | int(r.m_Volatile));
+    int lhs = (((m_Const?1:0) << 1) | (m_Volatile?1:0));
+    int rhs = (((r.m_Const?1:0) << 1) | (r.m_Volatile?1:0));
     return (lhs < rhs);
     }
 }
