@@ -103,6 +103,17 @@ void CvTypeWriter::Add(const cxx::CvQualifiedType& cvType)
   if(m_TypesAdded.find(cvType) != m_TypesAdded.end())
     { return; }
   
+#ifdef _MSC_VER
+  // MSVC cannot distinguish among cv-qualified versions of void.
+  if((cvType.IsConst() || cvType.IsVolatile()) &&
+     cvType.GetType()->IsFundamentalType() &&
+     cxx::FundamentalType::SafeDownCast(cvType.GetType())->IsVoid())
+    {
+    this->Add(cvType.GetType()->GetCvQualifiedType(false, false));
+    return;
+    } 
+#endif
+  
   const cxx::Type* type = cvType.GetType();
   
   // Make sure the cv-unqualified version comes first.
