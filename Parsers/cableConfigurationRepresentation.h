@@ -59,7 +59,8 @@ namespace configuration
 enum TypeOfObject {
   Undefined_id=0,
 
-  CodeBlock_id, Named_id, Class_id, Namespace_id, CableConfiguration_id
+  CodeBlock_id, Named_id, Class_id, Function_id, Namespace_id,
+  CableConfiguration_id
 };
 
 
@@ -79,6 +80,7 @@ public:
   bool IsCableConfiguration() const { return (this->GetTypeOfObject() == CableConfiguration_id); }
   bool IsCodeBlock() const          { return (this->GetTypeOfObject() == CodeBlock_id); }
   bool IsClass() const              { return (this->GetTypeOfObject() == Class_id); }
+  bool IsFunction() const           { return (this->GetTypeOfObject() == Function_id); }
   bool IsNamespace() const          { return (this->GetTypeOfObject() == Namespace_id); }
 
   virtual void AddCharacterData(const char*, unsigned long, bool);
@@ -187,6 +189,39 @@ private:
 
 
 /**
+ * Represent a function wrapper in the configuration file.  This corresponds to
+ * a function in the C++ code being wrapped.
+ */
+class PARSERS_EXPORT Function: public Named
+{
+public:
+  typedef Function                  Self;
+  typedef SmartPointer<Self>        Pointer;
+  typedef SmartPointer<const Self>  ConstPointer;
+
+  virtual const char* GetNameOfClass() const { return "Function"; }
+  virtual TypeOfObject GetTypeOfObject() const { return Function_id; }
+  
+  static Pointer New(const String&);
+
+  typedef std::set<String> AlternateNames;
+  AlternateNames::const_iterator AlternateNamesBegin() const { return m_AlternateNames.begin(); }
+  AlternateNames::const_iterator AlternateNamesEnd() const { return m_AlternateNames.end(); }
+  
+  void AddAlternateName(const String&);
+  
+protected:
+  Function(const String& name): Named(name) {}
+  Function(const Self&): Named("") {}
+  void operator=(const Self&) {}
+  virtual ~Function() {}
+  
+private:
+  AlternateNames m_AlternateNames;
+};
+
+
+/**
  * Represent a namespace in the configuration file.  This corresponds to
  * a namespace in the C++ code being wrapped.  It will also serve to hold
  * the names of CodeBlock definitions.
@@ -210,10 +245,19 @@ public:
   bool AddCode(CodeBlock*);
   bool AddNamespace(Namespace*);
   void AddClass(Class*);
+  void AddFunction(Function*);
   
-  typedef std::vector<Class::Pointer> Wrappers;
-  Wrappers::const_iterator WrappersBegin() const { return m_Wrappers.begin(); }
-  Wrappers::const_iterator WrappersEnd() const { return m_Wrappers.end(); }
+  typedef std::vector<Class::Pointer> ClassWrappers;
+  ClassWrappers::const_iterator ClassWrappersBegin() const
+    { return m_ClassWrappers.begin(); }
+  ClassWrappers::const_iterator ClassWrappersEnd() const
+    { return m_ClassWrappers.end(); }
+  
+  typedef std::vector<Function::Pointer> FunctionWrappers;
+  FunctionWrappers::const_iterator FunctionWrappersBegin() const
+    { return m_FunctionWrappers.begin(); }
+  FunctionWrappers::const_iterator FunctionWrappersEnd() const
+    { return m_FunctionWrappers.end(); }
   
   typedef std::map<String, Named::Pointer>  Fields;
   Fields::const_iterator FieldsBegin() const { return m_Fields.begin(); }
@@ -259,7 +303,8 @@ protected:
    */
   Fields m_Fields;
 
-  Wrappers m_Wrappers;
+  ClassWrappers m_ClassWrappers;
+  FunctionWrappers m_FunctionWrappers;
 };
 
 

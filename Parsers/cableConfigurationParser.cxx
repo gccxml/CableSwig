@@ -383,6 +383,21 @@ Parser
 
 
 /**
+ * Get the current Function off the top of the element stack.
+ */
+Function::Pointer
+Parser
+::CurrentFunction() const
+{
+  if(!m_ElementStack.top()->IsFunction())
+    throw ElementStackTypeException("Function",
+                                    m_ElementStack.top()->GetNameOfClass());
+
+  return dynamic_cast<Function*>(m_ElementStack.top().RealPointer());
+}
+
+
+/**
  * Push a new element onto the element stack.
  */
 void
@@ -629,6 +644,38 @@ Parser
   this->CurrentNamespaceScope()->AddClass(c);
 }
 
+/**
+ * Begin handler for Function element.
+ */
+void
+Parser
+::begin_Function(const Attributes& atts)
+{
+  String name = atts.Get("name");
+  
+  // Create a new Function.
+  Function::Pointer newFunction = Function::New(name);
+  
+  // Put new Function on the stack so it can be filled.
+  this->PushElement(newFunction);
+}
+
+
+/**
+ * End handler for Function element.
+ */
+void
+Parser
+::end_Function()
+{
+  Function::Pointer c = this->CurrentFunction();
+  
+  // Take the Function off the stack.
+  this->PopElement();
+  
+  this->CurrentNamespaceScope()->AddFunction(c);
+}
+
 
 /**
  * Begin handler for AlternateName element.
@@ -726,6 +773,7 @@ Parser
   beginHandlers["Namespace"]          = &Parser::begin_Namespace;
   beginHandlers["Code"]               = &Parser::begin_Code;
   beginHandlers["Class"]              = &Parser::begin_Class;
+  beginHandlers["Function"]           = &Parser::begin_Function;
   beginHandlers["AlternateName"]      = &Parser::begin_AlternateName;
   beginHandlers["Header"]             = &Parser::begin_Header;
   beginHandlers["Group"]              = &Parser::begin_Group;
@@ -734,6 +782,7 @@ Parser
   endHandlers["Namespace"]          = &Parser::end_Namespace;
   endHandlers["Code"]               = &Parser::end_Code;
   endHandlers["Class"]              = &Parser::end_Class;
+  endHandlers["Function"]           = &Parser::end_Function;
   endHandlers["AlternateName"]      = &Parser::end_AlternateName;
   endHandlers["Header"]             = &Parser::end_Header;
   endHandlers["Group"]              = &Parser::end_Group;

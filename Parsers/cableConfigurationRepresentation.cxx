@@ -138,6 +138,27 @@ Class
   m_AlternateNames.insert(in_name);
 }
 
+/**
+ * Create a new Function and return a pointer to it.
+ */
+Function::Pointer
+Function
+::New(const String& in_name)
+{
+  return new Function(in_name);
+}  
+
+
+/**
+ * Add an alternate name for the function.
+ */
+void
+Function
+::AddAlternateName(const String& in_name)
+{
+  m_AlternateNames.insert(in_name);
+}
+
 
 /**
  * Create a new Namespace and return a pointer to it.
@@ -220,7 +241,18 @@ void
 Namespace
 ::AddClass(Class* c)
 {
-  m_Wrappers.push_back(c);
+  m_ClassWrappers.push_back(c);
+}
+
+
+/**
+ * Add the given function to the set of wrappers defined in this namespace.
+ */
+void
+Namespace
+::AddFunction(Function* f)
+{
+  m_FunctionWrappers.push_back(f);
 }
 
 
