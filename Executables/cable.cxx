@@ -47,6 +47,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <fstream>
 
+// Hacked-up approach to versioning.
+#define CABLE_VERSION_STRING "0.01"
+
 typedef configuration::CableConfiguration  CableConfiguration;
 typedef source::Namespace       Namespace;
   
@@ -95,12 +98,16 @@ public:
   bool ParseConfiguration();
   bool ParseSource();
   void Generate();
+  bool DisplayVersion() const { return m_DisplayVersion; }
+  void PrintVersionLine(std::ostream&) const;
+  void PrintUsage(std::ostream&) const;
 private:
   std::vector<WrapperGenerator> m_WrapperGenerators;
   String m_ConfigurationFileName;
   String m_SourceFileName;
   CableConfiguration::ConstPointer m_CableConfiguration;
   source::Namespace::ConstPointer m_GlobalNamespace;
+  bool m_DisplayVersion;
 };
 
 void Cable::Add(const WrapperGenerator& wg)
@@ -120,6 +127,7 @@ bool Cable::ProcessCommandLine(int argc, char* argv[])
     arguments.push_back(argv[i]);
     }
 
+  this->m_DisplayVersion = false;
   bool haveConfig = false;
   
   for(std::vector<String>::const_iterator arg = arguments.begin();
@@ -143,7 +151,12 @@ bool Cable::ProcessCommandLine(int argc, char* argv[])
         }
       }
     if(found) { continue; }
-    if(!haveConfig)
+    if(*arg == "--version")
+      {
+      this->m_DisplayVersion = true;
+      return true;
+      }
+    else if(!haveConfig)
       {
       m_ConfigurationFileName = *arg;
       haveConfig = true;
@@ -247,6 +260,33 @@ void Cable::Generate()
 }
 
 
+void Cable::PrintVersionLine(std::ostream& os) const
+{
+  os << "CABLE version " CABLE_VERSION_STRING << std::endl;
+}
+
+void Cable::PrintUsage(std::ostream& os) const
+{
+  this->PrintVersionLine(os);
+  os << "Usage: " << std::endl
+     << "  cable [options] config-file -language-name output-file" << std::endl
+     << std::endl
+     << "where \"-language-name\" is one of: " << std::endl;
+  
+  for(std::vector<WrapperGenerator>::const_iterator
+        wg = m_WrapperGenerators.begin();
+      wg != m_WrapperGenerators.end(); ++wg)
+    {
+    os << "  " << wg->GetCommandLineFlag().c_str() << " to generate "
+       << wg->GetLanguageName() << " wrappers." << std::endl;
+    }
+  
+  os << std::endl
+     << "Supported options are:" << std::endl
+     << "  --version = Print the version string and exit." << std::endl;
+}
+
+
 /**
  * Program entry point.
  */
@@ -256,8 +296,18 @@ int main(int argc, char* argv[])
   cable.Add(WrapperGenerator("Tcl", "-tcl", &gen::TclGenerator::GetInstance));
   
   try {
+  if(argc == 1)
+    {
+    cable.PrintUsage(std::cout);
+    return 0;
+    }
   if(!cable.ProcessCommandLine(argc, argv))
     { return 1; }
+  if(cable.DisplayVersion())
+    {
+    cable.PrintVersionLine(std::cout);
+    return 0;
+    }
   if(!cable.ParseConfiguration())
     { return 1; }
   if(!cable.ParseSource())
