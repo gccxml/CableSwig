@@ -5,7 +5,7 @@ INCLUDE_DIRECTORIES(${TCL_INCLUDE_PATH}
                     ${CABLE_SOURCE_DIR}
                     ${CABLE_SOURCE_DIR}/CableTclFacility)
 
-SOURCE_FILES(CableTclFacility_SRCS
+SET(CableTclFacility_SRCS
   ctArgument.cxx
   ctCalls.cxx
   ctClassWrapper.cxx
@@ -25,27 +25,47 @@ SOURCE_FILES(CableTclFacility_SRCS
 )
 
 IF (WIN32)
-  SOURCE_FILES(CableTclFacility_SRCS ctWin32OutputWindow.cxx)
+  SET(CableTclFacility_SRCS ${CableTclFacility_SRCS} ctWin32OutputWindow.cxx)
 ENDIF (WIN32)
 
 ADD_DEFINITIONS(-DCxxTypes_EXPORTS)
-ADD_LIBRARY(CableTclFacility SHARED CxxTypes_SRCS CableTclFacility_SRCS)  
+ADD_LIBRARY(CableTclFacility SHARED ${CxxTypes_SRCS} ${CableTclFacility_SRCS})
 
 TARGET_LINK_LIBRARIES(CableTclFacility ${TCL_LIBRARY})
 
-INCLUDE(${CABLE_SOURCE_DIR}/CableTclFacility/ctConfigureTclPackages.cmake)
+IF(UNIX)
+  SET(CABLE_LIBNAME_PREFIX "lib")
+ELSE(UNIX)
+  SET(CABLE_LIBNAME_PREFIX "")
+ENDIF(UNIX)
 
-IF (NOT CABLE_NO_INSTALL)
-  INSTALL_FILES(/share/Cable/include/CableTclFacility ^ct.*\\.h$)
-  INSTALL_FILES(/share/Cable/include/CableTclFacility ^ct.*\\.txx$)
-  INSTALL_TARGETS(/lib CableTclFacility)
-  IF(UNIX)
-    SET (CABLE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.unix
-                   ${CABLE_BINARY_DIR}/CableTclFacility/Install/Hide/pkgIndex.tcl)
-  ELSE(UNIX)
-    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.win32
-                   ${CABLE_BINARY_DIR}/CableTclFacility/Install/Hide/pkgIndex.tcl)
-  ENDIF(UNIX)
-  INSTALL_FILES(/share/Cable "" Install/Hide/pkgIndex.tcl)
-ENDIF (NOT CABLE_NO_INSTALL)
+#-----------------------------------------------------------------------------
+# Create install targets.
+IF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
+  SET(CABLE_TCL_PKGINDEX_FOR_INSTALL "${CABLE_BINARY_DIR}/CableTclFacility/Install/Hide/pkgIndex.tcl")
+  INSTALL_FILES(/lib/Cable FILES "${CABLE_TCL_PKGINDEX_FOR_INSTALL}")
+ENDIF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
+
+INSTALL_FILES(/include/Cable/CableTclFacility "^ct.*\\.h$")
+INSTALL_FILES(/include/Cable/CableTclFacility "^ct.*\\.txx$")
+INSTALL_TARGETS(/lib/Cable CableTclFacility)
+
+#-----------------------------------------------------------------------------
+# Configure the pkgIndex.tcl file for the build tree.
+IF(CABLE_MSDEV_CONFIG_DIRS)
+  FOREACH (config ${CABLE_MSDEV_CONFIG_DIRS})
+    SET(CABLE_TCLFACILITY_DIR "${CABLE_TCL_LIBRARY_DIR}/${config}")
+    CONFIGURE_FILE("${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.in"
+                   "${CABLE_BINARY_DIR}/CableTclFacility/${config}/pkgIndex.tcl" IMMEDIATE)
+  ENDFOREACH (config)
+ELSE(CABLE_MSDEV_CONFIG_DIRS)
+  SET(CABLE_TCLFACILITY_DIR "${CABLE_TCL_LIBRARY_DIR}")
+  CONFIGURE_FILE("${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.in"
+                 "${CABLE_BINARY_DIR}/CableTclFacility/pkgIndex.tcl" IMMEDIATE)
+ENDIF(CABLE_MSDEV_CONFIG_DIRS)
+
+#-----------------------------------------------------------------------------
+# Configure the pkgIndex.tcl file for the install tree.
+SET(CABLE_TCLFACILITY_DIR "[file dirname [info script]]")
+CONFIGURE_FILE("${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.in"
+               "${CABLE_TCL_PKGINDEX_FOR_INSTALL}" IMMEDIATE)

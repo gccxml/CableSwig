@@ -13,6 +13,11 @@ ADD_EXECUTABLE(cable cable.cxx cableSystemTools.cxx)
 
 TARGET_LINK_LIBRARIES(cable CableGenerators CableParsers CxxTypes CableExpat)
 
-IF (NOT CABLE_NO_INSTALL)
-  INSTALL_TARGETS(/bin cable)
-ENDIF (NOT CABLE_NO_INSTALL)
+INSTALL_TARGETS(/bin cable)
+
+IF(UNIX)
+  IF(NOT CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
+    # Hack for installation with CMake 1.4.
+    INSTALL_FILES(/lib/Cable ".cmake" "UseCABLE")
+  ENDIF(NOT CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
+ENDIF(UNIX)

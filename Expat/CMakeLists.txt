@@ -1,7 +1,7 @@
 PROJECT(CABLEEXPAT)
 INCLUDE_REGULAR_EXPRESSION("^(expat|xml|ascii|utf|name|iascii|latin).*$")
 
-SOURCE_FILES(expat_SRCS 
+SET(expat_SRCS 
   xmlparse.c 
   xmltok.c 
   xmlrole.c
@@ -14,7 +14,7 @@ IF (NOT CABLE_LIBRARY_OUTPUT_PATH)
   LINK_DIRECTORIES(${CABLEEXPAT_BINARY_DIR})
 ENDIF (NOT CABLE_LIBRARY_OUTPUT_PATH)
 
-CONFIGURE_FILE(${CABLEEXPAT_SOURCE_DIR}/expatConfig.h.in
-               ${CABLEEXPAT_BINARY_DIR}/expatConfig.h)
+CONFIGURE_FILE("${CABLEEXPAT_SOURCE_DIR}/expatConfig.h.in"
+               "${CABLEEXPAT_BINARY_DIR}/expatConfig.h")
 
-ADD_LIBRARY(CableExpat STATIC expat_SRCS)
+ADD_LIBRARY(CableExpat STATIC ${expat_SRCS})
