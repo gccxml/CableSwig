@@ -797,6 +797,13 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
   SourceObject* tobj = m_SourceRepresentation->GetSourceObject(tid);
   if(tobj)
     {
+    // If the id refers to a Typedef, follow the typedef.
+    Typedef* td = Typedef::SafeDownCast(tobj);
+    if(td)
+      {
+      tobj = td->GetType();
+      }
+
     // If the id refers to a Class or Enumeration, get the
     // corresponding ClassType or EnumerationType.  This can only
     // happen for a non-cv-qualified class or enumeration type because
