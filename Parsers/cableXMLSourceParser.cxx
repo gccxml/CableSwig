@@ -999,24 +999,22 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
     cableErrorMacro("No max attribute on ArrayType " << element->GetId());
     return 0;
     }
-  unsigned long max = 0;
+  unsigned long len = 0;
   if(String(maxStr).length() > 0)
     {
+    unsigned long max = 0;
     if(sscanf(maxStr, "%ul", &max) != 1)
       {
       cableErrorMacro("Cannot convert max=\"" << maxStr << "\" to integer "
                       "on ArrayType " << element->GetId());
       return 0;
       }
-    }
-  else
-    {
-    max = -1;
+    len = max+1;
     }
   
   ArrayType::Pointer type = ArrayType::New();
   type->SetTarget(target);
-  type->SetLength(max+1);
+  type->SetLength(len);
   this->SetSourceObject(element, type);
   return type;
 }
