@@ -1,0 +1,6 @@
+- base class fix
+- operator rename files
+- missing class files
+- mark if a class has a public constructor in the idx file
+- force template instances for return types in gcc
+

@@ -1,6 +1,6 @@
 INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/gcc/cp)
 
-ADD_EXECUTABLE(cc1plus
+ADD_EXECUTABLE(gccxml_cc1plus
   ${GCC_SOURCE_DIR}/gcc/c-common.c
   ${GCC_SOURCE_DIR}/gcc/c-dump.c
   ${GCC_SOURCE_DIR}/gcc/c-format.c
@@ -40,4 +40,4 @@ ADD_EXECUTABLE(cc1plus
   xref.c
 )
 
-TARGET_LINK_LIBRARIES(cc1plus backend cpp iberty)
+TARGET_LINK_LIBRARIES(gccxml_cc1plus backend cpp iberty)

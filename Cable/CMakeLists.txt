@@ -1,0 +1,28 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 1.4)
+
+IF (CMAKE_MAJOR_VERSION MATCHES "^1$")
+  IF (CMAKE_MINOR_VERSION MATCHES "^[56]$")
+    SET(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES 1)
+  ENDIF (CMAKE_MINOR_VERSION MATCHES "^[56]$")
+ENDIF (CMAKE_MAJOR_VERSION MATCHES "^1$")
+
+# Project name and version.
+PROJECT (CABLE)
+
+SET(CABLE_VERSION_MAJOR 0)
+SET(CABLE_VERSION_MINOR 1)
+SET(CABLE_VERSION_PATCH development)
+SET(CABLE_VERSION_STRING
+    "${CABLE_VERSION_MAJOR}.${CABLE_VERSION_MINOR}.${CABLE_VERSION_PATCH}")
+
+# Limit dependencies in UNIX.
+INCLUDE_REGULAR_EXPRESSION ("^(cxx|cable|ct|CxxTypes).*$")
+
+# Build the standard components.
+SUBDIRS (Expat CxxTypes Parsers Generators )
+
+
+# Configure the CABLE version number in the build.
+CONFIGURE_FILE ("${CABLE_SOURCE_DIR}/cableVersion.h.in"
+                "${CABLE_BINARY_DIR}/cableVersion.h" @ONLY IMMEDIATE)
+
