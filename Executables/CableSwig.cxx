@@ -478,8 +478,12 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
 
 
 // Find the first base classes that are wrapped in a group
-void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skipped)
+void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skipped, const cable::Class* startClass)
 {
+  if(!startClass)
+    {
+    startClass = c;
+    }
   std::vector<cable::Class*> parents;
   c->GetBaseClasses(parents);
   bool foundBase = false;
@@ -497,7 +501,26 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skippe
       foundBase = true;
       if(skipped)
         {
-        std::cerr << "Warning " << c->GetQualifiedName().c_str() << " has a parent class that is not wrapped when that parent's parent is wrapped.\n";
+        if(startClass)
+          {
+          std::cerr << "Warning " << startClass->GetQualifiedName().c_str() 
+                    << " has a parent class that is not wrapped when "
+            "that parent's parent is wrapped.\n";
+          std::cerr 
+            << "        The first wrapped parent is: " 
+            << this->TemplateName((*i)->GetQualifiedName().c_str()).c_str() 
+            << "\n";
+          }
+        else
+          {
+          std::cerr << "Warning " << c->GetQualifiedName().c_str() 
+                    << " has a parent class that is not wrapped when "
+            "that parent's parent is wrapped.\n";
+          std::cerr 
+            << "        The first wrapped parent is: " 
+            << this->TemplateName((*i)->GetQualifiedName().c_str()).c_str() 
+            << "\n";
+          }
         }
       }
     }
@@ -510,7 +533,7 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skippe
     for( std::vector<cable::Class*>::iterator i = parents.begin();
          i != parents.end(); ++i)
       {
-      this->FindWrappedBases(bases, *i, skipped);
+      this->FindWrappedBases(bases, *i, skipped, startClass);
       }
     }
 }

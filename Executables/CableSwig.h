@@ -108,7 +108,7 @@ private:
   bool ReadMasterIndexFile();
   void AddClassToBeImported(cable::Class const*);
   void AddImportReturnTypesAndArguments(cable::Class const* );
-  void FindWrappedBases(List* bases, const cable::Class*, bool skiped = false );
+  void FindWrappedBases(List* bases, const cable::Class*, bool skiped = false, const cable::Class* original = 0 );
   void AddImportClass( const cable::Type* rt);
 private:
   std::string m_DependFile;
