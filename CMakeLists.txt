@@ -1,9 +1,14 @@
 PROJECT(CableSwig)
 
-SET(LIBRARY_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE PATH 
-                        "Single output directory for building all libraries.")
-SET(EXECUTABLE_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE PATH 
-                           "Single output directory for building all executables.")
+IF(NOT LIBRARY_OUTPUT_PATH)
+  SET(LIBRARY_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE INTERNAL 
+    "Single output directory for building all libraries.  Can not be changed.")
+ENDIF(NOT LIBRARY_OUTPUT_PATH)
+
+IF(NOT EXECUTABLE_OUTPUT_PATH)
+  SET(EXECUTABLE_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE INTERNAL
+    "Single output directory for building all executables.  Can not be changed.")
+ENDIF(NOT EXECUTABLE_OUTPUT_PATH)
 
 SET(SWIG_TOP ${CableSwig_SOURCE_DIR}/SWIG)
 SET(CABLE_SOURCE ${CableSwig_SOURCE_DIR}/Cable)
