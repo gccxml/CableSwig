@@ -1,0 +1,17 @@
+IF(LIBRARY_OUTPUT_PATH)
+  SET(CABLE_WRAPTCLFACILITY_DIR ${LIBRARY_OUTPUT_PATH})
+ELSE(LIBRARY_OUTPUT_PATH)
+  SET(CABLE_WRAPTCLFACILITY_DIR ${CABLE_BINARY_DIR}/WrapTclFacility)
+ENDIF(LIBRARY_OUTPUT_PATH)
+
+IF(UNIX)
+  SET(CABLE_MSDEV_CONFIG_DIR "")
+  CONFIGURE_FILE(${CABLE_SOURCE_DIR}/WrapTclFacility/pkgIndex.tcl.build
+                 ${CABLE_BINARY_DIR}/WrapTclFacility/pkgIndex.tcl IMMEDIATE)
+ELSE(UNIX)
+  FOREACH (config Debug Release RelWithDebInfo MinSizeRel)
+    SET(CABLE_MSDEV_CONFIG_DIR ${config})
+    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/WrapTclFacility/pkgIndex.tcl.build
+                   ${CABLE_BINARY_DIR}/WrapTclFacility/${config}/pkgIndex.tcl IMMEDIATE)
+  ENDFOREACH (config)
+ENDIF(UNIX)

@@ -1,0 +1,19 @@
+package ifneeded WrapTclFacility 1.0 {
+  global tcl_platform
+  if {$tcl_platform(platform) == "unix"} {
+    set libPrefix "lib"
+    set libPath "${CABLE_INSTALL_PREFIX}/share/Cable/lib"
+  } else {
+    set libPrefix ""
+    package require registry
+    set libPath [registry sldkfjsdflkjsd]
+  }
+
+  set libName "WrapTclFacility"
+  set libExt [info sharedlibextension]
+  set libFile [file join $libPath "$libPrefix$libName$libExt"]
+
+  if {[catch { load $libFile } errorMessage ]} {
+    puts $errorMessage
+  }
+}
