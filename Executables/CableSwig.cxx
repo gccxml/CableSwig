@@ -504,36 +504,44 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skippe
         if(startClass)
           {
           std::cerr << "Warning " << startClass->GetQualifiedName().c_str() 
-                    << " has a parent class that is not wrapped when "
-            "that parent's parent is wrapped.\n";
-          std::cerr << "        List of parents follows: (* notes first wrapped parent class):\n";
+                    << "\nhas a class hierarchy that has wrapping gaps.\n";
+          std::cerr << "The class hierarchy wrapping is as follows:\n";
           std::vector<cable::Class*> allp;
           startClass->GetAllBaseClasses(allp);
           for(unsigned int j=0; j < allp.size(); ++j)
             {
-            if(allp[j] == *i)
+            if(this->FindClassGroup(allp[j]->GetQualifiedName().c_str(), &group))
               {
-              std::cerr << "*";
+              std::cerr << "    Wrapped: ";
+              }
+            else
+              {
+              std::cerr << "Not wrapped: ";
               }
             std::cerr << this->TemplateName(allp[j]->GetQualifiedName().c_str()).c_str() << "\n";
             }
+          std::cerr << "\n";
           }
         else
           {
-          std::cerr << "Warning " << c->GetQualifiedName().c_str() 
-                    << " has a parent class that is not wrapped when "
-            "that parent's parent is wrapped.\n";
-          std::cerr << "        List of parents follows: (* notes first wrapped parent class):\n";
+          std::cerr << "Warning " << startClass->GetQualifiedName().c_str() 
+                    << "\nhas a class hierarchy that has wrapping gaps.\n";
+          std::cerr << "The class hierarchy wrapping is as follows:\n";
           std::vector<cable::Class*> allp;
           startClass->GetAllBaseClasses(allp);
           for(unsigned int j=0; j < allp.size(); ++j)
             {
-            if(allp[j] == *i)
+            if(this->FindClassGroup(allp[j]->GetQualifiedName().c_str(), &group))
               {
-              std::cerr << "*";
+              std::cerr << "Wrapped: ";
               }
+            else
+              {
+              std::cerr << "Not wrapped: ";
+              } 
             std::cerr << this->TemplateName(allp[j]->GetQualifiedName().c_str()).c_str() << "\n";
             }
+          std::cerr << "\n";
           }
         }
       }
