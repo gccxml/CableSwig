@@ -30,6 +30,11 @@
 
 #include "cableVersion.h"
 
+#define _cable_tcl_TO_STRING(x) _cable_tcl_TO_STRING0(x)
+#define _cable_tcl_TO_STRING0(x) #x
+#define _cable_tcl_VERSION _cable_tcl_TO_STRING(CABLE_VERSION_MAJOR) \
+                           _cable_tcl_TO_STRING(CABLE_VERSION_MINOR)
+
 #include <map>
 #include <set>
 #include <queue>
@@ -272,7 +277,7 @@ void WrapperFacility::InitializeForInterpreter()
   Tcl_CreateObjCommand(m_Interpreter, "cable::DebugOff",
                        &DebugOffCommandFunction, 0, 0);
   
-  Tcl_PkgProvide(m_Interpreter, "cable", CABLE_VERSION_STRING);
+  Tcl_PkgProvide(m_Interpreter, "cable", _cable_tcl_VERSION);
 }
 
 

@@ -34,7 +34,7 @@ ENDIF (CABLE_TCL_FACILITY)
 
 # Configure the CABLE version number in the build.
 CONFIGURE_FILE ("${CABLE_SOURCE_DIR}/cableVersion.h.in"
-                "${CABLE_BINARY_DIR}/cableVersion.h" IMMEDIATE)
+                "${CABLE_BINARY_DIR}/cableVersion.h" @ONLY IMMEDIATE)
 
 # Need to include generated headers.
 INCLUDE_DIRECTORIES (${CABLE_BINARY_DIR})
