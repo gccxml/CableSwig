@@ -48,7 +48,7 @@ FIND_PROGRAM(CABLE_INDEX
   /usr/local/bin
 )
 
-
+SET(IGNORE_WARNINGS -w362 -w389 -w503 -w508 -w509)
 # define macros for wrapping commands
 MACRO(GCCXML_CREATE_XML_FILE Source Bin Input Output Library)
    ADD_CUSTOM_COMMAND(
@@ -70,25 +70,33 @@ MACRO(CINDEX_CREATE_IDX_FILE Bin Input Output Library)
 ENDMACRO(CINDEX_CREATE_IDX_FILE)
 
 MACRO(CSWIG_CREATE_TCL_CXX_FILE Bin MasterIdx InputIdx InputXml OutputTclCxx Library LibraryIndexFiles)
+   SET(CINDEX)
+   FOREACH(MIDX ${MasterIdx})
+     SET(CINDEX ${CINDEX} -Cindex "${MIDX}")
+   ENDFOREACH(MIDX)
    ADD_CUSTOM_COMMAND(
-   SOURCE ${Bin}/${InputIdx}
-   COMMAND ${CSWIG}
-   ARGS -c -cindex ${Bin}/${MasterIdx} ${IGNORE_WARNINGS} -o ${Bin}/${OutputTclCxx} -tcl -c++ ${Bin}/${InputXml}
-   TARGET ${Library}
-   OUTPUTS ${Bin}/${OutputTclCxx}
-   DEPENDS ${LibraryIndexFiles}
- )
+     SOURCE ${Bin}/${InputIdx}
+     COMMAND ${CSWIG}
+     ARGS -c ${CINDEX} ${IGNORE_WARNINGS} -o ${Bin}/${OutputTclCxx} -tcl -c++ ${Bin}/${InputXml}
+     TARGET ${Library}
+     OUTPUTS ${Bin}/${OutputTclCxx}
+     DEPENDS ${LibraryIndexFiles}
+     )
 ENDMACRO(CSWIG_CREATE_TCL_CXX_FILE)
 
 MACRO(CSWIG_CREATE_PYTHON_CXX_FILE Bin MasterIdx InputIdx InputXml OutputTclCxx Library LibraryIndexFiles)
+   SET(CINDEX)
+   FOREACH(MIDX ${MasterIdx})
+     SET(CINDEX ${CINDEX} -Cindex "${MIDX}")
+   ENDFOREACH(MIDX)
    ADD_CUSTOM_COMMAND(
-   SOURCE ${Bin}/${InputIdx}
-   COMMAND ${CSWIG}
-   ARGS -c -cindex ${Bin}/${MasterIdx} ${IGNORE_WARNINGS} -o ${Bin}/${OutputTclCxx} -python -c++ ${Bin}/${InputXml}
-   TARGET ${Library}
-   OUTPUTS ${Bin}/${OutputTclCxx}
-   DEPENDS ${LibraryIndexFiles}
- )
+     SOURCE ${Bin}/${InputIdx}
+     COMMAND ${CSWIG} 
+     ARGS -c ${CINDEX} ${IGNORE_WARNINGS} -o ${Bin}/${OutputTclCxx} -python -c++ ${Bin}/${InputXml}
+     TARGET ${Library}
+     OUTPUTS ${Bin}/${OutputTclCxx}
+     DEPENDS ${LibraryIndexFiles}
+     )
 ENDMACRO(CSWIG_CREATE_PYTHON_CXX_FILE)
 
 # make sure required stuff is set
@@ -112,9 +120,10 @@ FOREACH(INCDIR ${ITK_INCLUDE_DIRS})
        SET(ITK_TOP ${INCDIR}/../.. )
        SET(SWIG_INC ${SWIG_INC} -I${ITK_TOP}/Wrapping/Tcl)
        SET(SWIG_INC ${SWIG_INC} -I${ITK_TOP}/Wrapping/Tcl/Common)
+       SET(SWIG_INC ${SWIG_INC} -I${ITK_TOP}/Wrapping/Tcl/Numerics)
      ENDIF(NOT ITK_TOP)
      SET(SWIG_INC ${SWIG_INC} -I${INCDIR}/vnl -I${INCDIR}/vcl/doc)
    ENDIF( "${INCDIR}" MATCHES "Utilities/vxl$")
 ENDFOREACH(INCDIR)
 ADD_DEFINITIONS(-DSWIG_GLOBAL)
-SUBDIRS(SwigRuntime Common)
+SUBDIRS(SwigRuntime VXLNumerics Common Numerics )
