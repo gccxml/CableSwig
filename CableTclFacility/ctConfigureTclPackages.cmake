@@ -1,0 +1,19 @@
+IF(CABLE_LIBRARY_PATH)
+  SET(CABLE_TCLFACILITY_DIR ${CABLE_LIBRARY_PATH})
+ELSE(CABLE_LIBRARY_PATH)
+  SET(CABLE_TCLFACILITY_DIR ${CABLE_BINARY_DIR}/CableTclFacility)
+ENDIF(CABLE_LIBRARY_PATH)
+
+IF(UNIX)
+  SET(CABLE_LIBNAME_PREFIX "lib")
+  SET(CABLE_MSDEV_CONFIG_DIR "")
+  CONFIGURE_FILE(${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.build
+                 ${CABLE_BINARY_DIR}/CableTclFacility/pkgIndex.tcl IMMEDIATE)
+ELSE(UNIX)
+  SET(CABLE_LIBNAME_PREFIX "")
+  FOREACH (config Debug Release RelWithDebInfo MinSizeRel)
+    SET(CABLE_MSDEV_CONFIG_DIR ${config})
+    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/CableTclFacility/pkgIndex.tcl.build
+                   ${CABLE_BINARY_DIR}/CableTclFacility/${config}/pkgIndex.tcl IMMEDIATE)
+  ENDFOREACH (config)
+ENDIF(UNIX)

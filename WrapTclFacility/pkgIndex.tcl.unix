@@ -1,8 +1,0 @@
-package ifneeded WrapTclFacility ${CABLE_VERSION_STRING} {
-  set libPath "${CABLE_INSTALL_PREFIX}/share/Cable/lib"
-  set libName "WrapTclFacility"
-  set libExt [info sharedlibextension]
-  set libFile [file join $libPath "lib$libName$libExt"]
-
-  if {[catch { load $libFile } errorMessage ]} { puts $errorMessage }
-}

@@ -1,0 +1,9 @@
+package ifneeded cable ${CABLE_VERSION_STRING} {
+  set libPrefix "${CABLE_LIBNAME_PREFIX}"
+  set libPath [file join "${CABLE_TCLFACILITY_DIR}" "${CABLE_MSDEV_CONFIG_DIR}"]
+  set libName "CableTclFacility"
+  set libExt [info sharedlibextension]
+  set libFile [file join $libPath "$libPrefix$libName$libExt"]
+
+  if {[catch { load $libFile } errorMessage ]} { puts $errorMessage }
+}

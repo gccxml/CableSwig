@@ -1,41 +1,17 @@
 /*=========================================================================
 
-  Program:   Insight Segmentation & Registration Toolkit
+  Program:   CABLE - CABLE Automates Bindings for Language Extension
   Module:    cxxUtils.h
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
 
-Copyright (c) 2001 Insight Consortium
-All rights reserved.
+  Copyright (c) 2002 Insight Consortium. All rights reserved.
+  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
- * Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-
- * Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
- * The name of the Insight Consortium, nor the names of any consortium members,
-   nor of any contributors, may be used to endorse or promote products derived
-   from this software without specific prior written permission.
-
-  * Modified source versions must be plainly marked as such, and must not be
-    misrepresented as being the original software.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS ``AS IS''
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     This software is distributed WITHOUT ANY WARRANTY; without even 
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 #ifndef _cxxUtils_h
@@ -105,14 +81,36 @@ namespace _cxx_
  * Define the type "String" to be just like the STL "string".  In UNIX,
  * there are no problems with this in shared libraries.
  */
-typedef std::string  String;
+typedef std::string  StringBase;
 #else
 /**
  * Define the type "String" to be just like the STL "string", but with our
  * DLL-boundary-safe allocator for the Win32 version.
  */
-typedef std::basic_string<char, std::_cxx_char_traits<char>, DllAllocator<char> >  String;
+typedef std::basic_string<char, std::_cxx_char_traits<char>, DllAllocator<char> >  StringBase;
 #endif
+
+/** Wrapper around standard string class.  Keeps name short.  */
+class String: public StringBase
+{
+public:
+  typedef StringBase::value_type             value_type;
+  typedef StringBase::pointer                pointer;
+  typedef StringBase::reference              reference;
+  typedef StringBase::const_reference        const_reference;
+  typedef StringBase::size_type              size_type;
+  typedef StringBase::difference_type        difference_type;
+  typedef StringBase::iterator               iterator;
+  typedef StringBase::const_iterator         const_iterator;
+  typedef StringBase::reverse_iterator       reverse_iterator;
+  typedef StringBase::const_reverse_iterator const_reverse_iterator;
+  
+  String(): StringBase() {}
+  String(const value_type* s): StringBase(s) {}
+  String(const value_type* s, size_type n): StringBase(s, n) {}
+  String(const StringBase& s, size_type pos=0, size_type n=npos):
+    StringBase(s, pos, n) {}
+};
 
 } // namespace _cxx_
 

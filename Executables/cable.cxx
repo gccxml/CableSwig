@@ -1,334 +1,315 @@
 /*=========================================================================
 
-  Program:   Insight Segmentation & Registration Toolkit
+  Program:   CABLE - CABLE Automates Bindings for Language Extension
   Module:    cable.cxx
   Language:  C++
   Date:      $Date$
   Version:   $Revision$
 
-Copyright (c) 2001 Insight Consortium
-All rights reserved.
+  Copyright (c) 2002 Insight Consortium. All rights reserved.
+  See ITKCopyright.txt or http://www.itk.org/HTML/Copyright.htm for details.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
- * Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
-
- * Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
- * The name of the Insight Consortium, nor the names of any consortium members,
-   nor of any contributors, may be used to endorse or promote products derived
-   from this software without specific prior written permission.
-
-  * Modified source versions must be plainly marked as such, and must not be
-    misrepresented as being the original software.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS ``AS IS''
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHORS OR CONTRIBUTORS BE LIABLE FOR
-ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+     This software is distributed WITHOUT ANY WARRANTY; without even 
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
 #include "cableVersion.h"
-#include "cableConfigurationParser.h"
-#include "cableSourceParser.h"
+#include "cableXMLSourceParser.h"
+#include "cableSourceRepresentation.h"
+#include "cableTclGenerator.h"
+#include "cableSystemTools.h"
 
-#include "genGeneratorBase.h"
-#include "genTclGenerator.h"
+using namespace cable;
 
-#include <iostream>
-#include <fstream>
+String findSelfPath(const char* argv0);
+String findGCC_XML(const char* argv0, const char* cableGCCXML);
+String findXMLFileName(const char* argv0);
 
-typedef configuration::CableConfiguration  CableConfiguration;
-typedef source::Namespace       Namespace;
-  
-/**
- * A class to define a wrapper generator.
- */
-class WrapperGenerator
+/** Program entry point.  */
+int main(int argc, char* argv[])
 {
-public:
-  typedef gen::GeneratorBase* (*AllocateFunction)(const CableConfiguration*, const Namespace*, std::ostream&);
-  WrapperGenerator(const String& languageName,
-                   const String& commandLineFlag,
-                   AllocateFunction get):
-    m_LanguageName(languageName), m_CommandLineFlag(commandLineFlag),
-    m_Get(get), m_Enabled(false) {}
+  bool printVersion = false;
+  bool printUsage = false;
+  bool verbose = false;
+  bool keepXML = false;
+  const char* inFileName = 0;
+  const char* tclOutName = 0;
+  const char* xmlOutName = 0;
+  const char* srcOutName = 0;
+  const char* cableGCCXML = 0;
+  String gccxmlOptions;
   
-  void Enable() { m_Enabled = true; }
-  void Disable() { m_Enabled = false; }
-  bool Enabled() const { return m_Enabled; }
-  const String& GetLanguageName() const { return m_LanguageName; }
-  const String& GetCommandLineFlag() const { return m_CommandLineFlag; }
-  const String& GetOutputFileName() const { return m_OutputFileName; }
-  void SetOutputFileName(const String& name) { m_OutputFileName = name; }
-  gen::GeneratorBase* GetGenerator(const CableConfiguration* c,
-                                   const Namespace* ns,
-                                   std::ostream& os)
+  for(unsigned int i=1;i < argc;++i)
     {
-      if(m_Get) { return m_Get(c, ns, os); }
-      else { return NULL; }
-    }
-  
-private:
-  String m_LanguageName;
-  String m_CommandLineFlag;
-  AllocateFunction m_Get;
-  bool m_Enabled;
-  String m_OutputFileName;
-};
-
-
-class Cable
-{
-public:
-  void Add(const WrapperGenerator&);
-  bool ProcessCommandLine(int argc, char* argv[]);
-  bool ParseConfiguration();
-  bool ParseSource();
-  void Generate();
-  bool DisplayVersion() const { return m_DisplayVersion; }
-  void PrintVersionLine(std::ostream&) const;
-  void PrintUsage(std::ostream&) const;
-private:
-  std::vector<WrapperGenerator> m_WrapperGenerators;
-  String m_ConfigurationFileName;
-  String m_SourceFileName;
-  CableConfiguration::ConstPointer m_CableConfiguration;
-  source::Namespace::ConstPointer m_GlobalNamespace;
-  bool m_DisplayVersion;
-};
-
-void Cable::Add(const WrapperGenerator& wg)
-{
-  m_WrapperGenerators.push_back(wg);
-}
-
-/**
- * Loop through all the arguments.  Any unrecognized argument
- * is assumed to be an config file name.
- */
-bool Cable::ProcessCommandLine(int argc, char* argv[])
-{
-  std::vector<String> arguments;
-  for(int i=1; i < argc; ++i)
-    {
-    arguments.push_back(argv[i]);
-    }
-
-  this->m_DisplayVersion = false;
-  bool haveConfig = false;
-  
-  for(std::vector<String>::const_iterator arg = arguments.begin();
-      arg != arguments.end(); ++arg)
-    {
-    bool found = false;
-    for(std::vector<WrapperGenerator>::iterator wg = m_WrapperGenerators.begin();
-        wg != m_WrapperGenerators.end(); ++wg)
-      {
-      if(*arg == wg->GetCommandLineFlag())
-        {
-        ++arg;
-        if(arg == arguments.end())
-          {
-          std::cerr << "  Language " << wg->GetLanguageName().c_str() << " specified without output file." << std::endl;
-          return false;
-          }
-        wg->SetOutputFileName(*arg);
-        wg->Enable();
-        found = true;
-        }
-      }
-    if(found) { continue; }
-    if(*arg == "--version")
-      {
-      this->m_DisplayVersion = true;
-      return true;
-      }
-    else if(!haveConfig)
-      {
-      m_ConfigurationFileName = *arg;
-      haveConfig = true;
-      }
+    String arg = argv[i];
+    if(arg == "--version")
+      { printVersion = true; }
+    else if(arg == "--help")
+      { printUsage = true; }
+    else if(arg == "--verbose")
+      { verbose = true; }
+    else if((arg == "--gccxml") && ((i+1) < argc))
+      { cableGCCXML = argv[i+1]; ++i; }
+    else if(arg == "--keep-xml")
+      { keepXML = true; }
+    else if((arg == "-tcl") && ((i+1) < argc))
+      { tclOutName = argv[i+1]; ++i; }
+    else if((arg == "-xml") && ((i+1) < argc))
+      { xmlOutName = argv[i+1]; ++i; }
+    else if((arg == "-src") && ((i+1) < argc))
+      { srcOutName = argv[i+1]; ++i; }
     else
       {
-      std::cerr << "  Unknown command-line argument: " << arg->c_str() << std::endl;
-      std::cout << "  Configuration file already specified as \"" << m_ConfigurationFileName.c_str() << "\"" << std::endl;
-      return false;
-      }
-    }
-  
-  if(!haveConfig)
-    {
-    std::cerr << "  No config file specified!" << std::endl;
-    return false;
-    }
-  
-  return true;
-}
-
-bool Cable::ParseConfiguration()
-{
-  configuration::Parser::Pointer configurationParser = configuration::Parser::New();
-  
-  std::ifstream configFile(m_ConfigurationFileName.c_str());
-  if(!configFile)
-    {
-    std::cerr << "  Error opening configuration file \""
-              << m_ConfigurationFileName.c_str() << "\"" << std::endl;
-    return false;
-    }
-  
-  std::cout << "  Parsing configuration file \"" << m_ConfigurationFileName.c_str()
-            << "\" ..." << std::endl;
-  configurationParser->Parse(configFile);
-  m_CableConfiguration = configurationParser->GetCableConfiguration();
-  m_SourceFileName = m_CableConfiguration->GetSourceFileName();
-  
-  return true;
-}
-
-bool Cable::ParseSource()
-{
-  if(m_SourceFileName.length() > 0)
-    {
-    source::Parser::Pointer sourceParser = source::Parser::New();
-  
-    std::ifstream sourceFile(m_SourceFileName.c_str());
-    if(!sourceFile)
-      {
-      std::cerr << "  Error opening XML source file \""
-                << m_SourceFileName.c_str() << "\"" << std::endl;
-      return false;
-      }
-    
-    std::cout << "  Parsing XML source file \"" << m_SourceFileName.c_str()
-              << "\" ..." << std::endl;
-    sourceParser->Parse(sourceFile);
-    m_GlobalNamespace = sourceParser->GetGlobalNamespace();
-    }
-  
-  return true;
-}
-
-void Cable::Generate()
-{
-  for(std::vector<WrapperGenerator>::iterator
-        wg = m_WrapperGenerators.begin();
-      wg != m_WrapperGenerators.end(); ++wg)
-    {
-    if(wg->Enabled())
-      {
-      std::ofstream wrapperStream(wg->GetOutputFileName().c_str());
-      if(wrapperStream)
+      if(!inFileName)
         {
-        std::cout << "    Generating " << wg->GetLanguageName().c_str()
-                  << " wrappers..." << std::endl;
-      
-        gen::GeneratorBase* generator =
-          wg->GetGenerator(m_CableConfiguration, m_GlobalNamespace, wrapperStream);
-        if(generator)
-          {
-          generator->Generate();
-          delete generator;
-          }
-        else
-          {
-          std::cerr << "      Error creating wrapper generation class." << std::endl;
-          }
+        inFileName = argv[i];
         }
       else
         {
-        std::cerr << "  Error opening output file \""
-                  << wg->GetOutputFileName().c_str() << "\"" << std::endl;
-        std::cout << "    Not Generating " << wg->GetLanguageName().c_str()
-                  << " wrappers." << std::endl;
+        gccxmlOptions += " ";
+        gccxmlOptions += argv[i];
         }
       }
     }
-}
-
-
-void Cable::PrintVersionLine(std::ostream& os) const
-{
-  os << "CABLE version " CABLE_VERSION_STRING << std::endl;
-}
-
-void Cable::PrintUsage(std::ostream& os) const
-{
-  this->PrintVersionLine(os);
-  os << "Usage: " << std::endl
-     << "  cable [options] config-file -language-name output-file" << std::endl
-     << std::endl
-     << "where \"-language-name\" is one of: " << std::endl;
   
-  for(std::vector<WrapperGenerator>::const_iterator
-        wg = m_WrapperGenerators.begin();
-      wg != m_WrapperGenerators.end(); ++wg)
+  if(printVersion)
     {
-    os << "  " << wg->GetCommandLineFlag().c_str() << " to generate "
-       << wg->GetLanguageName() << " wrappers." << std::endl;
-    }
-  
-  os << std::endl
-     << "Supported options are:" << std::endl
-     << "  --version = Print the version string and exit." << std::endl;
-}
-
-
-/**
- * Program entry point.
- */
-int main(int argc, char* argv[])
-{
-  Cable cable;
-  cable.Add(WrapperGenerator("Tcl", "-tcl", &gen::TclGenerator::GetInstance));
-  
-  try {
-  if(argc == 1)
-    {
-    cable.PrintUsage(std::cout);
+    std::cout << "CABLE version " CABLE_VERSION_STRING "\n";
     return 0;
     }
-  if(!cable.ProcessCommandLine(argc, argv))
-    { return 1; }
-  if(cable.DisplayVersion())
+  else if(printUsage)
     {
-    cable.PrintVersionLine(std::cout);
+    std::cout << "CABLE version " CABLE_VERSION_STRING "\n";
+    std::cout << "Usage:\n"
+              << "  cable [options] input-file -language-name output-file [gccxml-options ...]\n"
+              << "\n"
+              << "where \"-language-name\" is one of:\n"
+              << "  -tcl to generate Tcl wrappers.\n"
+              << "\n"
+              << "Supported options are:\n"
+              << "  --verbose    = Verbose output during execution.\n"
+              << "  --version    = Print the version string and exit.\n"
+              << "  --help       = Print this message and exit.\n"
+              << "  --gccxml xxx = Use \"xxx\" as GCC-XML program.\n"
+              << "  --keep-xml   = Don't delete the GCC-XML output file.\n"
+              << "\n"
+              << "Unrecognized options will be passed on to GCC-XML.\n"
+              << "If CABLE_GCCXML is set in the environment, it will be used\n"
+              << "as the GCC-XML program.\n";
     return 0;
     }
-  if(!cable.ParseConfiguration())
-    { return 1; }
-  if(!cable.ParseSource())
-    { return 1; }
-  cable.Generate();
-  }
-  catch(String s)
+  
+  if(!inFileName)
     {
-    std::cerr << "main(): Caught exception: " << std::endl
-              << s.c_str() << std::endl;
+    std::cerr << "Must specify input file name (use --help for options).\n";
     return 1;
     }
-  catch(char* s)
+  
+  if(verbose)
     {
-    std::cerr << "main(): Caught exception: " << std::endl
-              << s << std::endl;
+    std::cout << "Using input file \"" << inFileName << "\"\n";
+    }
+  
+  // Find the GCC-XML executable name.
+  String gccxmlExecutable = findGCC_XML(argv[0], cableGCCXML);
+  
+  // Get the GCC-XML output file name.
+  String xmlFileName = findXMLFileName(inFileName);
+  
+  // Build the GCC-XML command.
+  String gccxmlCommand =
+    gccxmlExecutable+" "+inFileName+" -fxml=\""+xmlFileName+
+    "\" -fxml-start=_cable_ -DCABLE_CONFIGURATION"+gccxmlOptions;
+  
+  if(verbose)
+    {
+    std::cout << "Running GCC-XML with command:\n"
+              << gccxmlCommand.c_str() << "\n";
+    }
+  
+  // Run the GCC-XML command.
+  String output;
+  int ret;
+  if(!SystemTools::RunCommand(gccxmlCommand.c_str(), output, ret) || ret)
+    {
+    std::cerr << "Error running GCC-XML with command:\n"
+              << gccxmlCommand.c_str() << "\n";
     return 1;
     }
-  catch(...)
+  
+  // Open the XML input file produced by GCC-XML.
+  std::ifstream inFile(xmlFileName.c_str());
+  if(!inFile)
     {
-    std::cerr << "main(): Caught unknown exception!" << std::endl;
+    std::cerr << "Error opening GCC-XML output file: \""
+              << xmlFileName.c_str() << "\"\n";
     return 1;
+    }
+  
+  // Parse the XML input file.
+  XMLSourceParser::Pointer parser = XMLSourceParser::New();  
+  parser->SetStream(&inFile);
+  if(!parser->Parse())
+    {
+    std::cerr << "Errors occurred during parsing of GCC-XML output: "
+              << xmlFileName.c_str() << "\n";
+    return 1;
+    }
+  parser->SetStream(0);
+  inFile.close();
+  
+  if(!keepXML)
+    {
+    // Delete the XML file.
+    SystemTools::RemoveFile(xmlFileName.c_str());
+    }
+  
+  // Print the parsed xml back out if requested.
+  if(xmlOutName)
+    {
+    std::cout << "Writing XML to \"" << xmlOutName << "\"\n";
+    std::ofstream xmlOutFile(xmlOutName);
+    if(xmlOutFile)
+      {
+      parser->Print(xmlOutFile);
+      }
+    else
+      {
+      std::cerr << "Error opening xml output file.\n";
+      return 1;
+      }
+    }
+  
+  // Get the parsed source representation.
+  SourceRepresentation::Pointer sr = parser->GetSourceRepresentation();
+  if(!sr)
+    {
+    std::cerr << "Error getting SourceRepresentation from parser.\n";    
+    return 1;
+    }
+  
+  // Print the parsed source representation back out if requested.
+  if(srcOutName)
+    {
+    std::cout << "Writing source to \"" << srcOutName << "\"\n";
+    std::ofstream srcOutFile(srcOutName);
+    if(srcOutFile)
+      {
+      sr->Print(srcOutFile);
+      }
+    else
+      {
+      std::cerr << "Error opening src output file.\n";
+      return 1;
+      }
+    }
+  
+  // Generate the Tcl wrappers if requested.
+  if(tclOutName)
+    {
+    std::cout << "Writing Tcl wrappers to \"" << tclOutName << "\"\n";
+    std::ofstream tclOutFile(tclOutName);
+    if(tclOutFile)
+      {
+      TclGenerator::Pointer tg = TclGenerator::New();
+      tg->SetSourceRepresentation(sr);
+      tg->SetStream(&tclOutFile);
+      tg->Generate();
+      }
+    else
+      {
+      std::cerr << "Error opening tcl output file.\n";
+      return 1;
+      }
     }
   
   return 0;
+}
+
+//----------------------------------------------------------------------------
+String findSelfPath(const char* argv0)
+{
+  // Find our own executable's location.
+  String av0 = argv0;
+  SystemTools::ConvertToUnixSlashes(av0);
+  String::size_type pos = av0.find_last_of("/");
+  if(pos == std::string::npos)
+    {
+    av0 = SystemTools::FindProgram(argv0);
+    pos = av0.find_last_of("/");
+    }
+  String selfPath;
+  if(pos != String::npos)
+    {
+    selfPath = SystemTools::CollapseDirectory(av0.substr(0, pos).c_str());
+    }
+  else
+    {
+    selfPath = SystemTools::CollapseDirectory(".");
+    }
+  SystemTools::ConvertToUnixSlashes(selfPath);
+  return selfPath;
+}
+
+//----------------------------------------------------------------------------
+String findGCC_XML(const char* argv0, const char* cableGCCXML)
+{
+  String gccxmlExecutable;
+  // Find the GCC-XML executable's location.
+  if(cableGCCXML)
+    {
+    // It was given on the command line.
+    gccxmlExecutable = cableGCCXML;
+    SystemTools::ConvertToUnixSlashes(gccxmlExecutable);
+    return gccxmlExecutable;
+    }  
+  else if(SystemTools::GetEnv("CABLE_GCCXML", gccxmlExecutable))
+    {
+    // There is an environment variable.
+    SystemTools::ConvertToUnixSlashes(gccxmlExecutable);
+    return gccxmlExecutable;
+    }
+  else
+    {
+    // Try to find it next to the cable executable.
+    String selfPath = findSelfPath(argv0);
+    gccxmlExecutable = selfPath+"gccxml"+SystemTools::GetExecutableExtension();
+    SystemTools::ConvertToUnixSlashes(gccxmlExecutable);
+    
+    if(SystemTools::FileExists(gccxmlExecutable.c_str()))
+      {
+      return gccxmlExecutable;
+      }
+    }
+  // Try to find a registry entry for GCC-XML.
+  const char* gccxmlRegistry = "HKEY_CURRENT_USER\\Software\\Kitware\\GCC_XML;loc";
+  if(SystemTools::ReadRegistryValue(gccxmlRegistry, gccxmlExecutable))
+    {
+    SystemTools::ConvertToUnixSlashes(gccxmlExecutable);
+    gccxmlExecutable += "/gccxml";
+    return gccxmlExecutable;
+    }
+  
+  // Just hope it is in the path.
+  return "gccxml";
+}
+
+//----------------------------------------------------------------------------
+String findXMLFileName(const char* inFileName)
+{
+  String ifn = inFileName;
+  SystemTools::ConvertToUnixSlashes(ifn);
+  String::size_type pos = ifn.rfind('/');
+  String file;
+  if(pos != String::npos)
+    {
+    file = ifn.substr(pos+1);
+    }
+  else
+    {
+    file = ifn;
+    }
+  file += ".xml";
+  return file;
 }
