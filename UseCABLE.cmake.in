@@ -1,4 +1,17 @@
+# The full path to the main cable executable.
 SET(CABLE "${CABLE_EXECUTABLE_FILE}")
+
+# The full path to the CableTclFacility library.
 SET(CABLE_TCL_LIBRARY "${CABLE_TCL_LIBRARY_FILE}")
+
+# The CABLE include file directory.
 SET(CABLE_INCLUDE_DIR "${CABLE_INCLUDE_DIR}")
+
+# The CABLE version number
+SET(CABLE_VERSION_STRING "${CABLE_VERSION_STRING}")
+
+# The C++ compiler used to build CABLE.
 SET(CABLE_CXX_COMPILER "${CMAKE_CXX_COMPILER}")
+
+# The C++ compiler flags used to build CABLE.
+SET(CABLE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
