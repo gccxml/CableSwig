@@ -78,8 +78,12 @@ typedef struct kwsysProcessCreateInformation_s
 
 /*--------------------------------------------------------------------------*/
 typedef struct kwsysProcessPipeData_s kwsysProcessPipeData;
-static DWORD WINAPI kwsysProcessPipeThread(LPVOID ptd);
-static void kwsysProcessPipeThreadReadPipe(kwsysProcess* cp, kwsysProcessPipeData* td);
+static DWORD WINAPI kwsysProcessPipeThreadRead(LPVOID ptd);
+static void kwsysProcessPipeThreadReadPipe(kwsysProcess* cp,
+                                           kwsysProcessPipeData* td);
+static DWORD WINAPI kwsysProcessPipeThreadWake(LPVOID ptd);
+static void kwsysProcessPipeThreadWakePipe(kwsysProcess* cp,
+                                           kwsysProcessPipeData* td);
 static int kwsysProcessInitialize(kwsysProcess* cp);
 static int kwsysProcessCreate(kwsysProcess* cp, int index,
                               kwsysProcessCreateInformation* si,
@@ -102,25 +106,38 @@ static kwsysProcessTime kwsysProcessTimeAdd(kwsysProcessTime in1, kwsysProcessTi
 static kwsysProcessTime kwsysProcessTimeSubtract(kwsysProcessTime in1, kwsysProcessTime in2);
 static void kwsysProcessSetExitException(kwsysProcess* cp, int code);
 static void kwsysProcessKillTree(int pid);
+static void kwsysProcessDisablePipeThreads(kwsysProcess* cp);
 extern kwsysEXPORT int kwsysEncodedWriteArrayProcessFwd9x(const char* fname);
 
 /*--------------------------------------------------------------------------*/
-/* A structure containing data for each pipe's thread.  */
+/* A structure containing synchronization data for each thread.  */
+typedef struct kwsysProcessPipeSync_s kwsysProcessPipeSync;
+struct kwsysProcessPipeSync_s
+{
+  /* Handle to the thread.  */
+  HANDLE Thread;
+
+  /* Semaphore indicating to the thread that a process has started.  */
+  HANDLE Ready;
+
+  /* Semaphore indicating to the thread that it should begin work.  */
+  HANDLE Go;
+
+  /* Semaphore indicating thread has reset for another process.  */
+  HANDLE Reset;
+};
+
+/*--------------------------------------------------------------------------*/
+/* A structure containing data for each pipe's threads.  */
 struct kwsysProcessPipeData_s
 {
   /* ------------- Data managed per instance of kwsysProcess ------------- */
 
-  /* Handle for the thread for this pipe.  */
-  HANDLE Thread;
+  /* Synchronization data for reading thread.  */
+  kwsysProcessPipeSync Reader;
 
-  /* Semaphore indicating a process and pipe are available.  */
-  HANDLE Ready;
-
-  /* Semaphore indicating when this thread's buffer is empty.  */
-  HANDLE Empty;
-
-  /* Semaphore indicating a pipe thread has reset for another process.  */
-  HANDLE Reset;
+  /* Synchronization data for waking thread.  */
+  kwsysProcessPipeSync Waker;
 
   /* Index of this pipe.  */
   int Index;
@@ -164,6 +181,12 @@ struct kwsysProcess_s
 
   /* The working directory for the child process.  */
   char* WorkingDirectory;
+
+  /* Whether to create the child as a detached process.  */
+  int OptionDetach;
+
+  /* Whether the child was created as a detached process.  */
+  int Detached;
 
   /* Whether to hide the child process's window.  */
   int HideWindow;
@@ -411,32 +434,65 @@ kwsysProcess* kwsysProcess_New()
     /* Give the thread a pointer back to the kwsysProcess instance.  */
     cp->Pipe[i].Process = cp;
 
-    /* The pipe is not yet ready to read.  Initialize semaphore to 0.  */
-    if(!(cp->Pipe[i].Ready = CreateSemaphore(0, 0, 1, 0)))
+    /* No process is yet running.  Initialize semaphore to 0.  */
+    if(!(cp->Pipe[i].Reader.Ready = CreateSemaphore(0, 0, 1, 0)))
       {
       kwsysProcess_Delete(cp);
       return 0;
       }
 
     /* The pipe is not yet reset.  Initialize semaphore to 0.  */
-    if(!(cp->Pipe[i].Reset = CreateSemaphore(0, 0, 1, 0)))
+    if(!(cp->Pipe[i].Reader.Reset = CreateSemaphore(0, 0, 1, 0)))
       {
       kwsysProcess_Delete(cp);
       return 0;
       }
 
     /* The thread's buffer is initially empty.  Initialize semaphore to 1.  */
-    if(!(cp->Pipe[i].Empty = CreateSemaphore(0, 1, 1, 0)))
+    if(!(cp->Pipe[i].Reader.Go = CreateSemaphore(0, 1, 1, 0)))
       {
       kwsysProcess_Delete(cp);
       return 0;
       }
 
-    /* Create the thread.  It will block immediately.  The thread will
-       not make deeply nested calls, so we need only a small
-       stack.  */
-    if(!(cp->Pipe[i].Thread = CreateThread(0, 1024, kwsysProcessPipeThread,
-                                           &cp->Pipe[i], 0, &dummy)))
+    /* Create the reading thread.  It will block immediately.  The
+       thread will not make deeply nested calls, so we need only a
+       small stack.  */
+    if(!(cp->Pipe[i].Reader.Thread = CreateThread(0, 1024,
+                                                  kwsysProcessPipeThreadRead,
+                                                  &cp->Pipe[i], 0, &dummy)))
+      {
+      kwsysProcess_Delete(cp);
+      return 0;
+      }
+
+    /* No process is yet running.  Initialize semaphore to 0.  */
+    if(!(cp->Pipe[i].Waker.Ready = CreateSemaphore(0, 0, 1, 0)))
+      {
+      kwsysProcess_Delete(cp);
+      return 0;
+      }
+
+    /* The pipe is not yet reset.  Initialize semaphore to 0.  */
+    if(!(cp->Pipe[i].Waker.Reset = CreateSemaphore(0, 0, 1, 0)))
+      {
+      kwsysProcess_Delete(cp);
+      return 0;
+      }
+
+    /* The waker should not wake immediately.  Initialize semaphore to 0.  */
+    if(!(cp->Pipe[i].Waker.Go = CreateSemaphore(0, 0, 1, 0)))
+      {
+      kwsysProcess_Delete(cp);
+      return 0;
+      }
+
+    /* Create the waking thread.  It will block immediately.  The
+       thread will not make deeply nested calls, so we need only a
+       small stack.  */
+    if(!(cp->Pipe[i].Waker.Thread = CreateThread(0, 1024,
+                                                 kwsysProcessPipeThreadWake,
+                                                 &cp->Pipe[i], 0, &dummy)))
       {
       kwsysProcess_Delete(cp);
       return 0;
@@ -460,7 +516,14 @@ void kwsysProcess_Delete(kwsysProcess* cp)
   /* If the process is executing, wait for it to finish.  */
   if(cp->State == kwsysProcess_State_Executing)
     {
-    kwsysProcess_WaitForExit(cp, 0);
+    if(cp->Detached)
+      {
+      kwsysProcess_Disown(cp);
+      }
+    else
+      {
+      kwsysProcess_WaitForExit(cp, 0);
+      }
     }
 
   /* We are deleting the kwsysProcess instance.  */
@@ -469,22 +532,41 @@ void kwsysProcess_Delete(kwsysProcess* cp)
   /* Terminate each of the threads.  */
   for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
     {
-    if(cp->Pipe[i].Thread)
+    /* Terminate this reading thread.  */
+    if(cp->Pipe[i].Reader.Thread)
       {
       /* Signal the thread we are ready for it.  It will terminate
          immediately since Deleting is set.  */
-      ReleaseSemaphore(cp->Pipe[i].Ready, 1, 0);
+      ReleaseSemaphore(cp->Pipe[i].Reader.Ready, 1, 0);
 
       /* Wait for the thread to exit.  */
-      WaitForSingleObject(cp->Pipe[i].Thread, INFINITE);
+      WaitForSingleObject(cp->Pipe[i].Reader.Thread, INFINITE);
 
       /* Close the handle to the thread. */
-      kwsysProcessCleanupHandle(&cp->Pipe[i].Thread);
+      kwsysProcessCleanupHandle(&cp->Pipe[i].Reader.Thread);
+      }
+
+    /* Terminate this waking thread.  */
+    if(cp->Pipe[i].Waker.Thread)
+      {
+      /* Signal the thread we are ready for it.  It will terminate
+         immediately since Deleting is set.  */
+      ReleaseSemaphore(cp->Pipe[i].Waker.Ready, 1, 0);
+
+      /* Wait for the thread to exit.  */
+      WaitForSingleObject(cp->Pipe[i].Waker.Thread, INFINITE);
+
+      /* Close the handle to the thread. */
+      kwsysProcessCleanupHandle(&cp->Pipe[i].Waker.Thread);
       }
 
     /* Cleanup the pipe's semaphores.  */
-    kwsysProcessCleanupHandle(&cp->Pipe[i].Ready);
-    kwsysProcessCleanupHandle(&cp->Pipe[i].Empty);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Reader.Ready);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Reader.Go);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Reader.Reset);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Waker.Ready);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Waker.Go);
+    kwsysProcessCleanupHandle(&cp->Pipe[i].Waker.Reset);
     }
 
   /* Close the shared semaphores.  */
@@ -869,6 +951,7 @@ int kwsysProcess_GetOption(kwsysProcess* cp, int optionId)
 
   switch(optionId)
     {
+    case kwsysProcess_Option_Detach: return cp->OptionDetach;
     case kwsysProcess_Option_HideWindow: return cp->HideWindow;
     default: return 0;
     }
@@ -884,6 +967,7 @@ void kwsysProcess_SetOption(kwsysProcess* cp, int optionId, int value)
 
   switch(optionId)
     {
+    case kwsysProcess_Option_Detach: cp->OptionDetach = value; break;
     case kwsysProcess_Option_HideWindow: cp->HideWindow = value; break;
     default: break;
     }
@@ -1119,7 +1203,8 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   /* Tell the pipe threads that a process has started.  */
   for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
     {
-    ReleaseSemaphore(cp->Pipe[i].Ready, 1, 0);
+    ReleaseSemaphore(cp->Pipe[i].Reader.Ready, 1, 0);
+    ReleaseSemaphore(cp->Pipe[i].Waker.Ready, 1, 0);
     }
 
   /* We don't care about the children's main threads.  */
@@ -1134,6 +1219,36 @@ void kwsysProcess_Execute(kwsysProcess* cp)
 
   /* The process has now started.  */
   cp->State = kwsysProcess_State_Executing;
+  cp->Detached = cp->OptionDetach;
+}
+
+/*--------------------------------------------------------------------------*/
+void kwsysProcess_Disown(kwsysProcess* cp)
+{
+  int i;
+
+  /* Make sure we are executing a detached process.  */
+  if(!cp || !cp->Detached || cp->State != kwsysProcess_State_Executing ||
+     cp->TimeoutExpired || cp->Killed || cp->Terminated)
+    {
+    return;
+    }
+
+  /* Disable the reading threads.  */
+  kwsysProcessDisablePipeThreads(cp);
+
+  /* Wait for all pipe threads to reset.  */
+  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
+    {
+    WaitForSingleObject(cp->Pipe[i].Reader.Reset, INFINITE);
+    WaitForSingleObject(cp->Pipe[i].Waker.Reset, INFINITE);
+    }
+
+  /* We will not wait for exit, so cleanup now.  */
+  kwsysProcessCleanup(cp, 0);
+
+  /* The process has been disowned.  */
+  cp->State = kwsysProcess_State_Disowned;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1172,7 +1287,7 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
        done with the data.  */
     if(cp->CurrentIndex < KWSYSPE_PIPE_COUNT)
       {
-      ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Empty, 1, 0);
+      ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Reader.Go, 1, 0);
       cp->CurrentIndex = KWSYSPE_PIPE_COUNT;
       }
 
@@ -1211,7 +1326,10 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
       /* Data are available or a pipe closed.  */
       if(cp->Pipe[cp->CurrentIndex].Closed)
         {
-        /* The pipe closed.  */
+        /* The pipe closed at the write end.  Close the read end and
+           inform the wakeup thread it is done with this process.  */
+        kwsysProcessCleanupHandle(&cp->Pipe[cp->CurrentIndex].Read);
+        ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Waker.Go, 1, 0);
         --cp->PipesLeft;
         }
       else if(data && length)
@@ -1306,14 +1424,15 @@ int kwsysProcess_WaitForExit(kwsysProcess* cp, double* userTimeout)
      without releaseing the pipe's thread.  Release it now.  */
   if(cp->CurrentIndex < KWSYSPE_PIPE_COUNT)
     {
-    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Empty, 1, 0);
+    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Reader.Go, 1, 0);
     cp->CurrentIndex = KWSYSPE_PIPE_COUNT;
     }
 
   /* Wait for all pipe threads to reset.  */
   for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
     {
-    WaitForSingleObject(cp->Pipe[i].Reset, INFINITE);
+    WaitForSingleObject(cp->Pipe[i].Reader.Reset, INFINITE);
+    WaitForSingleObject(cp->Pipe[i].Waker.Reset, INFINITE);
     }
 
   /* ---- It is now safe again to call kwsysProcessCleanup. ----- */
@@ -1366,31 +1485,8 @@ void kwsysProcess_Kill(kwsysProcess* cp)
     return;
     }
 
-  /* If we are killing a process that just reported data, release
-     the pipe's thread.  */
-  if(cp->CurrentIndex < KWSYSPE_PIPE_COUNT)
-    {
-    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Empty, 1, 0);
-    cp->CurrentIndex = KWSYSPE_PIPE_COUNT;
-    }
-
-  /* Wake up all the pipe threads with dummy data.  */
-  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
-    {
-    DWORD dummy;
-    WriteFile(cp->Pipe[i].Write, "", 1, &dummy, 0);
-    }
-
-  /* Tell pipe threads to reset until we run another process.  */
-  while(cp->PipesLeft > 0)
-    {
-    WaitForSingleObject(cp->Full, INFINITE);
-    cp->CurrentIndex = cp->SharedIndex;
-    ReleaseSemaphore(cp->SharedIndexMutex, 1, 0);
-    cp->Pipe[cp->CurrentIndex].Closed = 1;
-    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Empty, 1, 0);
-    --cp->PipesLeft;
-    }
+  /* Disable the reading threads.  */
+  kwsysProcessDisablePipeThreads(cp);
 
   /* Kill the children.  */
   cp->Killed = 1;
@@ -1418,23 +1514,19 @@ void kwsysProcess_Kill(kwsysProcess* cp)
   Function executed for each pipe's thread.  Argument is a pointer to
   the kwsysProcessPipeData instance for this thread.
 */
-DWORD WINAPI kwsysProcessPipeThread(LPVOID ptd)
+DWORD WINAPI kwsysProcessPipeThreadRead(LPVOID ptd)
 {
   kwsysProcessPipeData* td = (kwsysProcessPipeData*)ptd;
   kwsysProcess* cp = td->Process;
 
   /* Wait for a process to be ready.  */
-  while((WaitForSingleObject(td->Ready, INFINITE), !cp->Deleting))
+  while((WaitForSingleObject(td->Reader.Ready, INFINITE), !cp->Deleting))
     {
     /* Read output from the process for this thread's pipe.  */
     kwsysProcessPipeThreadReadPipe(cp, td);
 
-    /* We were signalled to exit with our buffer empty.  Reset the
-       mutex for a new process.  */
-    ReleaseSemaphore(td->Empty, 1, 0);
-
     /* Signal the main thread we have reset for a new process.  */
-    ReleaseSemaphore(td->Reset, 1, 0);
+    ReleaseSemaphore(td->Reader.Reset, 1, 0);
     }
   return 0;
 }
@@ -1448,7 +1540,7 @@ DWORD WINAPI kwsysProcessPipeThread(LPVOID ptd)
 void kwsysProcessPipeThreadReadPipe(kwsysProcess* cp, kwsysProcessPipeData* td)
 {
   /* Wait for space in the thread's buffer. */
-  while((WaitForSingleObject(td->Empty, INFINITE), !td->Closed))
+  while((WaitForSingleObject(td->Reader.Go, INFINITE), !td->Closed))
     {
     /* Read data from the pipe.  This may block until data are available.  */
     if(!ReadFile(td->Read, td->DataBuffer, KWSYSPE_PIPE_BUFFER_SIZE,
@@ -1469,6 +1561,52 @@ void kwsysProcessPipeThreadReadPipe(kwsysProcess* cp, kwsysProcessPipeData* td)
     /* Tell the main thread we have something to report.  */
     cp->SharedIndex = td->Index;
     ReleaseSemaphore(cp->Full, 1, 0);
+    }
+
+  /* We were signalled to exit with our buffer empty.  Reset the
+     mutex for a new process.  */
+  ReleaseSemaphore(td->Reader.Go, 1, 0);
+}
+
+/*--------------------------------------------------------------------------*/
+
+/*
+  Function executed for each pipe's thread.  Argument is a pointer to
+  the kwsysProcessPipeData instance for this thread.
+*/
+DWORD WINAPI kwsysProcessPipeThreadWake(LPVOID ptd)
+{
+  kwsysProcessPipeData* td = (kwsysProcessPipeData*)ptd;
+  kwsysProcess* cp = td->Process;
+
+  /* Wait for a process to be ready.  */
+  while((WaitForSingleObject(td->Waker.Ready, INFINITE), !cp->Deleting))
+    {
+    /* Wait for a possible wakeup.  */
+    kwsysProcessPipeThreadWakePipe(cp, td);
+
+    /* Signal the main thread we have reset for a new process.  */
+    ReleaseSemaphore(td->Waker.Reset, 1, 0);
+    }
+  return 0;
+}
+
+/*--------------------------------------------------------------------------*/
+
+/*
+  Function called in each pipe's thread to handle reading thread
+  wakeup for one execution of a subprocess.
+*/
+void kwsysProcessPipeThreadWakePipe(kwsysProcess* cp, kwsysProcessPipeData* td)
+{
+  /* Wait for a possible wake command. */
+  WaitForSingleObject(td->Waker.Go, INFINITE);
+
+  /* If the pipe is not closed, we need to wake up the reading thread.  */
+  if(!td->Closed)
+    {
+    DWORD dummy;
+    WriteFile(td->Write, "", 1, &dummy, 0);
     }
 }
 
@@ -2533,5 +2671,57 @@ static void kwsysProcessKillTree(int pid)
         }
       } while(kwsysProcess_List_NextProcess(plist));
     kwsysProcess_List_Delete(plist);
+    }
+}
+
+/*--------------------------------------------------------------------------*/
+static void kwsysProcessDisablePipeThreads(kwsysProcess* cp)
+{
+  int i;
+
+  /* If data were just reported data, release the pipe's thread.  */
+  if(cp->CurrentIndex < KWSYSPE_PIPE_COUNT)
+    {
+    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Reader.Go, 1, 0);
+    cp->CurrentIndex = KWSYSPE_PIPE_COUNT;
+    }
+
+  /* Wakeup all reading threads that are not on closed pipes.  */
+  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
+    {
+    /* The wakeup threads will write one byte to the pipe write ends.
+       If there are no data in the pipe then this is enough to wakeup
+       the reading threads.  If there are already data in the pipe
+       this may block.  We cannot use PeekNamedPipe to check whether
+       there are data because an outside process might still be
+       writing data if we are disowning it.  Also, PeekNamedPipe will
+       block if checking a pipe on which the reading thread is
+       currently calling ReadPipe.  Therefore we need a separate
+       thread to call WriteFile.  If it blocks, that is okay because
+       it will unblock when we close the read end and break the pipe
+       below.  */
+    if(cp->Pipe[i].Read)
+      {
+      ReleaseSemaphore(cp->Pipe[i].Waker.Go, 1, 0);
+      }
+    }
+
+  /* Tell pipe threads to reset until we run another process.  */
+  while(cp->PipesLeft > 0)
+    {
+    /* The waking threads will cause all reading threads to report.
+       Wait for the next one and save its index.  */
+    WaitForSingleObject(cp->Full, INFINITE);
+    cp->CurrentIndex = cp->SharedIndex;
+    ReleaseSemaphore(cp->SharedIndexMutex, 1, 0);
+
+    /* We are done reading this pipe.  Close its read handle.  */
+    cp->Pipe[cp->CurrentIndex].Closed = 1;
+    kwsysProcessCleanupHandle(&cp->Pipe[cp->CurrentIndex].Read);
+    --cp->PipesLeft;
+
+    /* Tell the reading thread we are done with the data.  It will
+       reset immediately because the pipe is closed.  */
+    ReleaseSemaphore(cp->Pipe[cp->CurrentIndex].Reader.Go, 1, 0);
     }
 }
