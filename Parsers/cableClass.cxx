@@ -141,6 +141,7 @@ bool Class::IsCopyConstructor(const Method* m) const
   if(!rt) { return false; }
   if(m->GetContext() != static_cast<const Context*>(this)) { return false; }
   ClassType* ct = ClassType::SafeDownCast(rt->GetTarget());
+  if(!ct) { return false; }
   if(ct->GetClass() != this) { return false; }  
   return true;
 }
