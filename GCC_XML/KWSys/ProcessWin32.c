@@ -40,6 +40,14 @@ Q190351 and Q150956.
 #include <string.h>  /* strlen, strdup */
 #include <stdio.h>   /* sprintf */
 #include <io.h>      /* _unlink */
+
+#ifndef _MAX_FNAME
+#define _MAX_FNAME 4096
+#endif
+#ifndef _MAX_PATH
+#define _MAX_PATH 4096
+#endif
+
 #ifdef _MSC_VER
 #pragma warning (pop)
 #pragma warning (disable: 4514)
@@ -1326,7 +1334,7 @@ int kwsysProcess_WaitForExit(kwsysProcess* cp, double* userTimeout)
     {
     /* The children exited.  Report the outcome of the last process.  */
     cp->ExitCode = cp->CommandExitCodes[cp->NumberOfCommands-1];
-    if(cp->ExitCode & 0xC0000000)
+    if((cp->ExitCode & 0xF0000000) == 0xC0000000)
       {
       /* Child terminated due to exceptional behavior.  */
       cp->State = kwsysProcess_State_Exception;
@@ -1335,10 +1343,10 @@ int kwsysProcess_WaitForExit(kwsysProcess* cp, double* userTimeout)
       }
     else
       {
-      /* Child exited normally.  */
+      /* Child exited without exception.  */
       cp->State = kwsysProcess_State_Exited;
       cp->ExitException = kwsysProcess_Exception_None;
-      cp->ExitValue = cp->ExitCode & 0x000000FF;
+      cp->ExitValue = cp->ExitCode;
       }
     }
 

@@ -89,7 +89,7 @@ static int kwsysProcessGetTimeoutTime(kwsysProcess* cp, double* userTimeout,
                                       kwsysProcessTime* timeoutTime);
 static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
                                       kwsysProcessTime* timeoutLength);
-static kwsysProcessTime kwsysProcessTimeGetCurrent();
+static kwsysProcessTime kwsysProcessTimeGetCurrent(void);
 static double kwsysProcessTimeToDouble(kwsysProcessTime t);
 static kwsysProcessTime kwsysProcessTimeFromDouble(double d);
 static int kwsysProcessTimeLess(kwsysProcessTime in1, kwsysProcessTime in2);
@@ -97,7 +97,7 @@ static kwsysProcessTime kwsysProcessTimeAdd(kwsysProcessTime in1, kwsysProcessTi
 static kwsysProcessTime kwsysProcessTimeSubtract(kwsysProcessTime in1, kwsysProcessTime in2);
 static void kwsysProcessSetExitException(kwsysProcess* cp, int sig);
 static void kwsysProcessChildErrorExit(int errorPipe);
-static void kwsysProcessRestoreDefaultSignalHandlers();
+static void kwsysProcessRestoreDefaultSignalHandlers(void);
 
 /*--------------------------------------------------------------------------*/
 /* Structure containing data used to implement the child's execution.  */
@@ -184,7 +184,7 @@ struct kwsysProcess_s
 };
 
 /*--------------------------------------------------------------------------*/
-kwsysProcess* kwsysProcess_New()
+kwsysProcess* kwsysProcess_New(void)
 {
   /* Allocate a process control structure.  */
   kwsysProcess* cp = (kwsysProcess*)malloc(sizeof(kwsysProcess));
@@ -547,6 +547,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
     if(r < 0)
       {
       kwsysProcessCleanup(cp, 1);
+      return;
       }
     }
 
@@ -1044,20 +1045,21 @@ static int kwsysProcessInitialize(kwsysProcess* cp)
   memset(cp->CommandExitCodes, 0, sizeof(int)*cp->NumberOfCommands);
 
   /* Allocate memory to save the real working directory.  */
-  {
-#if defined(MAXPATHLEN)
-  cp->RealWorkingDirectoryLength = MAXPATHLEN;
-#elif defined(PATH_MAX)
-  cp->RealWorkingDirectoryLength = PATH_MAX;
-#else
-  cp->RealWorkingDirectoryLength = 4096;
-#endif
-  cp->RealWorkingDirectory = malloc(cp->RealWorkingDirectoryLength);
-  if(!cp->RealWorkingDirectory)
+  if ( cp->WorkingDirectory )
     {
-    return 0;
+#if defined(MAXPATHLEN)
+    cp->RealWorkingDirectoryLength = MAXPATHLEN;
+#elif defined(PATH_MAX)
+    cp->RealWorkingDirectoryLength = PATH_MAX;
+#else
+    cp->RealWorkingDirectoryLength = 4096;
+#endif
+    cp->RealWorkingDirectory = malloc(cp->RealWorkingDirectoryLength);
+    if(!cp->RealWorkingDirectory)
+      {
+      return 0;
+      }
     }
-  }
 
   return 1;
 }
@@ -1405,7 +1407,7 @@ static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
 }
 
 /*--------------------------------------------------------------------------*/
-static kwsysProcessTime kwsysProcessTimeGetCurrent()
+static kwsysProcessTime kwsysProcessTimeGetCurrent(void)
 {
   kwsysProcessTime current;
   gettimeofday(&current, 0);
@@ -1607,7 +1609,7 @@ static void kwsysProcessChildErrorExit(int errorPipe)
 
 /*--------------------------------------------------------------------------*/
 /* Restores all signal handlers to their default values.  */
-static void kwsysProcessRestoreDefaultSignalHandlers()
+static void kwsysProcessRestoreDefaultSignalHandlers(void)
 {
   struct sigaction act;
   memset(&act, 0, sizeof(struct sigaction));

@@ -1,5 +1,6 @@
 .git*            export-ignore
 
+*.bat.in        -crlf
 *.dsp           -crlf
 *.png           -crlf
 *.sh             crlf=input

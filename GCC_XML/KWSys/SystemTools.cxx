@@ -816,14 +816,13 @@ kwsys_stl::string SystemTools::ConvertToWindowsOutputPath(const char* path)
 }
 
 bool SystemTools::CopyFileIfDifferent(const char* source,
-                                        const char* destination)
+                                      const char* destination)
 {
   if(SystemTools::FilesDiffer(source, destination))
     {
-    SystemTools::CopyFileAlways(source, destination);
-    return true;
+    return SystemTools::CopyFileAlways(source, destination);
     }
-  return false;
+  return true;
 }
 
   
@@ -1200,7 +1199,7 @@ kwsys_stl::string SystemTools::FindLibrary(const char* name,
   for(kwsys_stl::vector<kwsys_stl::string>::const_iterator p = path.begin();
       p != path.end(); ++p)
     {
-#if defined(_WIN32) && !defined(__CYGWIN__)
+#if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
     tryPath = *p;
     tryPath += "/";
     tryPath += name;
@@ -1238,6 +1237,22 @@ kwsys_stl::string SystemTools::FindLibrary(const char* name,
     tryPath += "/lib";
     tryPath += name;
     tryPath += ".dylib";
+    if(SystemTools::FileExists(tryPath.c_str()))
+      {
+      return SystemTools::CollapseFullPath(tryPath.c_str());
+      }
+    tryPath = *p;
+    tryPath += "/lib";
+    tryPath += name;
+    tryPath += ".dll";
+    if(SystemTools::FileExists(tryPath.c_str()))
+      {
+      return SystemTools::CollapseFullPath(tryPath.c_str());
+      }
+    tryPath = *p;
+    tryPath += "/";
+    tryPath += name;
+    tryPath += ".dll";
     if(SystemTools::FileExists(tryPath.c_str()))
       {
       return SystemTools::CollapseFullPath(tryPath.c_str());
