@@ -1,0 +1,22 @@
+# This file is included by Static/CMakeLists.txt and Shared/CMakeLists.txt
+# to get the source list for the CxxTypes library.
+
+SET(CxxTypes_SRCS
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxArrayType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxClassType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxConversions.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxCvQualifiedType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxEnumerationType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxFunctionType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxFundamentalType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxPointerToMemberType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxPointerType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxReferenceType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxType.cxx"
+  "${CABLE_SOURCE_DIR}/CxxTypes/cxxTypeSystem.cxx"
+)
+
+IF (WIN32)
+  SET(CxxTypes_SRCS ${CxxTypes_SRCS}
+      "${CABLE_SOURCE_DIR}/CxxTypes/cxxDllAllocator.cxx")
+ENDIF (WIN32)
