@@ -948,12 +948,16 @@ void TclGenerator::WriteClassWrapper(const Class* c,
 void TclGenerator::FindMethods(const Class* c, MethodVector& methods,
                                MethodVector& converters) const
 {
+  // Check whether the copy constructor will be valid.
+  bool copyValid = c->HasPublicCopyConstructor();
   const ClassType* ct = c->GetClassType();
   bool hasPublicDestructor = true;
   for(Context::Iterator i = c->Begin(); i != c->End(); ++i)
     {
+    // We want only members that are public methods.
     Method* m = Method::SafeDownCast(*i);
-    if(m && (i.GetAccess() == Context::Public))
+    if(m && (i.GetAccess() == Context::Public) &&
+       (copyValid || (!c->IsCopyConstructor(m))))
       {
       Function::FunctionIdType fid = m->GetFunctionId();
       FunctionType* ft = m->GetFunctionType();
