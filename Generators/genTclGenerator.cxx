@@ -492,7 +492,7 @@ TclGenerator
     "{\n"
     "  // Get the ClassType representation for the wrapped class.\n"
     "  const ClassType* wrappedTypeRepresentation =\n"
-    "    ClassType::SafeDownCast(CvType<" << cName.c_str() << ">::type.GetType());\n"
+    "    ClassType::SafeDownCast(CvType< " << cName.c_str() << " >::type.GetType());\n"
     "\n"
     "  // Ask the WrapperFacility to create a ClassWrapper for this type.\n"
     "  ClassWrapper* wrapper =\n"
@@ -686,7 +686,7 @@ TclGenerator
     {
     m_Output <<
       "    new Constructor(wrapperFacility, &Wrapper::Constructor_" << m << ",\n"
-      "                    \"" << constructorName << "\"";
+      "                    wrappedTypeRepresentation, \"" << constructorName << "\"";
     
     }
   
