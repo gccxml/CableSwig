@@ -48,8 +48,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapStaticMethod.h"
 #include "wrapWrapperFacility.h"
 
-#include <iostream>
-
 namespace _wrap_
 {
 
