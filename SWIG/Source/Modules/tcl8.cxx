@@ -66,14 +66,14 @@ static File   *f_shadow = 0;
 static File   *f_shadow_stubs = 0;
 
 static String *constructor = 0;
-static String *destructor = 0;
+//static String *destructor = 0;
 static String *base_classes = 0;
 static String *base_class_init = 0;
-static String *methods = 0;
+//static String *methods = 0;
 static String *imethods = 0;
 static String *attributes = 0;
 static String *attribute_traces = 0;
-static String *iattribute_traces = 0;
+//static String *iattribute_traces = 0;
 
 
 
@@ -682,14 +682,14 @@ public:
 
     if (itcl) {
       constructor = NewString("");
-      destructor =  NewString("");
+      //destructor =  NewString("");
       base_classes = NewString("");
       base_class_init = NewString("");
-      methods =  NewString("");
+      //methods =  NewString("");
       imethods =  NewString("");
       attributes = NewString("");
       attribute_traces = NewString("");
-      iattribute_traces = NewString("");
+      //iattribute_traces = NewString("");
 
       have_base_classes = 0;
       have_methods = 0;
