@@ -254,7 +254,7 @@
 
 
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
-#line 798 "/home/hoffman/Work/Andy/Swig/Swig/Source/CParse/parser.y"
+#line 823 "CableSwig/SWIG/Source/CParse/parser.y"
 typedef union YYSTYPE {
   char  *id;
   List  *bases;
@@ -296,7 +296,7 @@ typedef union YYSTYPE {
   Node         *node;
 } YYSTYPE;
 /* Line 1240 of yacc.c.  */
-#line 300 "/home/hoffman/Work/Andy/Swig/Swig-nightly-build/Source/CParse/parser.h"
+#line 300 "CableSwig-build/SWIG/Source/CParse/parser.h"
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
 # define YYSTYPE_IS_TRIVIAL 1
