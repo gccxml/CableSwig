@@ -44,7 +44,7 @@ ENDIF(UNIX)
 #-----------------------------------------------------------------------------
 # Create install targets.
 IF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
-  SET(CABLE_TCL_PKGINDEX_FOR_INSTALL "${CABLE_BINARY_DIR}/CableTclFacility/Install/Hide/pkgIndex.tcl")
+  SET(CABLE_TCL_PKGINDEX_FOR_INSTALL "${CABLE_BINARY_DIR}/CableTclFacility/InstallOnly/Hide/pkgIndex.tcl")
   INSTALL_FILES(/lib/Cable FILES "${CABLE_TCL_PKGINDEX_FOR_INSTALL}")
 ENDIF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
 
