@@ -268,8 +268,8 @@ void TclGenerator::GeneratePackageInitializer()
 void TclGenerator::GenerateNamespace(const configuration::Namespace* ns)
 {
   // Look through all the wrapper entries in this namespace.
-  for(configuration::Namespace::Wrappers::const_iterator w =
-        ns->WrappersBegin(); w != ns->WrappersEnd(); ++w)
+  for(configuration::Namespace::ClassWrappers::const_iterator w =
+        ns->ClassWrappersBegin(); w != ns->ClassWrappersEnd(); ++w)
     {
     String qualifedName = ns->GetQualifiedName()+"::"+(*w)->GetName();
     source::Class* c = m_GlobalNamespace->LookupClass(qualifedName);
@@ -1025,8 +1025,8 @@ void TclGenerator::WriteReturnEnumClasses() const
 
 void TclGenerator::FindCvTypes(const configuration::Namespace* ns)
 {
-  for(configuration::Namespace::Wrappers::const_iterator w =
-        ns->WrappersBegin(); w != ns->WrappersEnd(); ++w)
+  for(configuration::Namespace::ClassWrappers::const_iterator w =
+        ns->ClassWrappersBegin(); w != ns->ClassWrappersEnd(); ++w)
     {
     String qualifedName = ns->GetQualifiedName()+"::"+(*w)->GetName();
     source::Class* c = m_GlobalNamespace->LookupClass(qualifedName);
