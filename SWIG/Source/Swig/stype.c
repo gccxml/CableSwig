@@ -1080,7 +1080,7 @@ SwigType_namestr(const SwigType *t) {
   String *r;
   String *suffix;
   List   *p;
-  char   tmp[256];
+  char   tmp[1024];
   char   *c, *d, *e;
   int     i, sz;
 
