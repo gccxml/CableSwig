@@ -185,6 +185,7 @@ static Node *new_node(const String_or_char *tag) {
 extern  "C" Node *Swig_cparse(File *);
 extern  "C" void  Swig_cparse_cplusplus(int);
 extern  "C" void  Swig_cparse_debug_templates(int);
+bool SWIG_FileIsDirectory(const char* name);
 
 int SWIG_main(int argc, char *argv[], Language *l) {
   int    i;
@@ -251,23 +252,25 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   // Check for SWIG_LIB environment variable
 
   if ((c = getenv("SWIG_LIB")) == (char *) 0) {
-#if defined(_WIN32)
-//      char buf[MAX_PATH];
-//      char *p;
-//      if (GetModuleFileName(0, buf, MAX_PATH) == 0
-//	  || (p = strrchr(buf, '\\')) == 0) 
-        {
-//        Printf(stderr, "Warning: Could not determine SWIG library location. Assuming " SWIG_LIB "\n");
-        sprintf(LibDir,"%s",SWIG_LIB);    // Build up search paths
-        } 
-   //      else 
-//           {
-//           strcpy(p+1, "Lib");
-//           strcpy(LibDir, buf);
-//           }
-#else
-       sprintf(LibDir,"%s",SWIG_LIB);    // Build up search paths
-#endif                                        
+  if(SWIG_FileIsDirectory(SWIG_LIB))
+    {
+    sprintf(LibDir,"%s",SWIG_LIB);
+    }
+#ifdef SWIG_LIB_INSTALL
+  else if(SWIG_FileIsDirectory(SWIG_LIB_INSTALL))
+    {
+    sprintf(LibDir,"%s",SWIG_LIB_INSTALL);
+    }
+#endif
+  else
+    {
+    fprintf(stderr, "Cannot find SWIG Lib directory.  Checked:\n");
+    fprintf(stderr, "  %s\n", SWIG_LIB);
+#ifdef SWIG_LIB_INSTALL
+    fprintf(stderr, "  %s\n", SWIG_LIB_INSTALL);
+#endif
+    SWIG_exit (EXIT_FAILURE);
+    }
   } else {
       strcpy(LibDir,c);
   }
@@ -703,3 +706,21 @@ void SWIG_exit(int exit_code) {
   exit (exit_code);
 }
 
+#include <sys/stat.h>
+
+bool SWIG_FileIsDirectory(const char* name)
+{  
+  struct stat fs;
+  if(stat(name, &fs) == 0)
+    {
+#if _WIN32
+    return ((fs.st_mode & _S_IFDIR) != 0);
+#else
+    return S_ISDIR(fs.st_mode);
+#endif
+    }
+  else
+    {
+    return false;
+    }
+}

@@ -53,4 +53,6 @@ Source/DOH
 )
 
 # Install support library.
+SET(SWIG_LIB_INSTALL
+  ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
 SUBDIRS(Lib)

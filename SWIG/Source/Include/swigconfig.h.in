@@ -4,6 +4,7 @@
 /* Directory where to find the machine-independent SWIG files */
 
 #define SWIG_LIB   "@-swig_lib-@"
+#cmakedefine SWIG_LIB_INSTALL "@SWIG_LIB_INSTALL@"
 
 /* Default language */
 
