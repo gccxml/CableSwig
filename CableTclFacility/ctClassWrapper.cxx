@@ -336,11 +336,18 @@ ClassWrapper
     m_WrapperFacility->ReportErrorMessage(e.GetExceptionMessage());
     return TCL_ERROR;
     }
+  catch (const std::exception& e)
+    {
+    m_WrapperFacility->ReportErrorMessage(e.what());
+    return TCL_ERROR;
+    }
   // We must catch any C++ exception to prevent it from unwinding the
   // call stack back through the Tcl interpreter's C code.
   catch (...)
     {
-    m_WrapperFacility->ReportErrorMessage("Caught unknown exception!!");
+    m_WrapperFacility->ReportErrorMessage(
+      "CABLE Tcl Wrapping Facility Error:\n"
+      "Caught unknown exception before returning control to Tcl.");
     return TCL_ERROR;
     }
 }
@@ -394,11 +401,18 @@ int ClassWrapper::ObjectWrapperDispatch(int objc, Tcl_Obj* CONST objv[]) const
     m_WrapperFacility->ReportErrorMessage(e.GetExceptionMessage());
     return TCL_ERROR;
     }
+  catch (const std::exception& e)
+    {
+    m_WrapperFacility->ReportErrorMessage(e.what());
+    return TCL_ERROR;
+    }
   // We must catch any C++ exception to prevent it from unwinding the
   // call stack back through the Tcl interpreter's C code.
   catch (...)
     {
-    m_WrapperFacility->ReportErrorMessage("Caught unknown exception!!");
+    m_WrapperFacility->ReportErrorMessage(
+      "CABLE Tcl Wrapping Facility Error:\n"
+      "Caught unknown exception before returning control to Tcl.");
     return TCL_ERROR;
     }
 }
