@@ -89,7 +89,7 @@ MARK_AS_ADVANCED(CableSwig_cableidx_EXE CableSwig_cswig_EXE CableSwig_gccxml_EXE
 SET(CableSwig_cableidx_EXE_CONFIG ${CableSwig_cableidx_EXE})
 SET(CableSwig_cswig_EXE_CONFIG ${CableSwig_cswig_EXE})
 SET(CableSwig_gccxml_EXE_CONFIG ${CableSwig_gccxml_EXE})
-
+SET(CableSwig_DEFAULT_LIB_CONFIG ${CableSwig_SOURCE_DIR}/SWIG/Lib)
 CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/CableSwigConfig.cmake @ONLY IMMEDIATE)
 
@@ -97,6 +97,7 @@ CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
 SET(CableSwig_cableidx_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cableidx)
 SET(CableSwig_cswig_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cswig)
 SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${GCCXML_INSTALL_ROOT}/bin/gccxml)
+SET(CableSwig_DEFAULT_LIB_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
 
 CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
