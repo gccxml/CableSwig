@@ -177,7 +177,7 @@ IF(WIN32)
 ENDIF(WIN32)
 
 ADD_CUSTOM_COMMAND(TARGET generate
-                   SOURCE ${GCC_SOURCE_DIR}/gcc/rtl.def
+                   SOURCE ${GCC_SOURCE_DIR}/gcc/rtl.def.in
                    COMMAND ${GCC_gengenrtl_EXE}
                    DEPENDS ${GCC_BINARY_DIR}/gcc/genrtl.h
                    ARGS > ${OUTPUT_FILE}
