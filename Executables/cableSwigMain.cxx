@@ -206,7 +206,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   int     dump_classes = 0;
   int     werror = 0;
   int     depend = 0;
-
+  int     NoCable = 0;
   DOH    *cable_index_files;
   DOH    *libfiles = 0;
   DOH    *cpps = 0 ;
@@ -309,6 +309,9 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	    Swig_mark_arg(i);
           } else if ((strcmp(argv[i],"-no_default") == 0) || (strcmp(argv[i],"-nodefault") == 0)) {
 	    GenerateDefault = 0;
+	    Swig_mark_arg(i);
+	  } else if (strcmp(argv[i],"-nocable") == 0) {
+	    NoCable = 1;
 	    Swig_mark_arg(i);
 	  } else if (strcmp(argv[i],"-noexcept") == 0) {
 	    NoExcept = 1;
@@ -526,12 +529,14 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	Printf(fs,"\n%%include \"%s\"\n", lang_config);
       }
       // Remove the include of the input file
-#if 0
-      Printf(fs,"%%include \"%s\"\n", Swig_last_file());
-      for (i = 0; i < Len(libfiles); i++) {
-	Printf(fs,"\n%%include \"%s\"\n", Getitem(libfiles,i));
-      }
-#endif
+      if(NoCable)
+        {
+        Printf(fs,"%%include \"%s\"\n", Swig_last_file());
+        for (i = 0; i < Len(libfiles); i++) 
+          {
+          Printf(fs,"\n%%include \"%s\"\n", Getitem(libfiles,i));
+          }
+        }
       Seek(fs,0,SEEK_SET);
       cpps = Preprocessor_parse(fs);
       if (Swig_error_count()) {
@@ -576,13 +581,16 @@ int SWIG_main(int argc, char *argv[], Language *l) {
     }
 
     Node *top = Swig_cparse(cpps);
-    CableSwig cswig; 
-    for (i = 0; i < Len(cable_index_files); i++) 
+    if(!NoCable)
       {
-      cswig.AddMasterIndexFile(Char(Getitem(cable_index_files,i)));
+      CableSwig cswig; 
+      for (i = 0; i < Len(cable_index_files); i++) 
+        {
+        cswig.AddMasterIndexFile(Char(Getitem(cable_index_files,i)));
+        }
+      cswig.ParseFile(input_file, top, typemap_lang);
       }
     Delete(cable_index_files);
-    cswig.ParseFile(input_file, top, typemap_lang);
     if (Verbose) {
       Printf(stdout,"Processing types...\n");
     }
