@@ -343,7 +343,7 @@ bool SystemTools::RunCommand(const char* command,  String& output,
     }
   fin.close();
   SystemTools::RemoveFile(tempFile.c_str());
-  return true;
+  return (retVal == 0);
 #else
   fflush(stdout);
   fflush(stderr);
@@ -361,7 +361,7 @@ bool SystemTools::RunCommand(const char* command,  String& output,
 
   retVal = pclose(cpipe);
   retVal = WEXITSTATUS(retVal);
-  return true;
+  return (retVal == 0);
 #endif
 }
 
