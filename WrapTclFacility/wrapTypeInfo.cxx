@@ -76,6 +76,20 @@ _wrap_DEFINE_FUNDAMENTAL_CVTYPES(float);
 _wrap_DEFINE_FUNDAMENTAL_CVTYPES(double);
 _wrap_DEFINE_FUNDAMENTAL_CVTYPES(long double);
 _wrap_DEFINE_FUNDAMENTAL_CVTYPES(char*);
+
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(bool&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(char&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(signed char&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(unsigned char&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(short&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(unsigned short&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(int&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(unsigned int&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(long&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(unsigned long&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(float&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(double&);
+_wrap_DEFINE_FUNDAMENTAL_CVTYPES(long double&);
 //@}
 
 /*@{
@@ -206,6 +220,12 @@ CvPredefinedType<const T>::type = GetFundamentalType(FundamentalType::ID, true, 
 CvPredefinedType<volatile T>::type = GetFundamentalType(FundamentalType::ID, false, true); \
 CvPredefinedType<const volatile T>::type = GetFundamentalType(FundamentalType::ID, true, true)
 
+#define _wrap_GENERATE_REFERENCE_CVTYPES(T) \
+CvPredefinedType<T&>::type = GetReferenceType(CvPredefinedType<T>::type); \
+CvPredefinedType<const T&>::type = GetReferenceType(CvPredefinedType<const T>::type); \
+CvPredefinedType<volatile T&>::type = GetReferenceType(CvPredefinedType<volatile T>::type); \
+CvPredefinedType<const volatile T&>::type = GetReferenceType(CvPredefinedType<const volatile T>::type);
+
 /**
  * Initialization function for TypeInfo class.
  * This will be called exactly once by WrapperFacility::ClassInitialize().
@@ -235,6 +255,21 @@ void TypeInfo::ClassInitialize()
   _wrap_GENERATE_FUNDAMENTAL_CVTYPES(float, Float);
   _wrap_GENERATE_FUNDAMENTAL_CVTYPES(double, Double);
   _wrap_GENERATE_FUNDAMENTAL_CVTYPES(long double, LongDouble);
+
+  _wrap_GENERATE_REFERENCE_CVTYPES(bool);
+  _wrap_GENERATE_REFERENCE_CVTYPES(char);
+  _wrap_GENERATE_REFERENCE_CVTYPES(signed char);
+  _wrap_GENERATE_REFERENCE_CVTYPES(unsigned char);
+  _wrap_GENERATE_REFERENCE_CVTYPES(short);
+  _wrap_GENERATE_REFERENCE_CVTYPES(unsigned short);
+  _wrap_GENERATE_REFERENCE_CVTYPES(int);
+  _wrap_GENERATE_REFERENCE_CVTYPES(unsigned int);
+  _wrap_GENERATE_REFERENCE_CVTYPES(long);
+  _wrap_GENERATE_REFERENCE_CVTYPES(unsigned long);
+  _wrap_GENERATE_REFERENCE_CVTYPES(float);
+  _wrap_GENERATE_REFERENCE_CVTYPES(double);
+  _wrap_GENERATE_REFERENCE_CVTYPES(long double);
+  
   CvPredefinedType<Tcl_Interp>::type  = GetClassType("Tcl_Interp", false, false);
   CvPredefinedType<Tcl_Interp*>::type  = GetPointerType(CvPredefinedType<Tcl_Interp>::type, false, false);
   CvPredefinedType<char*>::type  = GetPointerType(CvPredefinedType<char>::type, false, false);

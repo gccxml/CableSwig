@@ -125,6 +125,20 @@ _wrap_DECLARE_FUNDAMENTAL_CVTYPES(float);
 _wrap_DECLARE_FUNDAMENTAL_CVTYPES(double);
 _wrap_DECLARE_FUNDAMENTAL_CVTYPES(long double);
 _wrap_DECLARE_FUNDAMENTAL_CVTYPES(char*);
+  
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(bool&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(char&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(signed char&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(unsigned char&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(short&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(unsigned short&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(int&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(unsigned int&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(long&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(unsigned long&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(float&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(double&);
+_wrap_DECLARE_FUNDAMENTAL_CVTYPES(long double&);
 //@}  
 
 // We are done with this macro.  Don't let it leak out of this header.
