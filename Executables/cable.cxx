@@ -38,6 +38,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
+#include "cableVersion.h"
 #include "cableConfigurationParser.h"
 #include "cableSourceParser.h"
 
@@ -46,9 +47,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 #include <fstream>
-
-// Hacked-up approach to versioning.
-#define CABLE_VERSION_STRING "0.01"
 
 typedef configuration::CableConfiguration  CableConfiguration;
 typedef source::Namespace       Namespace;

@@ -1,0 +1,6 @@
+#ifndef _cableVersion_h
+#define _cableVersion_h
+
+#define CABLE_VERSION_STRING "${CABLE_VERSION_STRING}"
+
+#endif

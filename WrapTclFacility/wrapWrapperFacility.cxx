@@ -51,6 +51,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "wrapConverters.h"
 #include "wrapWrapperBase.h"
 
+#include "cableVersion.h"
+
 #include <map>
 #include <set>
 #include <queue>
@@ -271,7 +273,7 @@ void WrapperFacility::InitializeForInterpreter()
   Tcl_CreateObjCommand(m_Interpreter, "wrap::DebugOff",
                        &DebugOffCommandFunction, 0, 0);
   
-  Tcl_PkgProvide(m_Interpreter, "WrapTclFacility", "1.0");
+  Tcl_PkgProvide(m_Interpreter, "WrapTclFacility", CABLE_VERSION_STRING);
 }
 
 

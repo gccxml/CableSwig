@@ -1,4 +1,4 @@
-package ifneeded WrapTclFacility 1.0 {
+package ifneeded WrapTclFacility ${CABLE_VERSION_STRING} {
   global tcl_platform
   if {$tcl_platform(platform) == "unix"} {
     set libPath "${CABLE_INSTALL_PREFIX}/share/Cable/lib"
@@ -22,7 +22,5 @@ package ifneeded WrapTclFacility 1.0 {
   set libExt [info sharedlibextension]
   set libFile [file join $libPath "$libPrefix$libName$libExt"]
 
-  if {[catch { load $libFile } errorMessage ]} {
-    puts $errorMessage
-  }
+  if {[catch { load $libFile } errorMessage ]} { puts $errorMessage }
 }

@@ -1,4 +1,7 @@
 PROJECT (CABLE)
+
+SET(CABLE_VERSION_STRING "0.01")
+
 INCLUDE_REGULAR_EXPRESSION ("^(cxx|cable|xml|gen|wrap|CxxTypes).*$")
 
 SUBDIRS (Expat CxxTypes Parsers Generators Executables)
@@ -22,11 +25,11 @@ ENDIF (CABLE_TCL_FACILITY)
 
 INCLUDE_DIRECTORIES (
 ${CABLE_SOURCE_DIR}
+${CABLE_BINARY_DIR}
 ${CABLE_SOURCE_DIR}/Expat/xmlparse
 )
 
-
-CONFIGURE_FILE(${CABLE_SOURCE_DIR}/cable.README
-               ${CABLE_BINARY_DIR}/cable.README.txt COPYONLY)
+CONFIGURE_FILE(${CABLE_SOURCE_DIR}/cableVersion.h.in
+               ${CABLE_BINARY_DIR}/cableVersion.h IMMEDIATE)
 SET (CABLE_EXECUTABLE_OUTPUT_PATH ${EXECUTABLE_OUTPUT_PATH} CACHE INTERNAL "Single output directory for building all libraries.")
 SET (CABLE_LIBRARY_OUTPUT_PATH ${LIBRARY_OUTPUT_PATH} CACHE INTERNAL "Single output directory for building all executables.")

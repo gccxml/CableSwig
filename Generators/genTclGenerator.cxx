@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
 #include "genTclGenerator.h"
+#include "cableVersion.h"
 
 #include <iostream>
 #include <fstream>
@@ -223,7 +224,7 @@ void TclGenerator::GeneratePackageInitializer()
     "int " << tclName.c_str() << "_Init(Tcl_Interp* interp)\n"
     "{\n"
     "  // Make sure a WrapperFacility has been initialized for this interpreter.\n"
-    "  if(!Tcl_PkgRequire(interp, \"WrapTclFacility\", \"1.0\", 0))\n"
+    "  if(!Tcl_PkgRequire(interp, \"WrapTclFacility\", \"" CABLE_VERSION_STRING "\", 1))\n"
     "    {\n"
     "    return TCL_ERROR;\n"
     "    }\n"
@@ -240,7 +241,7 @@ void TclGenerator::GeneratePackageInitializer()
   
   m_Output <<
     "  \n"
-    "  return Tcl_PkgProvide(interp, \"" << packageName.c_str() << "\", \"1.0\");\n"
+    "  return TCL_OK;\n"
     "}\n"
     "\n";
 }
