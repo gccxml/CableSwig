@@ -196,6 +196,15 @@ void CreateSwigMethod(Method* mth, Node* sc, cable::String& cname)
     Setattr(m, "sym:name",  cname.c_str());
     Setattr(m, "name", Getattr(sc, "name"));
     }
+  else if(fid == Function::DestructorId)
+    {
+    m = new_node("destructor");
+    // for a constructor use the name of the class as the function name
+    cable::String name = "~";
+    name += cname;
+    Setattr(m, "sym:name",  name.c_str());
+    Setattr(m, "name", name.c_str());
+    }
   else
     {
     m = new_node("cdecl");
@@ -208,6 +217,10 @@ void CreateSwigMethod(Method* mth, Node* sc, cable::String& cname)
         {
         Setattr(m, "abstract", "1");
         }
+      }
+    if(mth->GetStatic())
+      { 
+      Setattr(m, "storage", "static");
       }
     }
   ParmList* parms = 0;
@@ -250,20 +263,27 @@ void CreateSwigMethod(Method* mth, Node* sc, cable::String& cname)
     {
     Setattr(m, "parms", parms);
     }
-  if(fid !=  Function::ConstructorId)
+  if(fid ==  Function::ConstructorId)
+    {
+    Setattr(m, "feature:new", "1");
+    }
+  else if(fid == Function::DestructorId)
+    {
+    }
+  else
     {
     // set the return type
     Setattr(m, "type", 
             ToSwigType(ft->GetReturns()->GetCxxType()).c_str());
     }
-  else
-    {
-    Setattr(m, "feature:new", "1");
-    }  
   // add the method to the class
   appendChild(sc, m);
   // add the member name to the class
   if(fid == Function::ConstructorId)
+    {
+    Swig_symbol_add(Getattr(sc, "sym:name"), m);
+    }
+  else if(fid == Function::DestructorId)
     {
     Swig_symbol_add(Getattr(sc, "sym:name"), m);
     }
@@ -278,7 +298,7 @@ Node* CreateSwigClass(const Class* c, const Typedef* td)
   cable::String cname = GetClassName(c, td);
   Node* sc = new_node("class");
   Setattr(sc, "sym:name", cname.c_str());
-  Setattr(sc, "name", TemplateName(c->GetName()).c_str());
+  Setattr(sc, "name", TemplateName(c->GetQualifiedName().c_str()).c_str());
   Setattr(sc,"kind","class");
   Setattr(sc,"allows_typedef","1");
   // Create symbol table information
@@ -303,14 +323,7 @@ Node* CreateSwigClass(const Class* c, const Typedef* td)
     Method* mth = Method::SafeDownCast(*i);
     if(mth && (i.GetAccess() == Class::Private))
       {
-      Function::FunctionIdType fid = mth->GetFunctionId();
-      FunctionType* ft = mth->GetFunctionType();
-      if((fid == Function::ConstructorId) || 
-         (fid == Function::MethodId) || 
-         (fid == Function::OperatorMethodId))
-        {
-        CreateSwigMethod(mth, sc, cname);
-        }
+      CreateSwigMethod(mth, sc, cname);
       }
     }
   
@@ -324,14 +337,7 @@ Node* CreateSwigClass(const Class* c, const Typedef* td)
     Method* mth = Method::SafeDownCast(*i);
     if(mth && (i.GetAccess() == Class::Protected))
       {
-      Function::FunctionIdType fid = mth->GetFunctionId();
-      FunctionType* ft = mth->GetFunctionType();
-      if((fid == Function::ConstructorId) || 
-         (fid == Function::MethodId) || 
-         (fid == Function::OperatorMethodId))
-        {
-        CreateSwigMethod(mth, sc, cname);
-        }
+      CreateSwigMethod(mth, sc, cname);
       }
     }
 
@@ -345,14 +351,7 @@ Node* CreateSwigClass(const Class* c, const Typedef* td)
     Method* mth = Method::SafeDownCast(*i);
     if(mth && (i.GetAccess() == Class::Public))
       {
-      Function::FunctionIdType fid = mth->GetFunctionId();
-      FunctionType* ft = mth->GetFunctionType();
-      if((fid == Function::ConstructorId) || 
-         (fid == Function::MethodId) || 
-         (fid == Function::OperatorMethodId))
-        {
-        CreateSwigMethod(mth, sc, cname);
-        }
+      CreateSwigMethod(mth, sc, cname);
       }
     }
       
