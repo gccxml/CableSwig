@@ -1086,7 +1086,7 @@ Context
  */
 Namespace::FunctionSet
 Namespace
-::LookupFunction(const String& name)
+::LookupFunction(const String& name) const
 {
   FunctionSet functionSet;
   DeclarationRange resultRange;

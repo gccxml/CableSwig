@@ -988,7 +988,7 @@ public:
   typedef Context::QualifiersInserter QualifiersInserter;  
   
   typedef std::set<Function*> FunctionSet;
-  FunctionSet LookupFunction(const String&);
+  FunctionSet LookupFunction(const String&) const;
 protected:
   Namespace(const String& name): Context(name) {}
   Namespace(const Self&): Context("") {}
