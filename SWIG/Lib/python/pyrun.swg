@@ -308,6 +308,7 @@ type_error:
 SWIGRUNTIME(void *)
 SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags) {
   void *result;
+  (void)argnum;
   SWIG_Python_ConvertPtr(obj, &result, ty, flags | SWIG_POINTER_EXCEPTION);
   return result;
 }
