@@ -9,8 +9,8 @@
   Copyright (c) 2002 Kitware, Inc., Insight Consortium.  All rights reserved.
   See Copyright.txt for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -68,7 +68,7 @@ class XMLSourceParser::FileMap: public FileMapBase
 public:
   typedef FileMapBase::value_type value_type;
   typedef FileMapBase::iterator iterator;
-  typedef FileMapBase::const_iterator const_iterator;  
+  typedef FileMapBase::const_iterator const_iterator;
   static FileMap* New() { return new FileMap; }
   void Delete() { delete this; }
 };
@@ -79,7 +79,7 @@ class XMLSourceParser::ElementMap: public ElementMapBase
 public:
   typedef ElementMapBase::value_type value_type;
   typedef ElementMapBase::iterator iterator;
-  typedef ElementMapBase::const_iterator const_iterator;  
+  typedef ElementMapBase::const_iterator const_iterator;
   static ElementMap* New() { return new ElementMap; }
   void Delete() { delete this; }
 };
@@ -190,9 +190,9 @@ void XMLSourceParser::StartElement(const char *name, const char **atts)
                       << "Ignoring " << name << " inside unknown element.");
     return;
     }
-  
+
   // Dispatch element handler.
-  String n = name;  
+  String n = name;
   if(n == "GCC_XML")               { this->Start_GCC_XML(atts); }
   else if(n == "Argument")         { this->Start_Argument(atts); }
   else if(n == "Ellipsis")         { this->Start_Ellipsis(atts); }
@@ -256,9 +256,9 @@ void XMLSourceParser::EndElement(const char *name)
       }
     return;
     }
-  
+
   // Dispatch element handler.
-  String n = name;  
+  String n = name;
   if(n == "GCC_XML")               { this->End_GCC_XML(); }
   else if(n == "Argument")         { this->End_Argument(); }
   else if(n == "Ellipsis")         { this->End_Ellipsis(); }
@@ -312,7 +312,7 @@ void XMLSourceParser::Start_Argument(const char** atts)
                     << "Argument element not nested in function-style element.");
     return;
     }
-  
+
   XMLSourceElement::Pointer element = XMLSourceElement::New();
   element->SetName("Argument");
   element->SetAttributes(atts);
@@ -335,7 +335,7 @@ void XMLSourceParser::Start_Ellipsis(const char** atts)
                     << "Ellipsis element not nested in function-style element.");
     return;
     }
-  
+
   XMLSourceElement::Pointer element = XMLSourceElement::New();
   element->SetName("Ellipsis");
   element->SetAttributes(atts);
@@ -359,7 +359,7 @@ void XMLSourceParser::Start_EnumValue(const char** atts)
                     << "EnumValue element not nested Enumeration element.");
     return;
     }
-  
+
   XMLSourceElement::Pointer element = XMLSourceElement::New();
   element->SetName("EnumValue");
   element->SetAttributes(atts);
@@ -418,7 +418,7 @@ void XMLSourceParser::StartOther(const char* name, const char** atts)
   element->SetAttributes(atts);
   element->SetXMLSourceParser(this);
   m_CurrentElement = element;
-  
+
   // Add an extra reference since m_CurrentElement is not a smart
   // pointer.
   m_CurrentElement->Register();
@@ -432,7 +432,7 @@ void XMLSourceParser::EndOther()
   XMLSourceElement::Pointer element = m_CurrentElement;
   m_CurrentElement->Unregister();
   m_CurrentElement = 0;
-  
+
   const char* id = element->GetId();
   if(!id)
     {
@@ -441,7 +441,7 @@ void XMLSourceParser::EndOther()
                     << "Element " << element->GetName() << " has no id.");
     return;
     }
-  
+
   m_ElementMap[id] = element;
 }
 
@@ -455,7 +455,7 @@ bool XMLSourceParser::ConstructSourceRepresentation()
   // smart pointer.
   m_SourceRepresentation->Register();
   }
-  
+
   // Add all elements into the representation.
   for(ElementMap::const_iterator i = m_ElementMap.begin();
       i != m_ElementMap.end(); ++i)
@@ -467,7 +467,7 @@ bool XMLSourceParser::ConstructSourceRepresentation()
       return false;
       }
     }
-  
+
   return m_SourceRepresentation->CreateCxxTypes();
 }
 
@@ -524,14 +524,14 @@ XMLSourceParser::AddElementRepresentation(XMLSourceElement* element)
 //----------------------------------------------------------------------------
 void XMLSourceParser::SetSourceObject(XMLSourceElement* element,
                                       SourceObject* object)
-{  
+{
   const char* id = element->GetId();
   m_SourceRepresentation->SetSourceObject(id, object);
 }
 
 //----------------------------------------------------------------------------
 bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
-{  
+{
   // Set the name.
   const char* name = element->GetAttribute("name");
   if(name)
@@ -543,16 +543,33 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
     cableErrorMacro("No name on Named object " << named->GetNameOfClass());
     return false;
     }
-  
+
   // Set the location.
   const char* location = element->GetAttribute("location");
-  if(location)
+  const char* file_attribute = element->GetAttribute("file");
+  const char* line_attribute = element->GetAttribute("line");
+  if(file_attribute && line_attribute)
+    {
+    unsigned long line;
+    named->SetFile(this->GetSourceFile(file_attribute));
+    if(sscanf(line_attribute, "%lu", &line) == 1)
+      {
+      named->SetLine(line);
+      }
+    else
+      {
+      cableWarningMacro("Invalid line number entry " << line_attribute
+                        << " in " << element->GetNameOfClass() << " "
+                        << element->GetId());
+      }
+    }
+  else if(location)
     {
     // Need to parse "fid:line" from location.
     bool ok = true;
     String loc = location;
     String::size_type pos = loc.find(':');
-    
+
     if(pos != String::npos)
       {
       String fid = loc.substr(0, pos);
@@ -570,7 +587,7 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
                         << element->GetId());
       }
     }
-  
+
   Context::Access access = Context::Public;
   const char* accessStr = element->GetAttribute("access");
   if(accessStr)
@@ -587,7 +604,7 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
       return false;
       }
     }
-  
+
   // Set the context.
   XMLSourceElement* contextElement = element->GetElement("context");
   if(contextElement)
@@ -601,7 +618,7 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
       context->AddNamed(named, access);
       }
     }
-  
+
   return true;
 }
 
@@ -636,7 +653,7 @@ bool XMLSourceParser::SetupFunctionType(XMLSourceElement* element,
     cableErrorMacro("No returns attribute on " << element->GetName() << " "
                     << element->GetId());
     }
-  
+
   for(unsigned int i=0;i < element->GetNumberOfNestedElements(); ++i)
     {
     XMLSourceElement* argElement = element->GetNestedElement(i);
@@ -657,7 +674,7 @@ bool XMLSourceParser::SetupFunctionType(XMLSourceElement* element,
                         << element->GetId());
         return false;
         }
-      const char* defaultArg = argElement->GetAttribute("default");      
+      const char* defaultArg = argElement->GetAttribute("default");
       type->AddArgument(argType, defaultArg != 0);
       }
     else if(String(argElement->GetName()) == "Ellipsis")
@@ -682,10 +699,10 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
   ClassType::Pointer ct = ClassType::New();
   ct->SetClass(c);
   c->SetClassType(ct);
-  
+
   const char* abstract = element->GetAttribute("abstract");
   if(abstract && String(abstract) == "1") { c->SetAbstract(true); }
-  
+
   // Parse the space-separated list of bases.
   const char* bases = element->GetAttribute("bases");
   if(bases)
@@ -725,12 +742,12 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
       l = r;
       }
     }
-  
+
   // Add the ClassType element with a dummy id.
   String cid = element->GetId();
   cid += "_t";
   m_SourceRepresentation->SetSourceObject(cid.c_str(), ct);
-  
+
   // Add the Class element itself.
   this->SetSourceObject(element, c);
   return true;
@@ -740,7 +757,7 @@ bool XMLSourceParser::SetupClass(XMLSourceElement* element, Class* c)
 bool XMLSourceParser::SetupVariable(XMLSourceElement* element, Variable* v)
 {
   if(!this->SetupNamed(element, v)) { return false; }
-  
+
   // Get the target type.
   const char* tid = element->GetAttribute("type");
   if(!tid)
@@ -756,7 +773,7 @@ bool XMLSourceParser::SetupVariable(XMLSourceElement* element, Variable* v)
                     << element->GetName() << " " << element->GetId());
     return false;
     }
-  
+
   v->SetType(type);
   this->SetSourceObject(element, v);
   return true;
@@ -790,28 +807,28 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
     if(e) { return e->GetEnumerationType(); }
     else { return Type::SafeDownCast(tobj); }
     }
-  
+
   // Parse the type id to separate any cv-qualifiers.
   String typeStr = tid;
   String::size_type cvPosition = typeStr.find_first_of("cvr");
   String id = typeStr.substr(0, cvPosition);
-  
+
   // Get the non-cv-qualified version of the type.
   XMLSourceElement* typeElement = this->GetSourceElement(id.c_str());
   if(!typeElement) { return 0; }
   if(!this->AddElementRepresentation(typeElement)) { return 0; }
   Type* type = this->GetTypeFromId(id.c_str());
-  
+
   // If the desired result type is not cv-qualified, we are done.
-  if(cvPosition == String::npos) { return type; }  
-  
+  if(cvPosition == String::npos) { return type; }
+
   // Get the desired cv qualifiers.
   bool isConst = false;
   bool isVolatile = false;
   String cv = typeStr.substr(cvPosition);
   if(cv.find('c') != String::npos) { isConst = true; }
   if(cv.find('v') != String::npos) { isVolatile = true; }
-  
+
   // Add the type with these cv qualifiers.
   Type::Pointer newType;
   switch (type->GetTypeId())
@@ -884,15 +901,15 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
       cableErrorMacro("Cannot add cv-qualifiers to ReferenceType.");
       return 0;
       }
-    }  
+    }
   if(!newType)
     {
     cableErrorMacro("Could not add cv-qualifiers to "
                     << type->GetNameOfClass() << ".");
     return 0;
     }
-  
-  m_SourceRepresentation->SetSourceObject(tid, newType);  
+
+  m_SourceRepresentation->SetSourceObject(tid, newType);
   return newType;
 }
 
@@ -902,13 +919,13 @@ SourceObject* XMLSourceParser::AddNamespace(XMLSourceElement* element)
   Namespace::Pointer ns = Namespace::New();
   if(!this->SetupNamed(element, ns)) { return 0; }
   this->SetSourceObject(element, ns);
-  
+
   // If this is the global namespace, tell the SourceRepresentation.
   if(ns->IsGlobalNamespace())
     {
     m_SourceRepresentation->SetGlobalNamespace(element->GetId());
     }
-  
+
   return ns;
 }
 
@@ -949,7 +966,7 @@ SourceObject* XMLSourceParser::AddFundamentalType(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   FundamentalType::Pointer type = FundamentalType::New();
   type->SetTypeName(name);
   this->SetSourceObject(element, type);
@@ -972,7 +989,7 @@ SourceObject* XMLSourceParser::AddPointerType(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   PointerType::Pointer type = PointerType::New();
   type->SetTarget(target);
   this->SetSourceObject(element, type);
@@ -995,7 +1012,7 @@ SourceObject* XMLSourceParser::AddReferenceType(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   ReferenceType::Pointer type = ReferenceType::New();
   type->SetTarget(target);
   this->SetSourceObject(element, type);
@@ -1035,7 +1052,7 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
       }
     len = max+1;
     }
-  
+
   ArrayType::Pointer type = ArrayType::New();
   type->SetTarget(target);
   type->SetLength(len);
@@ -1054,13 +1071,13 @@ SourceObject* XMLSourceParser::AddFunctionType(XMLSourceElement* element)
 
 //----------------------------------------------------------------------------
 SourceObject* XMLSourceParser::AddMethodType(XMLSourceElement* element)
-{  
+{
   XMLSourceElement* bte = element->GetElement("basetype");
   if(!bte)
     {
     cableErrorMacro("No basetype on MethodType " << element->GetId());
     return 0;
-    }  
+    }
   Class* c = Class::SafeDownCast(this->AddElementRepresentation(bte));
   if(!c)
     {
@@ -1068,18 +1085,18 @@ SourceObject* XMLSourceParser::AddMethodType(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   MethodType::Pointer type = MethodType::New();
   if(!this->SetupFunctionType(element, type)) { return 0; }
   type->SetClass(c);
-  
+
   this->SetSourceObject(element, type);
   return type;
 }
 
 //----------------------------------------------------------------------------
 SourceObject* XMLSourceParser::AddOffsetType(XMLSourceElement* element)
-{  
+{
   XMLSourceElement* bte = element->GetElement("basetype");
   if(!bte)
     {
@@ -1092,7 +1109,7 @@ SourceObject* XMLSourceParser::AddOffsetType(XMLSourceElement* element)
     cableErrorMacro("Error getting Class from basetype on OffsetType "
                     << element->GetId());
     return 0;
-    }  
+    }
   const char* mtypeId = element->GetAttribute("type");
   if(!mtypeId)
     {
@@ -1106,11 +1123,11 @@ SourceObject* XMLSourceParser::AddOffsetType(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   OffsetType::Pointer type = OffsetType::New();
   type->SetClass(c);
   type->SetMemberType(mtype);
-  
+
   this->SetSourceObject(element, type);
   return type;
 }
@@ -1123,10 +1140,10 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
   EnumerationType::Pointer et = EnumerationType::New();
   et->SetEnumeration(e);
   e->SetEnumerationType(et);
-  
+
   // If the enum is anonymous, leave the name empty.
   if(e->GetName()[0] == '.') { e->SetName(""); }
-  
+
   for(unsigned int i=0;i < element->GetNumberOfNestedElements(); ++i)
     {
     XMLSourceElement* valueElement = element->GetNestedElement(i);
@@ -1162,13 +1179,13 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
                       << ".  It is not an EnumValue.");
       return false;
       }
-    }  
-  
+    }
+
   // Add the EnumerationType element with a dummy id.
   String eid = element->GetId();
   eid += "_t";
   m_SourceRepresentation->SetSourceObject(eid.c_str(), et);
-  
+
   // Add the Enumeration element itself.
   this->SetSourceObject(element, e);
   return e;
@@ -1203,7 +1220,7 @@ SourceObject* XMLSourceParser::AddTypedef(XMLSourceElement* element)
 {
   Typedef::Pointer td = Typedef::New();
   if(!this->SetupNamed(element, td)) { return 0; }
-  
+
   // Get the target type.
   const char* tid = element->GetAttribute("type");
   if(!tid)
@@ -1218,7 +1235,7 @@ SourceObject* XMLSourceParser::AddTypedef(XMLSourceElement* element)
                     << element->GetId());
     return 0;
     }
-  
+
   td->SetType(type);
   this->SetSourceObject(element, td);
   return td;
@@ -1248,14 +1265,14 @@ SourceObject* XMLSourceParser::AddFunction(XMLSourceElement* element)
   Function::Pointer f = Function::New();
   if(!this->SetupNamed(element, f)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   f->SetFunctionType(ft);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the Function element itself.
   this->SetSourceObject(element, f);
   return f;
@@ -1268,16 +1285,16 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
   bool isStatic = false;
   bool isVirtual = false;
   bool isPureVirtual = false;
-  
+
   const char* virtualAttr = element->GetAttribute("virtual");
   if(virtualAttr && (String(virtualAttr) == "1")) { isVirtual = true; }
   const char* pureVirtualAttr = element->GetAttribute("pure_virtual");
   if(pureVirtualAttr && (String(pureVirtualAttr) == "1")) { isPureVirtual = true; }
 
   const char* constAttr = element->GetAttribute("const");
-  if(constAttr && (String(constAttr) == "1")) { isConst = true; } 
+  if(constAttr && (String(constAttr) == "1")) { isConst = true; }
   const char* staticAttr = element->GetAttribute("static");
-  if(staticAttr && (String(staticAttr) == "1")) { isStatic = true; }  
+  if(staticAttr && (String(staticAttr) == "1")) { isStatic = true; }
   if(isConst && isStatic)
     {
     cableErrorMacro("Method " << element->GetId()
@@ -1290,23 +1307,23 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
                     << " is both virtual and static.");
     return 0;
     }
-  
+
   // Create the Method.
   Method::Pointer m = Method::New();
   if(!this->SetupNamed(element, m)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   m->SetFunctionType(ft);
   m->SetConst(isConst);
   m->SetStatic(isStatic);
   m->SetVirtual(isVirtual);
   m->SetPureVirtual(isPureVirtual);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the Method element itself.
   this->SetSourceObject(element, m);
   return m;
@@ -1319,14 +1336,14 @@ SourceObject* XMLSourceParser::AddConstructor(XMLSourceElement* element)
   Constructor::Pointer m = Constructor::New();
   if(!this->SetupNamed(element, m)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   m->SetFunctionType(ft);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the Constructor element itself.
   this->SetSourceObject(element, m);
   return m;
@@ -1339,14 +1356,14 @@ SourceObject* XMLSourceParser::AddDestructor(XMLSourceElement* element)
   Destructor::Pointer m = Destructor::New();
   if(!this->SetupNamed(element, m)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   m->SetFunctionType(ft);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the Destructor element itself.
   this->SetSourceObject(element, m);
   return m;
@@ -1359,14 +1376,14 @@ SourceObject* XMLSourceParser::AddOperatorFunction(XMLSourceElement* element)
   OperatorFunction::Pointer f = OperatorFunction::New();
   if(!this->SetupNamed(element, f)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   f->SetFunctionType(ft);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the OperatorFunction element itself.
   this->SetSourceObject(element, f);
   return f;
@@ -1380,28 +1397,28 @@ SourceObject* XMLSourceParser::AddOperatorMethod(XMLSourceElement* element)
   const char* constAttr = element->GetAttribute("const");
   if(constAttr && (String(constAttr) == "1")) { isConst = true; }
   const char* staticAttr = element->GetAttribute("static");
-  if(staticAttr && (String(staticAttr) == "1")) { isStatic = true; }  
+  if(staticAttr && (String(staticAttr) == "1")) { isStatic = true; }
   if(isConst && isStatic)
     {
     cableErrorMacro("Method " << element->GetId()
                     << " is both const and static.");
     return 0;
     }
-  
+
   // Create the OperatorMethod.
   OperatorMethod::Pointer m = OperatorMethod::New();
   if(!this->SetupNamed(element, m)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   m->SetFunctionType(ft);
   m->SetConst(isConst);
   m->SetStatic(isStatic);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the OperatorMethod element itself.
   this->SetSourceObject(element, m);
   return m;
@@ -1413,20 +1430,20 @@ SourceObject* XMLSourceParser::AddConverter(XMLSourceElement* element)
   bool isConst = false;
   const char* constAttr = element->GetAttribute("const");
   if(constAttr && (String(constAttr) == "1")) { isConst = true; }
-  
+
   // Create the Converter.
   Converter::Pointer m = Converter::New();
   if(!this->SetupNamed(element, m)) { return 0; }
   FunctionType::Pointer ft = FunctionType::New();
-  if(!this->SetupFunctionType(element, ft)) { return 0; }  
+  if(!this->SetupFunctionType(element, ft)) { return 0; }
   m->SetFunctionType(ft);
   m->SetConst(isConst);
-  
+
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
   fid += "_t";
   m_SourceRepresentation->SetSourceObject(fid.c_str(), ft);
-  
+
   // Add the Converter element itself.
   this->SetSourceObject(element, m);
   return m;
