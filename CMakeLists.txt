@@ -38,4 +38,11 @@ LINK_DIRECTORIES( ${CableSwig_BINARY_DIR}/bin  )
 
 # Tell GCC-XML that we are building gccxml_cc1plus.
 SET(GCCXML_NATIVE_CC1PLUS 1)
+
+# Tell CABLE to not install CxxTypes headers.
+SET(CABLE_NO_INSTALL_FACILITIES 1)
+
+# Tell GCC-XML where to install.
+SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
+
 SUBDIRS(SWIG Cable GCCPatch GCC_XML Executables)

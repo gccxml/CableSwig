@@ -22,3 +22,5 @@ TARGET_LINK_LIBRARIES(cableidx
         CableExpat 
         CxxTypes 
         )
+
+INSTALL_TARGETS(${CableSwig_INSTALL_ROOT}/bin cswig cableidx)
