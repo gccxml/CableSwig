@@ -13,7 +13,7 @@ ${CABLE_BINARY_DIR}/Generators
 
 LINK_LIBRARIES(
 CxxTypes
-Expat
+CableExpat
 CableParsers
 CableGenerators
 )

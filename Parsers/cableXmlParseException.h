@@ -43,7 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "cableWin32Header.h"
 
-#include "xmlparse.h"
+#include "expat.h"
 
 #include <iostream>
 #include <string>

@@ -1,25 +1,20 @@
-PROJECT(EXPAT)
+PROJECT(CABLEEXPAT)
+INCLUDE_REGULAR_EXPRESSION("^(expat|xml|ascii|utf|name|iascii|latin).*$")
 
-INCLUDE_DIRECTORIES(
-${EXPAT_SOURCE_DIR}/xmlparse
-${EXPAT_SOURCE_DIR}/xmltok
-${EXPAT_SOURCE_DIR}/xmlwf
+SOURCE_FILES(expat_SRCS 
+  xmlparse.c 
+  xmltok.c 
+  xmlrole.c
 )
 
-SOURCE_FILES(Expat_SRCS
-xmlparse/xmlparse
-xmlparse/hashtable
-xmltok/xmltok
-xmltok/xmlrole
-xmlwf/xmlwf
-xmlwf/xmlfile
-xmlwf/codepage
-) 
+INCLUDE_DIRECTORIES(${CABLEEXPAT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${CABLEEXPAT_BINARY_DIR})
 
-IF(UNIX)
-  SOURCE_FILES(Expat_SRCS xmlwf/unixfilemap)
-ELSE(UNIX)
-  SOURCE_FILES(Expat_SRCS xmlwf/win32filemap)
-ENDIF(UNIX)
+IF (NOT CABLE_LIBRARY_OUTPUT_PATH)
+  LINK_DIRECTORIES(${CABLEEXPAT_BINARY_DIR})
+ENDIF (NOT CABLE_LIBRARY_OUTPUT_PATH)
 
-ADD_LIBRARY(Expat STATIC Expat_SRCS)
+CONFIGURE_FILE(${CABLEEXPAT_SOURCE_DIR}/expatConfig.h.in
+               ${CABLEEXPAT_BINARY_DIR}/expatConfig.h)
+
+ADD_LIBRARY(CableExpat STATIC expat_SRCS)
