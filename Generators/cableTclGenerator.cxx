@@ -670,7 +670,7 @@ void TclGenerator::WritePackageInitialization() const
     "\n"  
     "  // Make sure the WrapperFacility is the correct version.\n"
     "  if(!Tcl_PkgRequire(interp, \"cable\", \""
-    CABLE_VERSION_STRING "\", 1))\n"
+    CABLE_VERSION "\", 1))\n"
     "    {\n"
     "    return TCL_ERROR;\n"
     "    }\n"
