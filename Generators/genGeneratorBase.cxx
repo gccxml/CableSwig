@@ -125,4 +125,14 @@ String GeneratorBase::GetOperatorName(const String& name)
 
 #undef TEST_OPERATOR
 
+String GeneratorBase::GetStringFromInteger(int i)
+{
+  std::ostrstream strStream;
+  strStream << i << std::ends;
+  String result = strStream.str();
+  strStream.rdbuf()->freeze(0);
+  return result;
+} 
+
+
 } // namespace gen

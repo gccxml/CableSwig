@@ -95,6 +95,7 @@ protected:
   std::ostream& m_Output;
   
   static String GetOperatorName(const String&);
+  String GetStringFromInteger(int);
 };
 
 } // namespace gen
