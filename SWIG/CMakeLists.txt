@@ -119,7 +119,7 @@ SET(SWIG_MODULES_PATH ${SWIG_SOURCE_DIR}/CMake)
 
 IF(SWIG_FIND_LANGS)
   FIND_PROGRAM(PYTHON_EXECUTABLE
-    NAMES python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 python
+    NAMES python python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 
     PATHS
     [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.3\\InstallPath]
     [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.2\\InstallPath]
