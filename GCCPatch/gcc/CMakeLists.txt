@@ -15,7 +15,10 @@ ADD_LIBRARY(cpp
 ADD_EXECUTABLE(cpp0 cppmain.c intl.c ${GCC_SOURCE_DIR}/libiberty/obstack.c)
 TARGET_LINK_LIBRARIES(cpp0 cpp iberty)
 
-ADD_CUSTOM_TARGET(generate ALL echo "")
+# This should really be an ADD_CUSTOM_TARGET, but the combination of
+# problems on CMake 1.6, MSVC 7 and UNIX makefiles is most easily
+# solved when an actual target on disk can be checked.
+ADD_EXECUTABLE(generate generateHack.c)
 
 SET(GCC_backend_GENSRCS
   ${GCC_BINARY_DIR}/gcc/genrtl.c
