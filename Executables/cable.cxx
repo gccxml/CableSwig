@@ -67,8 +67,9 @@ int main(int argc, char* argv[])
         }
       else
         {
-        gccxmlOptions += " ";
+        gccxmlOptions += " \"";
         gccxmlOptions += argv[i];
+        gccxmlOptions += "\"";
         }
       }
     }
