@@ -799,7 +799,7 @@ vbuild_message_string (msg, ap)
      va_list ap;
 {
   char *str = malloc(strlen(msg)*2 + 200);
-  sprintf (str, msg, ap);
+  vsprintf (str, msg, ap);
   return str;
 }
 
