@@ -35,7 +35,7 @@
 #       endif
 #else
 #       define SWIGEXPORT(a) a
-#       define SWIGIMPORT(a) a
+#       define SWIGIMPORT(a) extern a
 #endif
 
 #ifdef SWIG_GLOBAL
