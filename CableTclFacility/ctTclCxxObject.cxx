@@ -62,7 +62,7 @@ void TclCxxObject::SetObj(Tcl_Obj* objPtr, CxxObject* obj)
   // If this is a shared object, we are not supposed to be setting it.
   if(Tcl_IsShared(objPtr))
     {
-    panic("Tcl_SetCxxObjectObj called with shared object");
+    Tcl_Panic("Tcl_SetCxxObjectObj called with shared object");
     }
   Self::DeleteOldRepresentation(objPtr);
   Self::SetTclObj(objPtr, obj);
