@@ -1,2 +1,12 @@
 .git*            export-ignore
 
+*.dsp           -crlf
+*.png           -crlf
+*.sh             crlf=input
+capitalize       crlf=input
+config.*         crlf=input
+configure        crlf=input
+install-sh       crlf=input
+ltconfig         crlf=input
+makedebugtop     crlf=input
+mkinstalldirs    crlf=input
