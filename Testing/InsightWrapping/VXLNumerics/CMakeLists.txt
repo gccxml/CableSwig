@@ -39,8 +39,7 @@ ${WrapITK_SOURCE_DIR}/Master.mdx.in
 ${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx IMMEDIATE
 )
 
-SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTCL.mdx")
-
+SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx")
 FOREACH(Source ${WRAP_SOURCES})
   GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Numerics 
                          ${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.cxx ${Source}.xml VXLNumericsTcl)

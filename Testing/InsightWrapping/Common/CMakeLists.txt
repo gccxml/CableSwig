@@ -33,7 +33,7 @@ ENDFOREACH(Source)
 
 CONFIGURE_FILE(
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
-${WrapITK_BINARY_DIR}/Common/ITKCommonTCL.mdx
+${WrapITK_BINARY_DIR}/Common/ITKCommonTcl.mdx
 )
 
 # set the generated sources as generated
@@ -44,9 +44,8 @@ ADD_LIBRARY(ITKCommonTcl SHARED ${WRAP_TCL_SOURCES})
 ADD_LIBRARY(_ITKCommonTcl MODULE ${WRAP_PYTHON_SOURCES})
 SET_TARGET_PROPERTIES( _ITKCommonTcl PROPERTIES PREFIX "")
 
-SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/Numerics/VXLNumericsTCL.mdx"
-                       "${WrapITK_BINARY_DIR}/Numerics/ITKNumericsTCL.mdx"
-                       "${WrapITK_BINARY_DIR}/Common/ITKCommonTCL.mdx"
+SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
+                       "${WrapITK_BINARY_DIR}/Common/ITKCommonTcl.mdx"
 )
 # wrap each of the files
 FOREACH(Source ${WRAP_SOURCES})

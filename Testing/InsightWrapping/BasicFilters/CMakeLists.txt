@@ -53,9 +53,9 @@ ${WrapITK_SOURCE_DIR}/Master.mdx.in
 ${WrapITK_BINARY_DIR}/BasicFilters/ITKBasicFilters.mdx IMMEDIATE
 )
 
-SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTCL.mdx"
-                       "${WrapITK_BINARY_DIR}/Numerics/ITKNumericsTCL.mdx"
-                       "${WrapITK_BINARY_DIR}/Common/ITKCommonTCL.mdx"
+SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
+                       "${WrapITK_BINARY_DIR}/Numerics/ITKNumericsTcl.mdx"
+                       "${WrapITK_BINARY_DIR}/Common/ITKCommonTcl.mdx"
                        "${WrapITK_BINARY_DIR}/BasicFilters/ITKBasicFilters.mdx"
 )
 
