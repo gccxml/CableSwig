@@ -128,7 +128,7 @@ void TclGenerator::GenerateWrappers()
     "namespace\n"
     "{\n"
     "// Specializations will encapsulate wrappers.\n"
-    "template <typename> class Wrapper;\n"
+    "template <typename> struct Wrapper;\n"
     "\n";
 
   // Add all types that will be used by the wrappers to our CvTypeGenerator.
