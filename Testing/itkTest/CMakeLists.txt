@@ -38,13 +38,13 @@ SET(WRAP_SOURCES
   wrap_itkDifferenceImageFilter
   wrap_itkEventObject
   wrap_itkFiniteDifferenceImageFilter
-#  wrap_itkFixedArray
+  wrap_itkFixedArray
   wrap_itkImage
 #  wrap_itkImageToImageFilter  duplicates wrap_ITKFilterBaseTcl.cxx
   wrap_itkIndex
-#  wrap_itkPoint
+  wrap_itkPoint
   wrap_itkSize
-#  wrap_itkVector
+  wrap_itkVector
 )
 
 # loop over cable config files creating two lists:
@@ -60,13 +60,13 @@ SET_SOURCE_FILES_PROPERTIES(${WRAP_TCL_SOURCES} ${WRAP_PYTHON_SOURCES} GENERATED
 ADD_LIBRARY(ITKCommonTcl SHARED ${WRAP_TCL_SOURCES})
 ADD_LIBRARY(_ITKCommonTcl MODULE ${WRAP_PYTHON_SOURCES})
 SET_TARGET_PROPERTIES( _ITKCommonTcl PROPERTIES PREFIX "")
-
+SET(IGNORE_WARNINGS -w362 -w389 -w503 -w508 -w509)
 
 MACRO(CSWIG_WRAP_TCL_FILE Source Bin Input Output Library)
    ADD_CUSTOM_COMMAND(
    SOURCE ${Source}/${Input}
    COMMAND ${CSWIG}
-   ARGS -o ${Bin}/${Output} ${SWIG_INC}
+   ARGS ${IGNORE_WARNINGS} -o ${Bin}/${Output} ${SWIG_INC}
         -tcl -c++ ${Source}/${Input}
   TARGET ${Library}
   OUTPUTS ${Bin}/${Output} )
@@ -76,7 +76,7 @@ MACRO(CSWIG_WRAP_PYTHON_FILE Source Bin Input Output Library)
    ADD_CUSTOM_COMMAND(
    SOURCE ${Source}/${Input}
    COMMAND ${CSWIG}
-   ARGS -o ${Bin}/${Output} ${SWIG_INC}
+   ARGS ${IGNORE_WARNINGS} -o ${Bin}/${Output} ${SWIG_INC}
         -python -c++ ${Source}/${Input}
   TARGET ${Library}
   OUTPUTS ${Bin}/${Output} )
