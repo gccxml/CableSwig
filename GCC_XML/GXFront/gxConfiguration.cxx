@@ -9,8 +9,8 @@
   Copyright (c) 2002 Kitware, Inc., Insight Consortium.  All rights reserved.
   See Copyright.txt for details.
 
-     This software is distributed WITHOUT ANY WARRANTY; without even 
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR 
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
@@ -31,6 +31,7 @@ gxConfiguration::gxConfiguration()
   m_HelpFlag = false;
   m_VersionFlag = false;
   m_PrintFlag = false;
+  m_PreprocessFlag = false;
   m_DebugFlag = false;
   m_ManFlag = false;
   m_CopyrightFlag = false;
@@ -44,10 +45,10 @@ bool gxConfiguration::Configure(int argc, const char*const * argv)
 {
   // Find our working paths.
   this->FindRoots(argv[0]);
-  
+
   // Process the command line.
   if(!this->ProcessCommandLine(argc, argv)) { return false; }
-  
+
   // If a config file was not specified on the command line, check the
   // environment now.
   bool checkedEnvironment;
@@ -56,20 +57,20 @@ bool gxConfiguration::Configure(int argc, const char*const * argv)
     this->CheckEnvironment();
     checkedEnvironment = true;
     }
-  
+
   // Read the configuration file if it exists.
   if(!this->CheckConfigFile()) { return false; }
-  
+
   // If we didn't earlier check the environment, do it now.
   if(!checkedEnvironment)
     {
     this->CheckEnvironment();
     }
-  
+
   // Check the alternative environment settings for "CXX" and
   // "CXXFLAGS" as a last resort to get the compiler setting.
   this->CheckCxxEnvironment();
-  
+
   // If no root has been set, use the data root.
   if(m_GCCXML_ROOT.length() == 0)
     {
@@ -92,7 +93,7 @@ bool gxConfiguration::Configure(int argc, const char*const * argv)
       }
     }
 #endif
-  
+
   if(m_GCCXML_EXECUTABLE.length() == 0)
     {
     std::string loc = m_ExecutableRoot+"/gccxml_cc1plus";
@@ -111,11 +112,36 @@ bool gxConfiguration::Configure(int argc, const char*const * argv)
     {
     m_GCCXML_EXECUTABLE = gxSystemTools::FindProgram("gccxml_cc1plus");
     }
-  
+
   gxSystemTools::ConvertToUnixSlashes(m_GCCXML_ROOT);
   gxSystemTools::ConvertToUnixSlashes(m_GCCXML_EXECUTABLE);
   gxSystemTools::ConvertToUnixSlashes(m_GCCXML_CONFIG);
   gxSystemTools::ConvertToUnixSlashes(m_GCCXML_COMPILER);
+
+  // If no preprocessor has been set, see if there is one next to the
+  // gccxml_cc1plus executable.
+  if(m_GCCXML_CPP.length() == 0 && m_GCCXML_EXECUTABLE.length() > 0)
+    {
+    std::string loc =
+      gxSystemTools::GetFilenamePath(m_GCCXML_EXECUTABLE.c_str());
+    loc += "/gccxml_cpp0";
+#ifdef _WIN32
+    loc += ".exe";
+#endif
+    if(gxSystemTools::FileExists(loc.c_str()) &&
+       !gxSystemTools::FileIsDirectory(loc.c_str()))
+      {
+      m_GCCXML_CPP = loc;
+      }
+    }
+
+  // If no preprocessor has been set, try looking in the system path.
+  if(m_GCCXML_CPP.length() == 0)
+    {
+    m_GCCXML_CPP = gxSystemTools::FindProgram("gccxml_cpp0");
+    }
+
+  gxSystemTools::ConvertToUnixSlashes(m_GCCXML_CPP);
 
   return true;
 }
@@ -129,7 +155,7 @@ bool gxConfiguration::ConfigureFlags()
     }
   return true;
 }
-  
+
 //----------------------------------------------------------------------------
 void gxConfiguration::PrintConfiguration(std::ostream& os) const
 {
@@ -138,6 +164,7 @@ void gxConfiguration::PrintConfiguration(std::ostream& os) const
      << "  GCCXML_COMPILER=\"" << m_GCCXML_COMPILER.c_str() << "\"\n"
      << "  GCCXML_CXXFLAGS=\"" << m_GCCXML_CXXFLAGS.c_str() << "\"\n"
      << "  GCCXML_EXECUTABLE=\"" << m_GCCXML_EXECUTABLE.c_str() << "\"\n"
+     << "  GCCXML_CPP=\"" << m_GCCXML_CPP.c_str() << "\"\n"
      << "  GCCXML_FLAGS=\"" << m_GCCXML_FLAGS.c_str() << "\"\n"
      << "  GCCXML_USER_FLAGS=\"" << m_GCCXML_USER_FLAGS.c_str() << "\"\n"
      << "  GCCXML_ROOT=\"" << m_GCCXML_ROOT.c_str() << "\"\n";
@@ -153,18 +180,22 @@ const std::vector<std::string>& gxConfiguration::GetArguments() const
 void gxConfiguration::AddArguments(std::vector<std::string>& arguments) const
 {
   // Add standard arguments.
-  arguments.push_back("-quiet");
-  arguments.push_back("-o");
+  if(!this->GetPreprocessFlag())
+    {
+    // These arguments are not for the preprocessor.
+    arguments.push_back("-quiet");
+    arguments.push_back("-o");
 #if defined(_WIN32) && !defined(__CYGWIN__)
-  arguments.push_back("NUL");
+    arguments.push_back("NUL");
 #else
-  arguments.push_back("/dev/null");
+    arguments.push_back("/dev/null");
 #endif
+    arguments.push_back("-fsyntax-only");
+    arguments.push_back("-w");
+    }
   arguments.push_back("-nostdinc");
   arguments.push_back("-I-");
-  arguments.push_back("-w");
-  arguments.push_back("-fsyntax-only");
-  
+
   // Add user arguments.
   for(std::vector<std::string>::const_iterator i=m_Arguments.begin();
       i != m_Arguments.end(); ++i)
@@ -189,6 +220,12 @@ bool gxConfiguration::GetVersionFlag() const
 bool gxConfiguration::GetPrintFlag() const
 {
   return m_PrintFlag;
+}
+
+//----------------------------------------------------------------------------
+bool gxConfiguration::GetPreprocessFlag() const
+{
+  return m_PreprocessFlag;
 }
 
 //----------------------------------------------------------------------------
@@ -220,18 +257,24 @@ const std::string& gxConfiguration::GetGCCXML_EXECUTABLE() const
 {
   return m_GCCXML_EXECUTABLE;
 }
-  
+
+//----------------------------------------------------------------------------
+const std::string& gxConfiguration::GetGCCXML_CPP() const
+{
+  return m_GCCXML_CPP;
+}
+
 //----------------------------------------------------------------------------
 const std::string& gxConfiguration::GetGCCXML_FLAGS() const
 {
   return m_GCCXML_FLAGS;
 }
-  
+
 //----------------------------------------------------------------------------
 const std::string& gxConfiguration::GetGCCXML_USER_FLAGS() const
 {
   return m_GCCXML_USER_FLAGS;
-} 
+}
 
 //----------------------------------------------------------------------------
 void gxConfiguration::FindRoots(const char* argv0)
@@ -254,22 +297,22 @@ void gxConfiguration::FindRoots(const char* argv0)
     {
     selfPath = gxSystemTools::CollapseDirectory(".");
     }
-  gxSystemTools::ConvertToUnixSlashes(selfPath);  
-  
+  gxSystemTools::ConvertToUnixSlashes(selfPath);
+
   // Construct the name of the executable.
   std::string exeName = argv0;
   if(pos != std::string::npos)
     {
     exeName = av0.substr(pos+1).c_str();
     }
-#ifdef _WIN32  
+#ifdef _WIN32
   exeName = gxSystemTools::LowerCase(exeName.c_str());
   if(exeName.length() < 4 || exeName.substr(exeName.length()-4) != ".exe")
     {
     exeName += ".exe";
     }
 #endif
-  
+
   // Construct the full path to this executable as if it were in the
   // build tree, if it exists there.
   std::string ePath="<GCCXML_EXECUTABLE_DIR-DOES-NOT-EXIST>";
@@ -283,15 +326,15 @@ void gxConfiguration::FindRoots(const char* argv0)
     ePath += "/";
     ePath += exeName;
     }
-  
+
   // Construct the full path to the executable from argv[0].
   std::string sPath = selfPath;
   sPath += "/";
   sPath += exeName;
-  
+
   // Find the data files.
-  std::string sharePath = selfPath+"/../share/gccxml-" GCCXML_VERSION;  
-  
+  std::string sharePath = selfPath+"/../share/gccxml-" GCCXML_VERSION;
+
   // If we are running from the build directory, use the source
   // directory as the data root.
   if(gxSystemTools::SameFile(sPath.c_str(), ePath.c_str()))
@@ -306,7 +349,7 @@ void gxConfiguration::FindRoots(const char* argv0)
     {
     // Use our own location as the executable root.
     m_ExecutableRoot = selfPath;
-    
+
     if(gxSystemTools::FileIsDirectory(sharePath.c_str()))
       {
       // The data files are in the share path next to the bin path.
@@ -364,6 +407,18 @@ bool gxConfiguration::ProcessCommandLine(int argc, const char*const* argv)
         return false;
         }
       }
+    else if(strcmp(argv[i], "--gccxml-cpp") == 0)
+      {
+      if(++i < argc)
+        {
+        m_GCCXML_CPP = argv[i];
+        }
+      else
+        {
+        std::cerr << "Option --gccxml-cpp requires an argument.\n";
+        return false;
+        }
+      }
     else if(strcmp(argv[i], "--gccxml-config") == 0)
       {
       if(++i < argc)
@@ -374,7 +429,7 @@ bool gxConfiguration::ProcessCommandLine(int argc, const char*const* argv)
         {
         std::cerr << "Option --gccxml-config requires an argument.\n";
         return false;
-        }      
+        }
       }
     else if(strcmp(argv[i], "--gccxml-root") == 0)
       {
@@ -386,7 +441,7 @@ bool gxConfiguration::ProcessCommandLine(int argc, const char*const* argv)
         {
         std::cerr << "Option --gccxml-root requires an argument.\n";
         return false;
-        }      
+        }
       }
     else if(strcmp(argv[i], "--help") == 0)
       {
@@ -399,6 +454,11 @@ bool gxConfiguration::ProcessCommandLine(int argc, const char*const* argv)
     else if(strcmp(argv[i], "--print") == 0)
       {
       m_PrintFlag = true;
+      }
+    else if((strcmp(argv[i], "--preprocess") == 0) ||
+            (strcmp(argv[i], "-E") == 0))
+      {
+      m_PreprocessFlag = true;
       }
     else if(strcmp(argv[i], "--debug") == 0)
       {
@@ -428,7 +488,7 @@ bool gxConfiguration::ProcessCommandLine(int argc, const char*const* argv)
       m_Arguments.push_back(arg);
       }
     }
-  
+
   return true;
 }
 
@@ -452,6 +512,10 @@ void gxConfiguration::CheckEnvironment()
   if(m_GCCXML_EXECUTABLE.length() == 0)
     {
     gxSystemTools::GetEnv("GCCXML_EXECUTABLE", m_GCCXML_EXECUTABLE);
+    }
+  if(m_GCCXML_CPP.length() == 0)
+    {
+    gxSystemTools::GetEnv("GCCXML_CPP", m_GCCXML_CPP);
     }
   if(m_GCCXML_ROOT.length() == 0)
     {
@@ -492,7 +556,7 @@ bool gxConfiguration::CheckConfigFile()
       return true;
       }
     }
-  
+
   return this->ReadConfigFile();
 }
 
@@ -530,7 +594,7 @@ bool gxConfiguration::FindConfigFile()
     m_GCCXML_CONFIG = config;
     return true;
     }
-  
+
   return false;
 }
 
@@ -543,7 +607,7 @@ bool gxConfiguration::ReadConfigFile()
               << "\" does not exist.\n";
     return false;
     }
-  
+
   std::ifstream config(m_GCCXML_CONFIG.c_str());
   if(!config)
     {
@@ -551,7 +615,7 @@ bool gxConfiguration::ReadConfigFile()
               << m_GCCXML_CONFIG.c_str() << "\".\n";
     return false;
     }
-  
+
   char buf[4096];
   // Parse config values and set them if not already set.
   while(config.getline(buf, 4096))
@@ -575,6 +639,10 @@ bool gxConfiguration::ReadConfigFile()
       else if(key == "GCCXML_EXECUTABLE")
         {
         if(m_GCCXML_EXECUTABLE.length() == 0) { m_GCCXML_EXECUTABLE = value; }
+        }
+      else if(key == "GCCXML_CPP")
+        {
+        if(m_GCCXML_CPP.length() == 0) { m_GCCXML_CPP = value; }
         }
       else if(key == "GCCXML_ROOT")
         {
@@ -606,11 +674,11 @@ bool gxConfiguration::ParseConfigLine(const char* in_line, std::string& key,
   std::string::size_type lpos;
   std::string::size_type rpos;
   lpos = line.find_first_not_of(" \t");
-  
+
   // Ignore comments and blank lines.
   if(lpos == std::string::npos) { return false; }
   if(line[lpos] == '#') { return false; }
-  
+
   rpos = line.find("=", lpos);
   if(rpos == std::string::npos)
     {
@@ -618,11 +686,11 @@ bool gxConfiguration::ParseConfigLine(const char* in_line, std::string& key,
               << line.c_str() << "\n";
     return false;
     }
-  
+
   // Have the key.
   key = line.substr(lpos, rpos-lpos);
   std::string rawValue = line.substr(rpos+1);
-  
+
   // Pull off the value with no leading or trailing whitespace.
   lpos = rawValue.find_first_not_of(" \t");
   rpos = rawValue.find_last_not_of(" \t");
@@ -631,7 +699,7 @@ bool gxConfiguration::ParseConfigLine(const char* in_line, std::string& key,
     value = "";
     return true;
     }
-  
+
   // If the value is double quoted, remove the end quotes.
   std::string strippedValue = rawValue.substr(lpos, rpos-lpos+1);
   if((rawValue.length() >= 2) && (*strippedValue.begin() == '"')
@@ -639,7 +707,7 @@ bool gxConfiguration::ParseConfigLine(const char* in_line, std::string& key,
     {
     strippedValue = strippedValue.substr(1, strippedValue.length()-2);
     }
-  
+
   value = strippedValue;
   return true;
 }
@@ -658,7 +726,7 @@ bool gxConfiguration::CheckFlags()
 {
   // See if there are already flags set.
   if(m_GCCXML_FLAGS.length() > 0) { return true; }
-  
+
   // No flags, need compiler setting to guess flags.
   if(!this->CheckCompiler() || !this->FindFlags())
     {
@@ -715,7 +783,7 @@ bool gxConfiguration::FindFlags()
       gxSystemTools::FileIsDirectory((m_GCCXML_ROOT+"/Vc7").c_str());
     bool support71 =
       gxSystemTools::FileIsDirectory((m_GCCXML_ROOT+"/Vc71").c_str());
-    
+
     // See if only one is installed.
     if(have6 && !have7 && !have71)
       {
@@ -736,7 +804,7 @@ bool gxConfiguration::FindFlags()
       if(support6 && !support7 && !support71)
         {
         return this->FindFlagsMSVC6();
-        }      
+        }
       else if(!support6 && support7 && !support71)
         {
         return this->FindFlagsMSVC7();
@@ -747,12 +815,12 @@ bool gxConfiguration::FindFlags()
         }
       else if(!support6 && !support7 && !support71)
         {
-        std::cerr << "Compiler \"" << m_GCCXML_COMPILER 
+        std::cerr << "Compiler \"" << m_GCCXML_COMPILER
                   << "\" is not supported by GCC_XML because none of \n"
                   << "the Vc6, Vc7, or Vc71 support directories exists.\n";
         return false;
         }
-      
+
       // Can support either.  See if one is found in the path.
       std::string cl = gxSystemTools::FindProgram("cl");
       if(cl.length() > 0)
@@ -779,7 +847,7 @@ bool gxConfiguration::FindFlags()
             return this->FindFlagsMSVC71();
             }
           }
-        
+
         // Couldn't tell from program location.  Try running it.
         std::string output;
         int retVal=0;
@@ -831,7 +899,7 @@ bool gxConfiguration::FindFlags()
       }
     else
       {
-      std::cerr << "Compiler \"" << m_GCCXML_COMPILER 
+      std::cerr << "Compiler \"" << m_GCCXML_COMPILER
                 << "\" is not supported by GCC_XML because "
                 << "none of MSVC 6, 7, or 7.1 is installed.\n";
       return false;
@@ -850,7 +918,7 @@ bool gxConfiguration::FindFlags()
         {
         return this->FindFlagsBCC55(bcc32.c_str());
         }
-      
+
       // Couldn't tell from program location.  Try running it.
       std::string output;
       int retVal=0;
@@ -864,13 +932,13 @@ bool gxConfiguration::FindFlags()
         }
       }
     }
-  
+
   // Didn't find supported compiler.
-  std::cerr << "Compiler \"" << m_GCCXML_COMPILER 
+  std::cerr << "Compiler \"" << m_GCCXML_COMPILER
             << "\" is not supported by GCC_XML.\n";
   return false;
 #else
-  // This is a UNIX environment.  Use the gccxml_find_flags script.  
+  // This is a UNIX environment.  Use the gccxml_find_flags script.
   std::string gccxmlFindFlags = m_GCCXML_ROOT+"/gccxml_find_flags";
   gccxmlFindFlags += " ";
   gccxmlFindFlags += m_GCCXML_COMPILER;
@@ -883,15 +951,15 @@ bool gxConfiguration::FindFlags()
     std::cerr << "Error executing \"" << gccxmlFindFlags << "\"\n";
     return false;
     }
-  
-  // Remove newlines from the flags. 
+
+  // Remove newlines from the flags.
   std::string::size_type pos = flags.find_first_of("\r\n");
   while(pos != std::string::npos)
     {
     flags[pos] = ' ';
     pos = flags.find_first_of("\r\n", pos+1);
     }
-  
+
   m_GCCXML_FLAGS = flags;
   return true;
 #endif
@@ -912,7 +980,7 @@ bool gxConfiguration::FindFlagsMSVC6()
   gxSystemTools::ConvertToUnixSlashes(msvcPath);
   std::string vcIncludePath = m_GCCXML_ROOT+"/Vc6/Include";
   gxSystemTools::ConvertToUnixSlashes(vcIncludePath);
-  
+
   // Make sure the support directory exists.
   if(!gxSystemTools::FileIsDirectory(vcIncludePath.c_str()))
     {
@@ -920,7 +988,7 @@ bool gxConfiguration::FindFlagsMSVC6()
     std::cerr << "Checked \"" << vcIncludePath.c_str() << "\".\n";
     return false;
     }
-  
+
   m_GCCXML_FLAGS =
     "-D__stdcall=__attribute__((__stdcall__)) "
     "-D__cdecl=__attribute__((__cdecl__)) "
@@ -958,7 +1026,7 @@ bool gxConfiguration::FindFlagsMSVC7()
   std::string vcIncludePath2 = m_GCCXML_ROOT+"/Vc7/PlatformSDK";
   gxSystemTools::ConvertToUnixSlashes(vcIncludePath1);
   gxSystemTools::ConvertToUnixSlashes(vcIncludePath2);
-  
+
   // Make sure the support directories exist.
   if(!gxSystemTools::FileIsDirectory(vcIncludePath1.c_str()))
     {
@@ -972,7 +1040,7 @@ bool gxConfiguration::FindFlagsMSVC7()
     std::cerr << "Checked \"" << vcIncludePath2.c_str() << "\".\n";
     return false;
     }
-  
+
   m_GCCXML_FLAGS =
     "-D__stdcall=__attribute__((__stdcall__)) "
     "-D__cdecl=__attribute__((__cdecl__)) "
@@ -1014,7 +1082,7 @@ bool gxConfiguration::FindFlagsMSVC71()
   std::string vcIncludePath2 = m_GCCXML_ROOT+"/Vc71/PlatformSDK";
   gxSystemTools::ConvertToUnixSlashes(vcIncludePath1);
   gxSystemTools::ConvertToUnixSlashes(vcIncludePath2);
-  
+
   // Make sure the support directories exist.
   if(!gxSystemTools::FileIsDirectory(vcIncludePath1.c_str()))
     {
@@ -1028,7 +1096,7 @@ bool gxConfiguration::FindFlagsMSVC71()
     std::cerr << "Checked \"" << vcIncludePath2.c_str() << "\".\n";
     return false;
     }
-  
+
   m_GCCXML_FLAGS =
     "-D__stdcall=__attribute__((__stdcall__)) "
     "-D__cdecl=__attribute__((__cdecl__)) "
@@ -1071,13 +1139,13 @@ bool gxConfiguration::FindFlagsBCC55(const char* inBcc32)
     }
   std::string include1 = include2;
   include1 += "/Wrappers";
-  
+
   // Find the compiler's include directory.
   std::string include3 = inBcc32;
   include3 = include3.substr(0, include3.rfind('/'));
   include3 = include3.substr(0, include3.rfind('/'));
   include3 += "/Include";
-  
+
   if(!gxSystemTools::FileIsDirectory(include3.c_str()))
     {
     std::cerr << "Borland C++ 5.5 include directory cannot be found.\n";
@@ -1087,7 +1155,7 @@ bool gxConfiguration::FindFlagsBCC55(const char* inBcc32)
               << inBcc32 << "\".\n";
     return false;
     }
-  
+
   m_GCCXML_FLAGS =
     "-D__stdcall=__attribute__((__stdcall__)) "
     "-D__cdecl=__attribute__((__cdecl__)) "
