@@ -365,11 +365,20 @@ int WrapperFacility::ListMethodsCommand(int objc, Tcl_Obj* CONST objv[]) const
     {
     // Get the next class off the stack.
     const ClassType* curClass = outputStack.top(); outputStack.pop();
-    // If the class has a wrapper, list its methods.
     const WrapperBase* wrapper = this->GetWrapper(curClass);
+    // If the class has a wrapper, list its methods.
     if(wrapper)
       {
       wrapper->ListMethods();
+      }
+    // Otherwise, display a message that the wrapper is not loaded.
+    else
+      {
+      Tcl_AppendResult(m_Interpreter,
+                       "Wrapper for class ",
+                       const_cast<char*>(curClass->Name().c_str()),
+                       " has not been loaded.\n",
+                       0);
       }
     }
   
