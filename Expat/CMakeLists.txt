@@ -1,6 +1,9 @@
 PROJECT(CABLEEXPAT)
 INCLUDE_REGULAR_EXPRESSION("^(expat|xml|ascii|utf|name|iascii|latin).*$")
 
+INCLUDE(${CMAKE_ROOT}/Modules/TestBigEndian.cmake)
+TEST_BIG_ENDIAN( EXPAT_WORDS_BIGENDIAN )
+
 SET(expat_SRCS 
   xmlparse.c 
   xmltok.c 
