@@ -924,6 +924,36 @@ WrapperFacility::GetConversion(const CvQualifiedType& from,
       }
     }
   
+  // If the "from" type is a pointer type, we can try adding
+  // qualifiers to the type to which it points.  THIS IS A HACK, and only
+  // works for the first type below the top-level pointer type.
+  if(from.GetType()->IsPointerType())
+    {
+    CvQualifiedType pointedToType =
+      PointerType::SafeDownCast(from.GetType())->GetPointedToType();
+    conversionKey = ConversionKey(TypeInfo::GetPointerType(pointedToType.GetMoreQualifiedType(true, false),
+                                                           from.IsConst(), from.IsVolatile()), to);
+    i = m_ConversionMap->find(conversionKey);
+    if(i != m_ConversionMap->end())
+      {
+      return i->second;
+      }
+    conversionKey = ConversionKey(TypeInfo::GetPointerType(pointedToType.GetMoreQualifiedType(false, true),
+                                                           from.IsConst(), from.IsVolatile()), to);
+    i = m_ConversionMap->find(conversionKey);
+    if(i != m_ConversionMap->end())
+      {
+      return i->second;
+      }
+    conversionKey = ConversionKey(TypeInfo::GetPointerType(pointedToType.GetMoreQualifiedType(true, true),
+                                                           from.IsConst(), from.IsVolatile()), to);
+    i = m_ConversionMap->find(conversionKey);
+    if(i != m_ConversionMap->end())
+      {
+      return i->second;
+      }
+    }
+  
   // A special hack for conversion of any pointer type to pointer to
   // void.
   if(to->IsPointerType() && from.IsPointerType())
