@@ -25,12 +25,13 @@ namespace std {
     %rename(String) string;
     class string;
 
+    /* Overloading check */
     %typemap(typecheck) string = char *;
     %typemap(typecheck) const string & = char *;
 
     %typemap(in) string {
         if (TYPE($input) == T_STRING) {
-            $1 = std::string(STR2CSTR($input));
+            $1 = std::string(StringValuePtr($input));
         } else {
             SWIG_exception(SWIG_TypeError, "not a string");
         }
@@ -38,7 +39,7 @@ namespace std {
 
     %typemap(in) const string & (std::string temp) {
         if (TYPE($input) == T_STRING) {
-            temp = std::string(STR2CSTR($input));
+            temp = std::string(StringValuePtr($input));
             $1 = &temp;
         } else {
             SWIG_exception(SWIG_TypeError, "not a string");
@@ -51,6 +52,26 @@ namespace std {
 
     %typemap(out) const string & {
         $result = rb_str_new2($1->c_str());
+    }
+
+    %typemap(directorin) string, const string &, string & "$1_name.c_str()";
+
+    %typemap(directorin) string *, const string * "$1_name->c_str()";
+    
+    %typemap(directorout) string {
+        if (TYPE($input) == T_STRING)
+            $result = std::string(StringValuePtr($input));
+        else
+            throw Swig::DirectorTypeMismatchException("string expected");
+    }
+    
+    %typemap(directorout) const string & (std::string temp) {
+        if (TYPE($input) == T_STRING) {
+            temp = std::string(StringValuePtr($input));
+            $result = &temp;
+        } else {
+            throw Swig::DirectorTypeMismatchException("string expected");
+        }
     }
 
 }

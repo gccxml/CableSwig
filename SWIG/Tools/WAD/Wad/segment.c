@@ -32,7 +32,7 @@
 
 #include "wad.h"
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Wad/segment.c,v 1.18 2001/06/20 15:12:53 beazley Exp";
 
 /* Include the proper code for reading the segment map */
 

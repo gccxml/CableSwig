@@ -2,7 +2,4 @@
 class
 constants
 enum
-operator
-overload
 simple
-template

@@ -83,13 +83,13 @@ namespace std {
                 unsigned int size = (PyTuple_Check($input) ?
                                      PyTuple_Size($input) :
                                      PyList_Size($input));
-                $1 = std::vector<T >(size);
+                $1.reserve(size);
                 for (unsigned int i=0; i<size; i++) {
                     T* x;
                     PyObject* o = PySequence_GetItem($input,i);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
                                          $descriptor(T *),0)) != -1) {
-                        (($1_type &)$1)[i] = *x;
+                        (($1_type &)$1).push_back(*x);
                         Py_DECREF(o);
                     } else {
                         Py_DECREF(o);
@@ -99,11 +99,36 @@ namespace std {
                     }
                 }
             } else if (SWIG_ConvertPtr($input,(void **) &v, 
-                                       $&1_descriptor,1) != -1){
+                                       $&1_descriptor,0) != -1) {
                 $1 = *v;
             } else {
                 PyErr_SetString(PyExc_TypeError,"vector<" #T "> expected");
                 SWIG_fail;
+            }
+        }
+        %typemap(directorout) vector<T> (std::vector<T>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                $result.reserve(size);
+                for (unsigned int i=0; i<size; i++) {
+                    T* x;
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if ((SWIG_ConvertPtr(o,(void **) &x, 
+                                         $descriptor(T *),0)) != -1) {
+                        (($type &)$result).push_back(*x);
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $&descriptor,1) != -1){
+                $result = *v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
             }
         }
         %typemap(in) const vector<T>& (std::vector<T> temp,
@@ -114,14 +139,14 @@ namespace std {
                 unsigned int size = (PyTuple_Check($input) ?
                                      PyTuple_Size($input) :
                                      PyList_Size($input));
-                temp = std::vector<T >(size);
+                temp.reserve(size);
                 $1 = &temp;
                 for (unsigned int i=0; i<size; i++) {
                     T* x;
                     PyObject* o = PySequence_GetItem($input,i);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
                                          $descriptor(T *),0)) != -1) {
-                        temp[i] = *x;
+                        temp.push_back(*x);
                         Py_DECREF(o);
                     } else {
                         Py_DECREF(o);
@@ -131,11 +156,40 @@ namespace std {
                     }
                 }
             } else if (SWIG_ConvertPtr($input,(void **) &v, 
-                                       $1_descriptor,1) != -1){
+                                       $1_descriptor,0) != -1) {
                 $1 = v;
             } else {
                 PyErr_SetString(PyExc_TypeError,"vector<" #T "> expected");
                 SWIG_fail;
+            }
+        }
+        %typemap(directorout) const vector<T>& (std::vector<T> temp,
+                                         std::vector<T>* v),
+                       const vector<T>* (std::vector<T> temp,
+                                         std::vector<T>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                temp.reserve(size);
+                $result = &temp;
+                for (unsigned int i=0; i<size; i++) {
+                    T* x;
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if ((SWIG_ConvertPtr(o,(void **) &x, 
+                                         $descriptor(T *),0)) != -1) {
+                        temp.push_back(*x);
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $descriptor,1) != -1){
+                $result = v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
             }
         }
         %typemap(out) vector<T> {
@@ -143,6 +197,15 @@ namespace std {
             for (unsigned int i=0; i<$1.size(); i++) {
                 T* ptr = new T((($1_type &)$1)[i]);
                 PyTuple_SetItem($result,i,
+                                SWIG_NewPointerObj((void *) ptr, 
+                                                   $descriptor(T *), 1));
+            }
+        }
+        %typemap(directorin) vector<T> {
+            $input = PyTuple_New($1_name.size());
+            for (unsigned int i=0; i<$1_name.size(); i++) {
+                T* ptr = new T((($1_type &)$1_name)[i]);
+                PyTuple_SetItem($input,i,
                                 SWIG_NewPointerObj((void *) ptr, 
                                                    $descriptor(T *), 1));
             }
@@ -165,6 +228,7 @@ namespace std {
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
@@ -195,6 +259,7 @@ namespace std {
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
@@ -241,8 +306,9 @@ namespace std {
                 if (j<0) j = size+j;
                 if (i<0) i = 0;
                 if (j>size) j = size;
-                std::vector<T > tmp(j-i);
-                std::copy(self->begin()+i,self->begin()+j,tmp.begin());
+                std::vector<T > tmp;
+                tmp.reserve(j-i);
+                tmp.insert(tmp.begin(),self->begin()+i,self->begin()+j);
                 return tmp;
             }
             void __setitem__(int i, const T& x) {
@@ -263,11 +329,11 @@ namespace std {
                     std::copy(v.begin(),v.end(),self->begin()+i);
                 } else {
                     self->erase(self->begin()+i,self->begin()+j);
-                    if (i+1 <= self->size()) {
+                    if (i+1 <= int(self->size())) {
                         self->insert(self->begin()+i,v.begin(),v.end());
                     } else {
                         self->insert(self->end(),v.begin(),v.end());
-	            }
+                    }
                 }
             }
             void __delitem__(int i) {
@@ -293,76 +359,139 @@ namespace std {
     // Partial specialization for vectors of pointers.  [ beazley ]
 
     template<class T> class vector<T*> {
-        %typemap(in) vector<T> (std::vector<T>* v) {
+        %typemap(in) vector<T*> (std::vector<T*>* v) {
             if (PyTuple_Check($input) || PyList_Check($input)) {
                 unsigned int size = (PyTuple_Check($input) ?
                                      PyTuple_Size($input) :
                                      PyList_Size($input));
-                $1 = std::vector<T >(size);
+                $1 = std::vector<T *>(size);
                 for (unsigned int i=0; i<size; i++) {
-                    T x;
+                    T *x;
                     PyObject* o = PySequence_GetItem($input,i);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
-                                         $descriptor(T),0)) != -1) {
+                                         $descriptor(T *),0)) != -1) {
                         (($1_type &)$1)[i] = x;
                         Py_DECREF(o);
                     } else {
                         Py_DECREF(o);
                         PyErr_SetString(PyExc_TypeError,
-                                        "vector<" #T "> expected");
+                                        "vector<" #T "*> expected");
                         SWIG_fail;
                     }
                 }
             } else if (SWIG_ConvertPtr($input,(void **) &v, 
-                                       $&1_descriptor,1) != -1){
+                                       $&1_descriptor,0) != -1) {
                 $1 = *v;
             } else {
-                PyErr_SetString(PyExc_TypeError,"vector<" #T "> expected");
+                PyErr_SetString(PyExc_TypeError,"vector<" #T "*> expected");
                 SWIG_fail;
             }
         }
-        %typemap(in) const vector<T>& (std::vector<T> temp,
-                                       std::vector<T>* v),
-                     const vector<T>* (std::vector<T> temp,
-                                       std::vector<T>* v) {
+        %typemap(directorout) vector<T*> (std::vector<T*>* v) {
             if (PyTuple_Check($input) || PyList_Check($input)) {
                 unsigned int size = (PyTuple_Check($input) ?
                                      PyTuple_Size($input) :
                                      PyList_Size($input));
-                temp = std::vector<T >(size);
-                $1 = &temp;
+                $result = std::vector<T* >(size);
                 for (unsigned int i=0; i<size; i++) {
-                    T x;
+                    T *x;
                     PyObject* o = PySequence_GetItem($input,i);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
-                                         $descriptor(T),0)) != -1) {
+                                         $descriptor(T*),0)) != -1) {
+                        (($type &)$result)[i] = x;
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "*> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $&descriptor,1) != -1){
+                $result = *v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "*> expected");
+            }
+        }
+        %typemap(in) const vector<T*>& (std::vector<T*> temp,
+                                       std::vector<T*>* v),
+                     const vector<T*>* (std::vector<T*> temp,
+                                       std::vector<T*>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                temp = std::vector<T *>(size);
+                $1 = &temp;
+                for (unsigned int i=0; i<size; i++) {
+                    T *x;
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if ((SWIG_ConvertPtr(o,(void **) &x, 
+                                         $descriptor(T *),0)) != -1) {
                         temp[i] = x;
                         Py_DECREF(o);
                     } else {
                         Py_DECREF(o);
                         PyErr_SetString(PyExc_TypeError,
-                                        "vector<" #T "> expected");
+                                        "vector<" #T "*> expected");
                         SWIG_fail;
                     }
                 }
             } else if (SWIG_ConvertPtr($input,(void **) &v, 
-                                       $1_descriptor,1) != -1){
+                                       $1_descriptor,0) != -1) {
                 $1 = v;
             } else {
-                PyErr_SetString(PyExc_TypeError,"vector<" #T "> expected");
+                PyErr_SetString(PyExc_TypeError,"vector<" #T "*> expected");
                 SWIG_fail;
             }
         }
-        %typemap(out) vector<T> {
-            $result = PyTuple_New($1.size());
-            for (unsigned int i=0; i<$1.size(); i++) {
-                T ptr = (($1_type &)$1)[i];
-                PyTuple_SetItem($result,i,
-                                SWIG_NewPointerObj((void *) ptr, 
-                                                   $descriptor(T), 0));
+        %typemap(directorout) const vector<T *>& (std::vector<T *> temp,
+                                         std::vector<T *>* v),
+                       const vector<T *>* (std::vector<T *> temp,
+                                         std::vector<T *>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                temp = std::vector<T * >(size);
+                $result = &temp;
+                for (unsigned int i=0; i<size; i++) {
+                    T *x;
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if ((SWIG_ConvertPtr(o,(void **) &x, 
+                                         $descriptor(T *),0)) != -1) {
+                        temp[i] = x;
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "*> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $descriptor,1) != -1){
+                $result = v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "*> expected");
             }
         }
-        %typecheck(SWIG_TYPECHECK_VECTOR) vector<T> {
+        %typemap(out) vector<T*> {
+            $result = PyTuple_New($1.size());
+            for (unsigned int i=0; i<$1.size(); i++) {
+                T *ptr = (($1_type &)$1)[i];
+                PyTuple_SetItem($result,i,
+                                SWIG_NewPointerObj((void *) ptr, 
+                                                   $descriptor(T*), 0));
+            }
+        }
+        %typemap(directorin) vector<T*> {
+            $input = PyTuple_New($1_name.size());
+            for (unsigned int i=0; i<$1_name.size(); i++) {
+                T *ptr = (($1_type &)$1_name)[i];
+                PyTuple_SetItem($input,i,
+                                SWIG_NewPointerObj((void *) ptr, 
+                                                   $descriptor(T*), 0));
+            }
+        }
+        %typecheck(SWIG_TYPECHECK_VECTOR) vector<T*> {
             /* native sequence? */
             if (PyTuple_Check($input) || PyList_Check($input)) {
                 unsigned int size = (PyTuple_Check($input) ?
@@ -373,17 +502,18 @@ namespace std {
                     $1 = 1;
                 } else {
                     /* check the first element only */
-                    T x;
+                    T *x;
                     PyObject* o = PySequence_GetItem($input,0);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
-                                         $descriptor(T),0)) != -1)
+                                         $descriptor(T*),0)) != -1)
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
-                std::vector<T >* v;
+                std::vector<T* >* v;
                 if (SWIG_ConvertPtr($input,(void **) &v, 
                                     $&1_descriptor,0) != -1)
                     $1 = 1;
@@ -391,8 +521,8 @@ namespace std {
                     $1 = 0;
             }
         }
-        %typecheck(SWIG_TYPECHECK_VECTOR) const vector<T>&,
-                                          const vector<T>* {
+        %typecheck(SWIG_TYPECHECK_VECTOR) const vector<T*>&,
+                                          const vector<T*>* {
             /* native sequence? */
             if (PyTuple_Check($input) || PyList_Check($input)) {
                 unsigned int size = (PyTuple_Check($input) ?
@@ -403,17 +533,18 @@ namespace std {
                     $1 = 1;
                 } else {
                     /* check the first element only */
-                    T x;
+                    T *x;
                     PyObject* o = PySequence_GetItem($input,0);
                     if ((SWIG_ConvertPtr(o,(void **) &x, 
-                                         $descriptor(T),0)) != -1)
+                                         $descriptor(T*),0)) != -1)
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
-                std::vector<T >* v;
+                std::vector<T *>* v;
                 if (SWIG_ConvertPtr($input,(void **) &v, 
                                     $1_descriptor,0) != -1)
                     $1 = 1;
@@ -423,26 +554,26 @@ namespace std {
         }
       public:
         vector(unsigned int size = 0);
-        vector(unsigned int size, const T& value);
-        vector(const vector<T> &);
+        vector(unsigned int size, T * &value);
+        vector(const vector<T*> &);
 
         %rename(__len__) size;
         unsigned int size() const;
         void clear();
         %rename(append) push_back;
-        void push_back(T x);
+        void push_back(T * x);
         %extend {
             bool __nonzero__() {
                 return !(self->empty());
             }
-            T pop() {
+            T *pop() {
                 if (self->size() == 0)
                     throw std::out_of_range("pop from empty vector");
-                T x = self->back();
+                T *x = self->back();
                 self->pop_back();
                 return x;
             }
-            T  __getitem__(int i) {
+            T * __getitem__(int i) {
                 int size = int(self->size());
                 if (i<0) i += size;
                 if (i>=0 && i<size)
@@ -450,17 +581,17 @@ namespace std {
                 else
                     throw std::out_of_range("vector index out of range");
             }
-            std::vector<T> __getslice__(int i, int j) {
+            std::vector<T*> __getslice__(int i, int j) {
                 int size = int(self->size());
                 if (i<0) i = size+i;
                 if (j<0) j = size+j;
                 if (i<0) i = 0;
                 if (j>size) j = size;
-                std::vector<T > tmp(j-i);
+                std::vector<T *> tmp(j-i);
                 std::copy(self->begin()+i,self->begin()+j,tmp.begin());
                 return tmp;
             }
-            void __setitem__(int i, const T& x) {
+            void __setitem__(int i, T *x) {
                 int size = int(self->size());
                 if (i<0) i+= size;
                 if (i>=0 && i<size)
@@ -468,7 +599,7 @@ namespace std {
                 else
                     throw std::out_of_range("vector index out of range");
             }
-            void __setslice__(int i, int j, const std::vector<T>& v) {
+            void __setslice__(int i, int j, const std::vector<T*>& v) {
                 int size = int(self->size());
                 if (i<0) i = size+i;
                 if (j<0) j = size+j;
@@ -478,7 +609,7 @@ namespace std {
                     std::copy(v.begin(),v.end(),self->begin()+i);
                 } else {
                     self->erase(self->begin()+i,self->begin()+j);
-                    if (i+1 <= self->size())
+                    if (i+1 <= int(self->size()))
                         self->insert(self->begin()+i,v.begin(),v.end());
                     else
                         self->insert(self->end(),v.begin(),v.end());
@@ -533,6 +664,29 @@ namespace std {
                 SWIG_fail;
             }
         }
+        %typemap(directorout) vector<T> (std::vector<T>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                $result = std::vector<T >(size);
+                for (unsigned int i=0; i<size; i++) {
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if (CHECK(o)) {
+                        (($type &)$result)[i] = (T)(CONVERT_FROM(o));
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $&descriptor,1) != -1){
+                $result = *v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+            }
+        }
         %typemap(in) const vector<T>& (std::vector<T> temp,
                                        std::vector<T>* v),
                      const vector<T>* (std::vector<T> temp,
@@ -563,11 +717,44 @@ namespace std {
                 SWIG_fail;
             }
         }
+        %typemap(directorout) const vector<T>& (std::vector<T> temp,
+                                         std::vector<T>* v),
+                       const vector<T>* (std::vector<T> temp,
+                                         std::vector<T>* v) {
+            if (PyTuple_Check($input) || PyList_Check($input)) {
+                unsigned int size = (PyTuple_Check($input) ?
+                                     PyTuple_Size($input) :
+                                     PyList_Size($input));
+                temp = std::vector<T >(size);
+                $result = &temp;
+                for (unsigned int i=0; i<size; i++) {
+                    PyObject* o = PySequence_GetItem($input,i);
+                    if (CHECK(o)) {
+                        temp[i] = (T)(CONVERT_FROM(o));
+                        Py_DECREF(o);
+                    } else {
+                        Py_DECREF(o);
+                        throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+                    }
+                }
+            } else if (SWIG_ConvertPtr($input,(void **) &v, 
+                                       $descriptor,1) != -1){
+                $result = v;
+            } else {
+                throw Swig::DirectorTypeMismatchException("vector<" #T "> expected");
+            }
+        }
         %typemap(out) vector<T> {
             $result = PyTuple_New($1.size());
             for (unsigned int i=0; i<$1.size(); i++)
                 PyTuple_SetItem($result,i,
                                 CONVERT_TO((($1_type &)$1)[i]));
+        }
+        %typemap(directorin) vector<T> {
+            $input = PyTuple_New($1_name.size());
+            for (unsigned int i=0; i<$1_name.size(); i++)
+                PyTuple_SetItem($input,i,
+                                CONVERT_TO((($1_type &)$1_name)[i]));
         }
         %typecheck(SWIG_TYPECHECK_VECTOR) vector<T> {
             /* native sequence? */
@@ -585,6 +772,7 @@ namespace std {
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
@@ -613,6 +801,7 @@ namespace std {
                         $1 = 1;
                     else
                         $1 = 0;
+                    Py_DECREF(o);
                 }
             } else {
                 /* wrapped vector? */
@@ -679,7 +868,7 @@ namespace std {
                     std::copy(v.begin(),v.end(),self->begin()+i);
                 } else {
                     self->erase(self->begin()+i,self->begin()+j);
-                    if (i+1 <= self->size())
+                    if (i+1 <= int(self->size()))
                         self->insert(self->begin()+i,v.begin(),v.end());
                     else
                         self->insert(self->end(),v.begin(),v.end());
@@ -706,15 +895,18 @@ namespace std {
     %enddef
 
     specialize_std_vector(bool,PyInt_Check,PyInt_AsLong,SwigInt_FromBool);
+    specialize_std_vector(char,PyInt_Check,PyInt_AsLong,PyInt_FromLong);
     specialize_std_vector(int,PyInt_Check,PyInt_AsLong,PyInt_FromLong);
     specialize_std_vector(short,PyInt_Check,PyInt_AsLong,PyInt_FromLong);
-    specialize_std_vector(long,PyInt_Check,PyInt_AsLong,PyInt_FromLong);
+    specialize_std_vector(long,PyLong_Check,PyLong_AsLong,PyLong_FromLong);
+    specialize_std_vector(unsigned char,PyInt_Check,\
+                          PyInt_AsLong,PyInt_FromLong);
     specialize_std_vector(unsigned int,PyInt_Check,\
                           PyInt_AsLong,PyInt_FromLong);
     specialize_std_vector(unsigned short,PyInt_Check,\
                           PyInt_AsLong,PyInt_FromLong);
-    specialize_std_vector(unsigned long,PyInt_Check,\
-                          PyInt_AsLong,PyInt_FromLong);
+    specialize_std_vector(unsigned long,PyLong_Check,\
+                          PyLong_AsUnsignedLong,PyLong_FromUnsignedLong);
     specialize_std_vector(double,SwigNumber_Check,\
                           SwigNumber_AsDouble,PyFloat_FromDouble);
     specialize_std_vector(float,SwigNumber_Check,\

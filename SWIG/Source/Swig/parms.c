@@ -14,7 +14,7 @@
  * See the file LICENSE for information on usage and redistribution.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_parms_c[] = "Header";
+char cvsroot_parms_c[] = "/cvsroot/SWIG/Source/Swig/parms.c,v 1.8 2004/01/15 22:46:07 cheetah Exp";
 
 #include "swig.h"
 
@@ -26,7 +26,7 @@ char cvsroot_parms_c[] = "Header";
  * Create a new parameter from datatype 'type' and name 'n'.
  * ------------------------------------------------------------------------ */
 
-Parm *NewParm(SwigType *type, String_or_char *n) {
+Parm *NewParm(SwigType *type, const String_or_char *n) {
   Parm *p = NewHash();
   
   if (type) {
@@ -47,6 +47,7 @@ Parm *CopyParm(Parm *p) {
   String   *value;
   String   *ignore;
   String   *alttype;
+  String   *byname;
 
   Parm *np = NewHash();
   t = Getattr(p,"type");
@@ -55,6 +56,7 @@ Parm *CopyParm(Parm *p) {
   value = Getattr(p,"value");
   ignore = Getattr(p,"ignore");
   alttype = Getattr(p,"alttype");
+  byname = Getattr(p, "arg:byname");
 
   if (t) 
     Setattr(np,"type",Copy(t));
@@ -68,6 +70,8 @@ Parm *CopyParm(Parm *p) {
     Setattr(np,"ignore", Copy(ignore));
   if (alttype) 
     Setattr(np,"alttype", Copy(alttype));
+  if (byname)
+    Setattr(np, "arg:byname", Copy(byname));
       
   Setfile(np,Getfile(p));
   Setline(np,Getline(p));

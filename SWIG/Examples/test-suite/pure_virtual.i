@@ -5,9 +5,9 @@
    as in this file:
 */
 
-%module pure_virtual
+%module(ruby_minherit="1") pure_virtual
 
-%warnfilter(802) E; /* Ruby, multiple inheritance */
+%warnfilter(813,833) E; /* C#, Java multiple inheritance */
 
 %nodefault C;
 %nodefault E;
@@ -53,18 +53,19 @@ class AA {
 };
 
 /* Multiple inheritance between two abstract classes */
-#ifndef SWIGJAVA
 class E : public C, public AA {
 public:
    virtual void something() { };
 };
 
 /* Fill in method from AA.  This class should be constructable */
+#ifdef SWIGCSHARP
+%ignore F::method2(); // Work around for lack of multiple inheritance support - base AA is ignored.
+#endif
 class F : public E {
    public:
      virtual void method2() { }
 };
-#endif
 
 %}
 

@@ -4,6 +4,7 @@
  * Tcl8 configuration module.
  * ----------------------------------------------------------------------------- */
 
+%runtime "precommon.swg"
 %runtime "common.swg"
 %runtime "swigtcl8.swg"
 
@@ -32,20 +33,22 @@
 
 /* Pointers */
 %typemap(in) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] 
-  "if ((SWIG_ConvertPtr(interp, $input, (void **) &$1, $1_descriptor,SWIG_POINTER_EXCEPTION | $disown) != TCL_OK)) SWIG_fail;";
+  "if ((SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor,SWIG_POINTER_EXCEPTION | $disown) != TCL_OK)) SWIG_fail;";
 
+%typemap(in) void *
+  "if ((SWIG_ConvertPtr($input, (void **) &$1, 0,SWIG_POINTER_EXCEPTION | $disown) != TCL_OK)) SWIG_fail;";
 
 /* For bools, we first convert to an integer and then to a bool.  There
    is no guarantee that a bool is the same size as an int so we have to do this */
 
 %typemap(in) bool (int tempb) "if (Tcl_GetIntFromObj(interp,$input,&tempb) == TCL_ERROR) SWIG_fail;
-                               $1 = (bool) tempb;";
+                               $1 = tempb ? true : false;";
 
 /* These will pass an integer as an unsigned long.  However, the implementation is crippled due
    to limited precision in Tcl */
 
-%typemap(in) long long "$1 = (long long) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);";
-%typemap(in) unsigned long long "$1 = (unsigned long long) strtoull(Tcl_GetStringFromObj($input,NULL), 0, 0);";
+%typemap(in) long long "$1 = ($1_ltype) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);";
+%typemap(in) unsigned long long "$1 = ($1_ltype) strtoull(Tcl_GetStringFromObj($input,NULL), 0, 0);";
 
 /* Enum parsing.  Note: internally SWIG converts enums to/from integers so it's okay to use
    the "i" parse code here */
@@ -54,10 +57,11 @@
 
 /* Unknown type.  We convert from a pointer */
 %typemap(in) SWIGTYPE ($&1_ltype argp) 
-  "if ((SWIG_ConvertPtr(interp, $input, (void **) &argp, $&1_descriptor,SWIG_POINTER_EXCEPTION ) != TCL_OK)) SWIG_fail;
+  "if ((SWIG_ConvertPtr($input, (void **) &argp, $&1_descriptor,SWIG_POINTER_EXCEPTION ) != TCL_OK)) SWIG_fail;
   $1 = *argp; ";
 
-
+/* Member pointer */
+%typemap(in) SWIGTYPE (CLASS::*) "if ((SWIG_ConvertPacked($input, (void *) &$1, sizeof($1_type), $1_descriptor, SWIG_POINTER_EXCEPTION)) != TCL_OK) SWIG_fail;";
 
 /* Special constant variations.   These typemaps can be used to parse objects that are both constants
    or values. A Hash table lookup will occur. */
@@ -83,8 +87,7 @@
              const unsigned short & (unsigned short temp),
              const unsigned long & (unsigned long temp),
              const signed char & (signed char temp),
-             const unsigned char & (unsigned char temp),
-             const bool & (bool temp)
+             const unsigned char & (unsigned char temp)
 {
   long ltemp;
   if (Tcl_GetLongFromObj(interp, $input, &ltemp) != TCL_OK) {
@@ -93,6 +96,17 @@
   temp = ($*1_ltype) ltemp;
   $1 = &temp;
 }
+
+%typemap(in) const bool & (bool temp)
+{
+  long ltemp;
+  if (Tcl_GetLongFromObj(interp, $input, &ltemp) != TCL_OK) {
+    SWIG_fail;
+  }
+  temp = ltemp ? true : false;
+  $1 = &temp;
+}
+
 
 %typemap(in) const float & (float temp),
 	     const double & (double temp)
@@ -105,12 +119,12 @@
   $1 = &temp;
 }
 
-%typemap(in) const long long & (long long temp) 
-     "temp = (long long) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);
+%typemap(in) const long long & ($*1_ltype temp) 
+     "temp = ($*1_ltype) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);
       $1 = &temp;";
 
-%typemap(in) const unsigned long long & (unsigned long long temp) 
-        "temp = (unsigned long long) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);
+%typemap(in) const unsigned long long & ($*1_ltype temp) 
+        "temp = ($*1_ltype) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);
          $1 = &temp;";
 
 %typemap(in) const char &(char temp) {
@@ -154,10 +168,18 @@
 }
 
 %typemap(out) SWIGTYPE *INSTANCE, SWIGTYPE &INSTANCE, SWIGTYPE INSTANCE[]
-     "Tcl_SetObjResult(interp,SWIG_NewInstanceObj(interp, (void *) $1, $1_descriptor,0));";
+     "Tcl_SetObjResult(interp,SWIG_NewInstanceObj((void *) $1, $1_descriptor,0));";
 
 %typemap(out) SWIGTYPE *, SWIGTYPE &, SWIGTYPE []
-     "Tcl_SetObjResult(interp,SWIG_NewInstanceObj(interp, (void *) $1, $1_descriptor,0));";
+     "Tcl_SetObjResult(interp,SWIG_NewInstanceObj((void *) $1, $1_descriptor,0));";
+
+%typemap(out) SWIGTYPE *DYNAMIC, SWIGTYPE &DYNAMIC {
+     swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor,(void **) &$1);
+     Tcl_SetObjResult(interp,SWIG_NewInstanceObj((void *) $1, ty,0));
+}
+
+%typemap(out) SWIGTYPE (CLASS::*) 
+    "Tcl_SetObjResult(interp, SWIG_NewPackedObj((void *) &$1, sizeof($1_type), $1_descriptor, 0));";
 
 %typemap(out) void "";
 
@@ -184,14 +206,14 @@
 {
   $&1_ltype resultptr;
   resultptr = new $1_ltype(($1_ltype &) $1);
-  Tcl_SetObjResult(interp,SWIG_NewInstanceObj(interp,(void*) resultptr, $&1_descriptor,1));
+  Tcl_SetObjResult(interp,SWIG_NewInstanceObj((void*) resultptr, $&1_descriptor,1));
 }
 #else
 {
   $&1_ltype resultptr;
   resultptr = ($&1_ltype) malloc(sizeof($1_type));
   memmove(resultptr, &$1, sizeof($1_type));
-  Tcl_SetObjResult(interp,SWIG_NewInstanceObj(interp,(void*) resultptr, $&1_descriptor,1));
+  Tcl_SetObjResult(interp,SWIG_NewInstanceObj((void*) resultptr, $&1_descriptor,1));
 }
 #endif
 
@@ -251,18 +273,22 @@
 %typemap(varout) char * "$result = Tcl_NewStringObj((char*) $1,-1);";
 %typemap(varout) char [ANY] "$result = Tcl_NewStringObj((char *) $1,-1);";
 %typemap(varout) char "$result = Tcl_NewStringObj(&$1,1);";
-%typemap(varout) SWIGTYPE *, SWIGTYPE &, SWIGTYPE []  "$result = SWIG_NewPointerObj((void *) $1, $1_descriptor,0);";
+%typemap(varout) SWIGTYPE *, SWIGTYPE []  "$result = SWIG_NewPointerObj((void *) $1, $1_descriptor,0);";
+%typemap(varout) SWIGTYPE & "$result = SWIG_NewPointerObj((void *) &$1, $1_descriptor,0);";
 
-%typemap(varout) SWIGTYPE *INSTANCE, SWIGTYPE &INSTANCE, SWIGTYPE INSTANCE[]
-    "$result = SWIG_NewInstanceObj(interp, (void *) $1, $1_descriptor,0);";
+%typemap(varout) SWIGTYPE *INSTANCE, SWIGTYPE INSTANCE[]
+    "$result = SWIG_NewInstanceObj((void *) $1, $1_descriptor,0);";
 
-%typemap(varout) SWIGTYPE "$result = SWIG_NewPointerObj((void *) &$1, $&1_descriptor,0);";
-%typemap(varout) SWIGTYPE INSTANCE "$result = SWIG_NewInstanceObj(interp, (void *) &$1, $&1_descriptor,0);";
-%typemap(varout) SWIGTYPE "$result = SWIG_NewInstanceObj(interp, (void *) &$1, $&1_descriptor,0);";
+%typemap(varout) SWIGTYPE &INSTANCE
+    "$result = SWIG_NewInstanceObj((void *) &$1, $1_descriptor,0);";
+
+%typemap(varout) SWIGTYPE INSTANCE "$result = SWIG_NewInstanceObj((void *) &$1, $&1_descriptor,0);";
+%typemap(varout) SWIGTYPE "$result = SWIG_NewInstanceObj((void *) &$1, $&1_descriptor,0);";
+%typemap(varout) SWIGTYPE (CLASS::*) "$result = SWIG_NewPackedObj((void *) &$1, sizeof($1_type), $1_descriptor, 0);";
 
 /* -- Variable input --- */
 
-%typemap(varin) int, unsigned int, short, unsigned short, long, unsigned long, signed char, unsigned char, bool, enum SWIGTYPE
+%typemap(varin) int, unsigned int, short, unsigned short, long, unsigned long, signed char, unsigned char, enum SWIGTYPE
 {
   long temp;
   if (Tcl_GetLongFromObj(interp, $input, &temp) != TCL_OK) {
@@ -271,8 +297,17 @@
   $1 = ($1_type) temp;
 }
 
-%typemap(varin) long long "$1 = (long long) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);";
-%typemap(varin) unsigned long long "$1 = (unsigned long long) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);";
+%typemap(varin) bool
+{
+  long temp;
+  if (Tcl_GetLongFromObj(interp, $input, &temp) != TCL_OK) {
+    return (char*) "Type error. expected an integer";
+  }
+  $1 = temp ? true : false;
+}
+
+%typemap(varin) long long "$1 = ($1_ltype) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);";
+%typemap(varin) unsigned long long "$1 = ($1_ltype) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);";
 
 %typemap(varin) double, float {
   double temp;
@@ -327,7 +362,7 @@
 
 %typemap(varin) SWIGTYPE * {
   void *temp;
-  if (SWIG_ConvertPtr(interp,$input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION | SWIG_POINTER_DISOWN) != TCL_OK) {
+  if (SWIG_ConvertPtr($input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION | SWIG_POINTER_DISOWN) != TCL_OK) {
     return (char*)"Type error. Expected $1_ltype";
   }
   $1 = ($1_type) temp;
@@ -335,7 +370,7 @@
 
 %typemap(varin) void * {
   void *temp;
-  if (SWIG_ConvertPtr(interp,$input,&temp,0, SWIG_POINTER_EXCEPTION | SWIG_POINTER_DISOWN) != TCL_OK) {
+  if (SWIG_ConvertPtr($input,&temp,0, SWIG_POINTER_EXCEPTION | SWIG_POINTER_DISOWN) != TCL_OK) {
     return (char*)"Type error. Expected $1_ltype";
   }
   $1 = ($1_type) temp;
@@ -343,26 +378,34 @@
 
 %typemap(varin) SWIGTYPE & {
   void *temp;
-  if (SWIG_ConvertPtr(interp,$input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
+  if (SWIG_ConvertPtr($input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
     return (char*)"Type error. Expected $1_ltype";
   }
-  $1 = *(($&1_type) temp);
+  $1 = *($1_ltype) temp;
 }
 
 %typemap(varin) SWIGTYPE {
   void *temp;
-  if (SWIG_ConvertPtr(interp,$input,&temp,$&1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
+  if (SWIG_ConvertPtr($input,&temp,$&1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
     return (char*)"Type error. Expected $&1_ltype";
   }
   $1 = *(($&1_type) temp);
 }
 
-%typemap(varin) SWIGTYPE [] {
+%typemap(varin) SWIGTYPE [ANY] {
    void *temp;
-   if (SWIG_ConvertPtr(interp,$input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
+   if (SWIG_ConvertPtr($input,&temp,$1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
       return (char *)"Type error. Expected $1_ltype";
    }
    memmove((void *) $1,temp,$1_size*sizeof($1_basetype));
+}
+
+%typemap(varin) SWIGTYPE (CLASS::*) {
+   char  temp[sizeof($1_type)];
+   if (SWIG_ConvertPacked($input, temp, sizeof($1_type), $1_descriptor, SWIG_POINTER_EXCEPTION) != TCL_OK) {
+       return (char *) "Type error. Expected $1_ltype";
+   }
+   memmove((void *) &$1, temp, sizeof($1_type));
 }
    
 /* --- Constants --- */
@@ -425,7 +468,7 @@
  	 const unsigned int &, const unsigned short &, const unsigned long &,
 	 const long long &, const unsigned long long &,
 	 enum SWIGTYPE,
-	bool, const bool & 
+	 bool, const bool & 
 {
   long tmp;
   if (Tcl_GetLongFromObj(NULL,$input,&tmp) == TCL_ERROR) $1 = 0;
@@ -445,7 +488,7 @@
   char *tmp;
   int   len;
   tmp = Tcl_GetStringFromObj($input,&len);
-  (len == 1) ? 1 : 0;
+  $1 = (len == 1) ? 1 : 0;
 }
 
 %typecheck(SWIG_TYPECHECK_STRING) char * {
@@ -454,7 +497,7 @@
 
 %typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] {
   void *ptr;
-  if (SWIG_ConvertPtr(interp, $input, (void **) &ptr, $1_descriptor, 0) == TCL_ERROR) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $1_descriptor, 0) == TCL_ERROR) {
     $1 = 0;
   } else {
     $1 = 1;
@@ -463,7 +506,7 @@
 
 %typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE {
   void *ptr;
-  if (SWIG_ConvertPtr(interp, $input, (void **) &ptr, $&1_descriptor, 0) == TCL_ERROR) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $&1_descriptor, 0) == TCL_ERROR) {
     $1 = 0;
   } else {
     $1 = 1;
@@ -472,7 +515,7 @@
 
 %typecheck(SWIG_TYPECHECK_VOIDPTR) void * {
   void *ptr;
-  if (SWIG_ConvertPtr(interp, $input, (void **) &ptr, 0, 0) == TCL_ERROR) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, 0, 0) == TCL_ERROR) {
     $1 = 0;
   } else {
     $1 = 1;
@@ -495,7 +538,7 @@
 
 %typemap(throws) SWIGTYPE CLASS {
   $&1_ltype temp = new $1_ltype($1);
-  Tcl_SetObjResult(interp, SWIG_NewInstanceObj(interp, (void *) temp, $&1_descriptor, 1));
+  Tcl_SetObjResult(interp, SWIG_NewInstanceObj((void *) temp, $&1_descriptor, 1));
   SWIG_fail;
 }
 
@@ -510,9 +553,7 @@
 }
 
 // Some special reserved words in classes
-
-%namewarn("314:cget is a reserved method name") *::cget;
-%namewarn("314:configure is a reserved method name") *::configure;
+%include "tcl8kw.swg"
 
 /* C++ overloaded operators.
 

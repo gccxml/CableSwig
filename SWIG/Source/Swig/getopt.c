@@ -18,7 +18,7 @@
  *       Should have cleaner error handling in general.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_getopt_c[] = "Header";
+char cvsroot_getopt_c[] = "/cvsroot/SWIG/Source/Swig/getopt.c,v 1.9 2002/11/30 22:10:13 beazley Exp";
 
 #include "swig.h"
 

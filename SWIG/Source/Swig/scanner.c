@@ -12,7 +12,7 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_scanner_c[] = "Header";
+char cvsroot_scanner_c[] = "/cvsroot/SWIG/Source/Swig/scanner.c,v 1.13 2003/10/31 17:48:02 beazley Exp";
 
 #include "swig.h"
 #include <ctype.h>
@@ -223,7 +223,7 @@ retract(SwigScanner *s, int n) {
 static int
 look(SwigScanner *s) {
     int      state;
-    char     c = 0;
+    int      c = 0;
 
     state = 0;
     Clear(s->text);

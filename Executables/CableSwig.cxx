@@ -26,14 +26,16 @@
 #include "cxxClassType.h"
 #include <fstream>
 
+List *Swig_overload_rank(Node *n);
 
-// This is a copy of the file CableSwigModule.h 
+// This is a copy of the file CableSwigModule.h
 // Currently, it supports PERL, TCL, and PYTHON
 // Do not edit here, edit CableSwigModule.h, and
 // then re-create this string from that file.
-const char* SwigInitMacrosString = 
-"/* --- DECLARE_MODULE_INIT and CALL_MODULE_INIT definitions */"
-"\n#ifdef SWIGPERL\n"
+const char* SwigInitMacrosString =
+"/* --- DECLARE_MODULE_INIT and CALL_MODULE_INIT definitions */\n"
+"#ifdef SWIGPERL\n"
+"#define CS_MODULE_INIT_DEFINED 1\n"
 "#ifndef PERL_OBJECT\n"
 "#ifndef MULTIPLICITY\n"
 "#define SWIG_INIT_ARGS CV* cv;\n"
@@ -54,6 +56,7 @@ const char* SwigInitMacrosString =
 "#endif\n"
 "\n"
 "#ifdef SWIG_TCL_INT\n"
+"#define CS_MODULE_INIT_DEFINED 1\n"
 "#define DECLARE_MODULE_INIT(name, Capitalname) \\\n"
 "extern \"C\" int Capitalname##_Init( Tcl_Interp* );\n"
 "#define CALL_MODULE_INIT(name, Capitalname) \\\n"
@@ -61,44 +64,50 @@ const char* SwigInitMacrosString =
 "#endif\n"
 "\n"
 "#ifdef SWIGPYTHON\n"
+"#define CS_MODULE_INIT_DEFINED 1\n"
 "#define DECLARE_MODULE_INIT(name, Capitalname) \\\n"
 "extern \"C\" int init_##name( );\n"
 "#define CALL_MODULE_INIT(name, Capitalname) \\\n"
 "init_##name( );\n"
 "#endif\n"
+"\n"
+"#ifndef CS_MODULE_INIT_DEFINED\n"
+"#define DECLARE_MODULE_INIT(name, Capitalname)\n"
+"#define CALL_MODULE_INIT(name, Capitalname)\n"
+"#endif\n"
 "\n";
 
 
- 
+
 // copied from swig, with a modification
-// that it does not look for = 0, but looks at 
+// that it does not look for = 0, but looks at
 // the "abstract" attribute
 static List *pure_abstract(Node *n)
 {
   List *abs = 0;
-  while (n) 
+  while (n)
     {
-    if (Cmp(nodeType(n),"cdecl") == 0) 
+    if (Cmp(nodeType(n),"cdecl") == 0)
       {
       ::String *decl = Getattr(n,"decl");
-      if (SwigType_isfunction(decl)) 
+      if (SwigType_isfunction(decl))
         {
         ::String *init = Getattr(n,"abstract");
-        if (Cmp(init,"1") == 0) 
+        if (Cmp(init,"1") == 0)
           {
-          if (!abs) 
+          if (!abs)
             {
             abs = NewList();
             }
           Append(abs,n);
           }
         }
-      } 
-    else if (Cmp(nodeType(n),"destructor") == 0) 
+      }
+    else if (Cmp(nodeType(n),"destructor") == 0)
       {
-      if (Cmp(Getattr(n,"abstract"),"1") == 0) 
+      if (Cmp(Getattr(n,"abstract"),"1") == 0)
         {
-        if (!abs) 
+        if (!abs)
           {
           abs = NewList();
           }
@@ -120,7 +129,7 @@ void CableSwig::ReduceCommaSpace(std::string& source)
     {
     return;
     }
-  
+
   std::string rest;
   std::string::size_type cslen = strlen(cs);
   while (start != std::string::npos)
@@ -135,9 +144,8 @@ void CableSwig::ReduceCommaSpace(std::string& source)
     // reduced
     start = source.find(cs, start);
     }
-
 }
-								 
+
 // replace a substring in source
 void CableSwig::ReplaceString(std::string& source,
                               const char* replace,
@@ -188,6 +196,15 @@ std::string CableSwig::GetClassName(const cable::Class* c, const char* td)
 std::string CableSwig::TemplateName(const char* s)
 {
   std::string name = s;
+  // change the name for any native strings to 
+  // std::string, this is because itk.swg includes
+  // std_string.i which always defines an std::string class
+  // That class can then act as a native string in the wrapped
+  // languages.
+  if(m_NativeStringName.length() > 0 && name == m_NativeStringName)
+    {
+    name = "std::string";
+    }
   ReplaceString(name, "<", "<(");
   ReplaceString(name, ">", ")>");
   // in order to following Swig convention, <int, 2> should be <int,2>
@@ -199,6 +216,7 @@ std::string CableSwig::TemplateName(const char* s)
   // "unsigned short".  For the same reason as above, we convert to Swig
   // convention.
   ReplaceString(name, "short unsigned int", "unsigned short");
+  ReplaceString(name, "> )", ">)");
   return name;
 }
 
@@ -227,20 +245,20 @@ std::string CableSwig::ToSwigType(cxx::CvQualifiedType const&  t)
       break;
     case cxx::ReferenceType_id:
       {
-      cxx::ReferenceType const* r 
+      cxx::ReferenceType const* r
         = cxx::ReferenceType::SafeDownCast(t.GetType());
       std::string n = "r.";
       n += this->ToSwigType(r->GetReferencedType());
       return n;
       break;
       }
-    
+
     case cxx::FundamentalType_id:
       break;
-    case cxx::FunctionType_id: 
+    case cxx::FunctionType_id:
       {
-      
-      cxx::FunctionType const* f 
+
+      cxx::FunctionType const* f
         = cxx::FunctionType::SafeDownCast(t.GetType());
       std::string n = "f(";
       cxx::CvQualifiedTypes const& args = f->GetArgumentTypes();
@@ -278,7 +296,7 @@ std::string CableSwig::ToSwigType(cxx::CvQualifiedType const&  t)
 // Create a swig method and add it to the swig class Node sc
 // sc must be a swig class node that has already be created and
 // the swig scope must be in that class when this is called.
-void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cname, 
+void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cname,
                                  const char* access)
 {
   m_CurrentFile = mth->GetFile();
@@ -340,7 +358,7 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
         }
       }
     if(mth->GetStatic())
-      { 
+      {
       Setattr(m, "storage", "static");
       }
     }
@@ -359,7 +377,7 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   // object that will be thrown - in itk.swg the actual typemaps
   // live that map from the type of the throws to the catch code
   // that will actually be emited
-  // 
+  //
   // As soon as CableSwig gets proper throw() types from gcc_xml,
   // this little piece of code has to be adapted ever so slightly.
   Node *catchNode = NewHash();
@@ -373,16 +391,16 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   Parm* pp = 0;
   std::string allParams;
   for(unsigned int arg = 0; arg < ft->GetNumberOfArguments(); ++arg)
-    {    
+    {
     std::string swigArg = this->ToSwigType(ft->GetArgument(arg)->GetCxxType());
-    ::String* argName 
+    ::String* argName
         = NewString(swigArg.c_str());
     if(allParams.size())
       {
       allParams += ", ";
       }
     allParams += Char(argName);
-    Parm* p = NewParm(argName, 0); 
+    Parm* p = NewParm(argName, 0);
     Delete(argName);
     if(!parms)
       {
@@ -393,7 +411,7 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
       set_nextSibling(pp, p);
       }
     pp = p;
-    } 
+    }
   std::string decl;
   if(mth->GetConst())
     {
@@ -404,7 +422,7 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   decl += ").";
   // Set the declaration on the method
   Setattr(m, "decl", decl.c_str());
-  // if there are parameters set them 
+  // if there are parameters set them
   if(parms)
     {
     Setattr(m, "parms", parms);
@@ -418,9 +436,9 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
     }
   else
     {
-    Setattr(m, "type", 
+    Setattr(m, "type",
             this->ToSwigType(ft->GetReturns()->GetCxxType()).c_str());
-    } 
+    }
   // add the method to the class
   appendChild(sc, m);
   // add the member name to the class
@@ -442,6 +460,13 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   if(symbolName == "print" && m_WrapLanguage == "python")
     {
     symbolName = "Print";
+    }
+  // if the symbol is New, then change it to ClassNew because
+  // java does not handle covarient return types even in statics
+  if(symbolName == "New" && m_WrapLanguage == "java")
+    {
+    symbolName = cname;
+    symbolName += "_New";
     }
   Swig_symbol_add((char*)symbolName.c_str(), m);
 }
@@ -482,26 +507,26 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c)
 }
 
 
-// Create a swig class from the cable::Class c 
+// Create a swig class from the cable::Class c
 // td is the typedef name for the class
 Node* CableSwig::CreateSwigClass(const cable::Class* c, const char* td)
 {
   std::string typedefName = this->GetClassName(c, td);
   std::string actualName = this->TemplateName(c->GetName()).c_str();
-  
+
 
   cable::Context* context = c->GetContext();
   if(context && cable::Class::SafeDownCast(context))
     {
     typedefName = actualName = c->GetQualifiedName();
     }
-  
+
   Node* sc = new_node("class");
   Setattr(sc, "name", actualName.c_str());
   Setattr(sc,"kind","class");
   Setattr(sc,"allows_typedef","1");
   // Create symbol table information
-  // create a new scope 
+  // create a new scope
   Symtab* sym = Swig_symbol_newscope();
   Swig_symbol_setscopename(typedefName.c_str());
   // set the symtab on the class
@@ -527,7 +552,7 @@ Node* CableSwig::CreateSwigClass(const cable::Class* c, const char* td)
       CreateSwigMethod(mth, sc, typedefName, "private");
       }
     }
-  
+
   // protected methods
   p = new_node("access");
   Setattr(p,"kind","protected");
@@ -567,9 +592,10 @@ Node* CableSwig::CreateSwigClass(const cable::Class* c, const char* td)
   // has a public constructor or not, so we have to assume the worst
   // and tell swig to use the SwigWrapper template
   if(c->Begin() == c->End())
-    { 
+    {
     Setattr(sc,"allocate:noassign", "1");
     }
+
   // leave the scope of the class
   Swig_symbol_popscope();
   return sc;
@@ -577,7 +603,7 @@ Node* CableSwig::CreateSwigClass(const cable::Class* c, const char* td)
 
 
 // Create a swig node for a class and a namespace
-// and add them into the tree 
+// and add them into the tree
 Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td,
                                             Node* top, const char* swigtype,
                                             Node* moduleIn)
@@ -601,7 +627,7 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
   Node* priorScope =  Swig_symbol_current();  // save the swig scope
   // check to see if the class is in a namespace other than
   // the global one ::
-  if(classNameSpace && 
+  if(classNameSpace &&
      (strcmp(classNameSpace->GetName(), "::") != 0))
     {
     // create a new node for the namespace
@@ -609,9 +635,9 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
     Hash *h;
     // check for an existing namespace
     h = Swig_symbol_clookup((char*)classNameSpace->GetName(),0);
-    if (h && (Strcmp(nodeType(h),"namespace") == 0)) 
+    if (h && (Strcmp(nodeType(h),"namespace") == 0))
       {
-      if (Getattr(h,"alias")) 
+      if (Getattr(h,"alias"))
         {
         h = Getattr(h,"namespace");
         }
@@ -625,13 +651,13 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
       }
     }
   // Create the swig class node
-  Node* swigClassNode = CreateSwigClass(c, td); 
+  Node* swigClassNode = CreateSwigClass(c, td);
   if(context && cable::Class::SafeDownCast(context))
     {
     // ignore all nested classes
     Setattr(swigClassNode, "feature:ignore", "1");
     }
-  
+
   // once the class has been created, we can finish
   // off the namespace creatation, and pop the scope
   if(nameSpaceNode)
@@ -641,7 +667,7 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
     Setattr(nameSpaceNode,"symtab", Swig_symbol_popscope());
     Swig_symbol_setscope(priorScope);
     Swig_symbol_add((char*)classNameSpace->GetName(), nameSpaceNode);
-    } 
+    }
 
   // at this point we have a nameSpaceNode and a swigClassNode
   // create include an include or import node for the class
@@ -661,7 +687,7 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
   else
     {
     // add the class to the import or include
-    appendChild(importOrIncludeNode, swigClassNode); 
+    appendChild(importOrIncludeNode, swigClassNode);
     }
   // add the importOrIncludeNode to the top node
   appendChild(top, importOrIncludeNode);
@@ -684,7 +710,7 @@ bool CableSwig::ParseName(const char* name, std::string& result)
 }
 
 
-// find the group and package information 
+// find the group and package information
 bool CableSwig::GetGroupAndPackageInformation(cable::Namespace* cns,
                                               std::string& groupName,
                                               std::vector<std::string>& groupsNames,
@@ -717,7 +743,7 @@ bool CableSwig::GetGroupAndPackageInformation(cable::Namespace* cns,
       return false;
       }
     }
-  
+
   // Find the package name, if any.
   const cable::Variable* package = 0;
   lower = cns->LowerBound("package");
@@ -731,7 +757,7 @@ bool CableSwig::GetGroupAndPackageInformation(cable::Namespace* cns,
       return false;
       }
     }
-  
+
   // Find the package version, if any.
   const cable::Variable* package_version = 0;
   lower = cns->LowerBound("package_version");
@@ -752,7 +778,7 @@ bool CableSwig::GetGroupAndPackageInformation(cable::Namespace* cns,
       std::cerr << "Error parsing group name.\n";
       return false;
       }
-    
+
     // Hold on to the name of the configuration file.
     configFile = group->GetFile();
     }
@@ -766,8 +792,8 @@ bool CableSwig::GetGroupAndPackageInformation(cable::Namespace* cns,
     {
     std::cerr << "Error parsing package version string.\n";
     return false;
-    } 
-  
+    }
+
   if(groups)
     {
     std::string gl = groups->GetInitializer();
@@ -838,7 +864,7 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
 {
   const cable::Namespace* wns = 0;
   cable::Context::Iterator lower = cns->LowerBound("wrappers");
-  cable::Context::Iterator upper = cns->UpperBound("wrappers"); 
+  cable::Context::Iterator upper = cns->UpperBound("wrappers");
   if(lower != upper)
     {
     wns = cable::Namespace::SafeDownCast(*lower);
@@ -850,7 +876,7 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
   if(!wns)
     {
     return;
-    } 
+    }
   for(cable::Context::Iterator w = wns->Begin(); w != wns->End(); ++w)
     {
     cable::Typedef* td = cable::Typedef::SafeDownCast(*w);
@@ -860,40 +886,30 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
       if(ct)
         {
         const cable::Class* c = ct->GetClass();
-        // add this class and its typedef to the 
+        // add this class and its typedef to the
         // list of classes that will be included
         m_TypedefLookup.insert(std::pair<const cable::Class*, cable::Typedef*>(c, td));
         m_ClassesToBeIncluded.insert(c);
-        
+
         std::vector<cable::Class*> parents;
-        c->GetAllBaseClasses(parents);  
+        c->GetAllBaseClasses(parents);
         // add all the parent classes of c to map of imported classes
         for( std::vector<cable::Class*>::iterator i = parents.begin();
              i != parents.end(); ++i)
           {
           this->AddClassToBeImported(*i);
-          }   
-        // now look for return types
+          }
+        // now look for return types and function arguments
         for(cable::Class::Iterator i = c->Begin(); i != c->End(); ++i)
           {
           cable::Method* mth = cable::Method::SafeDownCast(*i);
           if(mth)
             {
             cable::FunctionType* ft = mth->GetFunctionType();
-            const cable::ClassType* rt = cable::ClassType::SafeDownCast(ft->GetReturns());
-            if(rt)
+            this->AddImportClass(ft->GetReturns());
+            for(unsigned int arg = 0; arg < ft->GetNumberOfArguments(); ++arg)
               {
-              // add the parents of any return type into the list as well
-              const cable::Class* c = rt->GetClass();
-              std::vector<cable::Class*> parents;
-              c->GetAllBaseClasses(parents);  
-              for( std::vector<cable::Class*>::iterator pi = parents.begin();
-                   pi != parents.end(); ++pi)
-                {
-                this->AddClassToBeImported(*pi);
-                }
-              // add the class into the list
-              this->AddClassToBeImported(rt->GetClass());
+              this->AddImportClass(ft->GetArgument(arg));
               }
             }
           }
@@ -909,7 +925,28 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
     }
 }
 
-
+void CableSwig::AddImportClass( const cable::Type* ct)
+{
+  if(const cable::ReferenceType* ref = cable::ReferenceType::SafeDownCast(ct))
+    {
+    ct = ref->GetTarget();
+    }
+  const cable::ClassType* rt = cable::ClassType::SafeDownCast(ct);
+  if(rt)
+    {
+    // add the parents of any return type into the list as well
+    const cable::Class* c = rt->GetClass();
+    std::vector<cable::Class*> parents;
+    c->GetAllBaseClasses(parents);
+    for( std::vector<cable::Class*>::iterator pi = parents.begin();
+         pi != parents.end(); ++pi)
+      {
+      this->AddClassToBeImported(*pi);
+      }
+    // add the class into the list
+    this->AddClassToBeImported(rt->GetClass());
+    }
+}
 
 // handle all the imported classes
 void CableSwig::ProcessImportedClasses(Node* top, Node* module)
@@ -929,7 +966,7 @@ void CableSwig::ProcessImportedClasses(Node* top, Node* module)
         cable::Typedef* td = 0;
         if(tdi != m_TypedefLookup.end())
           {
-          td = tdi->second; 
+          td = tdi->second;
           this->CreateSwigClassInNamespace(p, td->GetName(), top, "include", module);
           }
         else
@@ -950,17 +987,17 @@ void CableSwig::ProcessImportedClasses(Node* top, Node* module)
           Delete(importModule);
           }
         else
-          {
+          { 
           Node* includeModule = new_node("include");
           Setattr(includeModule, "name", p->GetFile());
-          Node* sc = 
+          Node* sc =
             this->CreateSwigClassInNamespace(p, p->GetName(), top, "include", includeModule);
           if(sc)
             {
             Setattr(sc, "feature:ignore", "1");
             }
           Delete(includeModule);
-          } 
+          }
         }
       }
     std::string group;
@@ -968,7 +1005,7 @@ void CableSwig::ProcessImportedClasses(Node* top, Node* module)
       {
       Node* includeModule = new_node("include");
       Setattr(includeModule, "name", c->GetFile());
-      Node* sc = 
+      Node* sc =
         this->CreateSwigClassInNamespace(c, c->GetName(), top, "include", includeModule);
       if(sc)
         {
@@ -989,9 +1026,9 @@ void CableSwig::ProcessImportedClasses(Node* top, Node* module)
 }
 
 
-  
-  
-// handle all the included classes  
+
+
+// handle all the included classes
 void CableSwig::ProcessIncludedClasses(Node* top, Node* module)
 {
   for(std::set<const cable::Class*>::iterator i = m_ClassesToBeIncluded.begin();
@@ -1005,7 +1042,7 @@ void CableSwig::ProcessIncludedClasses(Node* top, Node* module)
       {
       const cable::Class* p = parents[j];
       if(m_ClassesToBeIncluded.find(p) != m_ClassesToBeIncluded.end())
-        { 
+        {
         std::map<const cable::Class*, cable::Typedef*>::iterator tdi = m_TypedefLookup.find(p);
         cable::Typedef* td = 0;
         if(tdi != m_TypedefLookup.end())
@@ -1020,13 +1057,13 @@ void CableSwig::ProcessIncludedClasses(Node* top, Node* module)
           }
         }
       else
-        {  
+        {
         std::string group;
         if(!this->FindClassGroup(p->GetQualifiedName().c_str(), &group))
           {
           Node* importModule = new_node("include");
           Setattr(importModule, "name", p->GetFile());
-          Node* sc = 
+          Node* sc =
             this->CreateSwigClassInNamespace(p, p->GetName(), top, "include", importModule);
           // the module for the class is not known, so it is ignored
           if(sc)
@@ -1044,7 +1081,7 @@ void CableSwig::ProcessIncludedClasses(Node* top, Node* module)
           this->CreateSwigClassInNamespace(p, cname.c_str(), top, "import", importModule);
           Delete(importModule);
           }
-        } 
+        }
       }
     std::map<const cable::Class*, cable::Typedef*>::iterator tdi = m_TypedefLookup.find(c);
     cable::Typedef* td = 0;
@@ -1062,9 +1099,9 @@ void CableSwig::ProcessIncludedClasses(Node* top, Node* module)
 }
 
 
-// walk the cable namespace and create the swig tree 
+// walk the cable namespace and create the swig tree
 bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top)
-{ 
+{
   const cable::Namespace* gns = sr->GetGlobalNamespace();
   // Find the cable configuration namespace.
   cable::Context::Iterator lower = gns->LowerBound("_cable_");
@@ -1108,7 +1145,42 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
     Setattr(n, "section", "header");
     appendChild(top, n);
     }
-  
+
+  // look for the std namespace, and if there isn't one, use
+  // the global namespace.
+  // we are searching for the typedef for std::string because
+  // we do not want basic_string<....> to be used, but instead
+  // want the swig std_string.i std::string to be used.
+  // So we set m_NativeStringName to the basic_string<...> version
+  // of the class.
+  cable::Namespace const* sns;
+  cable::Context::Iterator stdLower = gns->LowerBound("std");
+  cable::Context::Iterator stdUpper = gns->UpperBound("std");
+  if(stdLower != stdUpper)
+    {
+    sns = cable::Namespace::SafeDownCast(*stdLower);
+    }
+  else
+    {
+    sns = gns;
+    }
+  for(cable::Context::Iterator w = sns->Begin(); w != sns->End(); ++w)
+    {
+    cable::Typedef* td = cable::Typedef::SafeDownCast(*w);
+    if(td && (strcmp(td->GetName(), "string")==0))
+      {
+      m_NativeStringName = td->GetType()->GetCxxType().GetName();
+      }
+    }
+
+  cable::Context::Iterator renamesLower = cns->LowerBound("renames");
+  cable::Context::Iterator renamesUpper = cns->UpperBound("renames");
+  if(renamesLower != renamesUpper)
+    {
+    // There are renames present.  Do not generate any wrappers.
+    // Create a fake group name.
+    group = group+"RenameHack";
+    }
 
   // Create a module node that has the group name
   Node* module = new_node("module");
@@ -1125,7 +1197,13 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
     {
     pythonWrap = true;
     }
-  
+  bool javaWrap = false;
+  if(m_WrapLanguage == "java")
+    {
+    javaWrap = true;
+    }
+  bool javaInitDone = false;
+
   // Fix the case of the package name for Tcl package loader.
   if(package != group && groups.size() > 0)
     {
@@ -1135,7 +1213,8 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
     std::string headerCode = SwigInitMacrosString;
     std::string initCode;
     std::string pythonCode;
-    
+    std::string javaCode;
+    javaCode = "public void dummy() {\nObject o;\n";
     for(std::vector<std::string>::iterator i = groups.begin();
         i != groups.end(); ++i)
       {
@@ -1145,6 +1224,12 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
         pythonCode += *i;
         pythonCode +=  " import *\n";
         }
+      if(javaWrap)
+        {
+        javaCode += "o = new ";
+        javaCode += *i;
+        javaCode += "();\n";
+        }
       std::cout << "  init module: " << i->c_str() << "\n";
       std::string tname = GetTclName(i->c_str());
       headerCode += "\nDECLARE_MODULE_INIT(";
@@ -1152,7 +1237,7 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
       headerCode += ", ";
       headerCode += tname;
       headerCode += ") \n";
-      
+
       initCode += "\nCALL_MODULE_INIT(";
       initCode += *i;
       initCode += ", ";
@@ -1166,29 +1251,91 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
       Setattr(python, "section", "python");
       appendChild(top, python);
       }
+    if(javaWrap)
+      {
+      javaInitDone = true;
+      javaCode += "}\n";
+      Node* java = new_node("pragma");
+      Setattr(java, "value", javaCode.c_str());
+      Setattr(java, "name", "modulecode");
+      Setattr(java, "lang", "java");
+      appendChild(top, java);
+      }
 
     Node* header = new_node("insert");
     Setattr(header, "code", headerCode.c_str());
     Setattr(header, "section", "header");
-    
+
     Node* init = new_node("insert");
     Setattr(init, "code", initCode.c_str());
     Setattr(init, "section", "init");
     appendChild(top, header);
     appendChild(top, init);
     }
-    
+
   // collect up all classes to be included or imported
   this->DetermineClassesToWrap(cns);
-  // first process imported classes 
+  // first process imported classes
   Node* importModule = new_node("module");
   Setattr(importModule, "name", "cableImport");
   this->ProcessImportedClasses(top, importModule);
   // next process included classes
   this->ProcessIncludedClasses(top, module);
-  
+
   Setattr(top, "name", Getattr(module, "name"));
   Setattr(top, "module", module);
+  if(javaWrap && !javaInitDone)
+    {
+    std::string javaCode = "public void dummy() {\n   Object o;\n";;
+    for(std::set<const cable::Class*>::iterator i = m_ClassesToBeIncluded.begin();
+        i != m_ClassesToBeIncluded.end(); ++i)
+      {
+      const cable::Class* c = *i;
+      std::map<const cable::Class*, cable::Typedef*>::iterator tdi = m_TypedefLookup.find(c);
+      if(tdi != m_TypedefLookup.end())
+        {
+        cable::Typedef* td = tdi->second;
+        javaCode += "   o = ";
+        if(c->LowerBound("New") != c->UpperBound("New"))
+          {
+          javaCode += td->GetName();
+          javaCode += ".";
+          javaCode += td->GetName();
+          javaCode += "_New();\n";
+          }
+        else
+          {
+          javaCode += "new ";
+          javaCode += td->GetName();
+          javaCode += "();\n";
+          }
+        }
+      }
+    javaCode += "\n}\n";
+    Node* java = new_node("pragma");
+    Setattr(java, "value", javaCode.c_str());
+    Setattr(java, "name", "modulecode");
+    Setattr(java, "lang", "java");
+    appendChild(top, java);
+
+    if(!m_Loaders.empty())
+      {
+      java = new_node("pragma");
+      javaCode = "  static {\n";
+      for(std::vector<std::string>::iterator i = m_Loaders.begin();
+          i != m_Loaders.end(); ++i)
+        {
+        javaCode += "    ";
+        javaCode += *i;
+        javaCode += ";\n";
+        }
+      javaCode += "  }\n";
+      Setattr(java, "value", javaCode.c_str());
+      Setattr(java, "name", "jniclasscode");
+      Setattr(java, "lang", "java");
+      appendChild(top, java);
+      }
+    }
 
   //  printf("********************cable swig file******************\n");
   //  Swig_print_tree(top);
@@ -1200,7 +1347,7 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
 
 
 // This is what is called by swig
-int CableSwig::ParseFile(const char* input_file, Node* top, 
+int CableSwig::ParseFile(const char* input_file, Node* top,
                          const char* wrapLang)
 {
   m_WrapLanguage = wrapLang;
@@ -1211,13 +1358,13 @@ int CableSwig::ParseFile(const char* input_file, Node* top,
     {
     return 1;
     }
-   
+
   if(!inFileName)
     {
     std::cerr << "Must specify input file name (use --help for options).\n";
     return 1;
     }
-  
+
   if(verbose)
     {
     std::cout << "Using input file \"" << inFileName << "\"\n";
@@ -1230,9 +1377,9 @@ int CableSwig::ParseFile(const char* input_file, Node* top,
               << inFileName << "\"\n";
     return 1;
     }
-  
+
   // Parse the XML input file.
-  cable::XMLSourceParser::Pointer parser = cable::XMLSourceParser::New();  
+  cable::XMLSourceParser::Pointer parser = cable::XMLSourceParser::New();
   parser->SetStream(&inFile);
   if(!parser->Parse())
     {
@@ -1247,20 +1394,23 @@ int CableSwig::ParseFile(const char* input_file, Node* top,
   cable::SourceRepresentation::Pointer sr = parser->GetSourceRepresentation();
   if(!sr)
     {
-    std::cerr << "Error getting SourceRepresentation from parser.\n";    
+    std::cerr << "Error getting SourceRepresentation from parser.\n";
     return 1;
-    }     
+    }
   if(m_DependFile.size())
     {
     this->DumpCMakeDependInformation(parser, m_DependFile.c_str());
     }
-  
-  ProcessSource(sr, top);
+
+  if(!ProcessSource(sr, top))
+    {
+    return 1;
+    }
   return 0;
 }
 
 
-Node *CableSwig::new_node(const String_or_char *tag) 
+Node *CableSwig::new_node(const String_or_char *tag)
 {
   Node *n = NewHash();
   set_nodeType(n,tag);
@@ -1300,7 +1450,7 @@ bool CableSwig::FindClassGroup(const char* className, std::string* group)
 
 // find the typedef name for a class that is imported
 bool CableSwig::FindImportTypedef(const char* className, std::string* typeName)
-{ 
+{
   std::map<csString, csString>::iterator i = m_ImportTypedefLookup.find(className);
   if(i != m_ImportTypedefLookup.end())
     {
@@ -1361,6 +1511,15 @@ bool CableSwig::ReadMasterIndexFile()
 	{
         continue;
 	}
+      if(buffer[0] == '%')
+        {
+        std::string loader = buffer;
+        if(loader.substr(0, 12) == "%JavaLoader=")
+          {
+          m_Loaders.push_back(loader.substr(12));
+          }
+        continue;
+        }
       std::ifstream idxIn(buffer);
       if(!idxIn)
 	{
@@ -1389,11 +1548,11 @@ bool CableSwig::DumpCMakeDependInformation(cable::XMLSourceParser::Pointer sr,
     std::cerr << "Could not open depend file for write " << f << "\n";
     return false;
     }
-  
+
   std::vector<std::string> files;
   sr->GetFileNames(files);
   fout << "SET(CABLE_SWIG_DEPEND\n";
-  
+
   for(std::vector<std::string>::iterator i = files.begin();
       i != files.end(); ++i)
     {

@@ -1,12 +1,15 @@
 //
-// Header
+// /cvsroot/SWIG/Lib/tcl/wish.i,v 1.3 2002/11/30 22:10:09 beazley Exp
 //
 // SWIG File for making wish
 // Dave Beazley
 // April 25, 1996
 //
 /* Revision History
- * $Log: wish.i,v $
+ * wish.i,v
+ * Revision 1.3  2002/11/30 22:10:09  beazley
+ * *** empty log message ***
+ *
  * Revision 1.1.2.1  2001/06/20 11:47:29  mkoeppe
  * Portability fixes
  *

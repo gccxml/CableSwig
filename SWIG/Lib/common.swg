@@ -14,33 +14,34 @@
  ************************************************************************/
 
 #include <string.h>
-#if defined(_WIN32) || defined(__WIN32__)
-#       if defined(_MSC_VER)
-#               if defined(STATIC_LINKED)
-#                       define SWIGEXPORT(a) a
-#                       define SWIGIMPORT(a) extern a
-#               else
-#                       define SWIGEXPORT(a) __declspec(dllexport) a
-#                       define SWIGIMPORT(a) __declspec(dllimport) a
-#               endif
-#       else
-#               if defined(__BORLANDC__)
-#                       define SWIGEXPORT(a) a _export
-#                       define SWIGIMPORT(a) a _export
-#               else
-#                       define SWIGEXPORT(a) a
-#                       define SWIGIMPORT(a) a
-#               endif
-#       endif
+
+#if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
+#  if defined(_MSC_VER) || defined(__GNUC__)
+#    if defined(STATIC_LINKED)
+#      define SWIGEXPORT(a) a
+#      define SWIGIMPORT(a) extern a
+#    else
+#      define SWIGEXPORT(a) __declspec(dllexport) a
+#      define SWIGIMPORT(a) extern a
+#    endif
+#  else
+#    if defined(__BORLANDC__)
+#      define SWIGEXPORT(a) a _export
+#      define SWIGIMPORT(a) a _export
+#    else
+#      define SWIGEXPORT(a) a
+#      define SWIGIMPORT(a) a
+#    endif
+#  endif
 #else
-#       define SWIGEXPORT(a) a
-#       define SWIGIMPORT(a) extern a
+#  define SWIGEXPORT(a) a
+#  define SWIGIMPORT(a) a
 #endif
 
 #ifdef SWIG_GLOBAL
-#define SWIGRUNTIME(a) SWIGEXPORT(a)
+#  define SWIGRUNTIME(a) SWIGEXPORT(a)
 #else
-#define SWIGRUNTIME(a) static a
+#  define SWIGRUNTIME(a) static a
 #endif
 
 #ifdef __cplusplus
@@ -51,10 +52,10 @@ typedef void *(*swig_converter_func)(void *);
 typedef struct swig_type_info *(*swig_dycast_func)(void **);
 
 typedef struct swig_type_info {
-  const char             *name;                 
+  const char             *name;
   swig_converter_func     converter;
   const char             *str;
-  void                   *clientdata;	
+  void                   *clientdata;
   swig_dycast_func        dcast;
   struct swig_type_info  *next;
   struct swig_type_info  *prev;
@@ -66,8 +67,11 @@ SWIGIMPORT(swig_type_info *) SWIG_TypeRegister(swig_type_info *);
 SWIGIMPORT(swig_type_info *) SWIG_TypeCheck(char *c, swig_type_info *);
 SWIGIMPORT(void *)           SWIG_TypeCast(swig_type_info *, void *);
 SWIGIMPORT(swig_type_info *) SWIG_TypeDynamicCast(swig_type_info *, void **);
+SWIGIMPORT(const char *)     SWIG_TypeName(const swig_type_info *);
 SWIGIMPORT(swig_type_info *) SWIG_TypeQuery(const char *);
 SWIGIMPORT(void)             SWIG_TypeClientData(swig_type_info *, void *);
+SWIGIMPORT(char *)           SWIG_PackData(char *, void *, int);
+SWIGIMPORT(char *)           SWIG_UnpackData(char *, void *, int);
 
 #else
 
@@ -75,15 +79,14 @@ static swig_type_info *swig_type_list = 0;
 
 /* Register a type mapping with the type-checking */
 SWIGRUNTIME(swig_type_info *)
-SWIG_TypeRegister(swig_type_info *ti)
-{
+SWIG_TypeRegister(swig_type_info *ti) {
   swig_type_info *tc, *head, *ret, *next;
   /* Check to see if this type has already been registered */
   tc = swig_type_list;
   while (tc) {
     if (strcmp(tc->name, ti->name) == 0) {
       /* Already exists in the table.  Just add additional types to the list */
-      if (tc->clientdata) ti->clientdata = tc->clientdata;	
+      if (tc->clientdata) ti->clientdata = tc->clientdata;
       head = tc;
       next = tc->next;
       goto l1;
@@ -98,7 +101,7 @@ SWIG_TypeRegister(swig_type_info *ti)
   swig_type_list = ti;
 
   /* Build linked lists */
- l1:
+  l1:
   ret = head;
   tc = ti + 1;
   /* Patch up the rest of the links */
@@ -108,14 +111,14 @@ SWIG_TypeRegister(swig_type_info *ti)
     head = tc;
     tc++;
   }
+  if (next) next->prev = head;
   head->next = next;
   return ret;
 }
 
 /* Check the typename */
 SWIGRUNTIME(swig_type_info *) 
-SWIG_TypeCheck(char *c, swig_type_info *ty)
-{
+SWIG_TypeCheck(char *c, swig_type_info *ty) {
   swig_type_info *s;
   if (!ty) return 0;        /* Void pointer */
   s = ty->next;             /* First element always just a name */
@@ -125,12 +128,13 @@ SWIG_TypeCheck(char *c, swig_type_info *ty)
       /* Move s to the top of the linked list */
       s->prev->next = s->next;
       if (s->next) {
-	s->next->prev = s->prev;
+        s->next->prev = s->prev;
       }
       /* Insert s as second element in the list */
       s->next = ty->next;
       if (ty->next) ty->next->prev = s;
       ty->next = s;
+      s->prev = ty;
       return s;
     }
     s = s->next;
@@ -140,31 +144,72 @@ SWIG_TypeCheck(char *c, swig_type_info *ty)
 
 /* Cast a pointer up an inheritance hierarchy */
 SWIGRUNTIME(void *) 
-SWIG_TypeCast(swig_type_info *ty, void *ptr) 
-{
+SWIG_TypeCast(swig_type_info *ty, void *ptr) {
   if ((!ty) || (!ty->converter)) return ptr;
   return (*ty->converter)(ptr);
 }
 
 /* Dynamic pointer casting. Down an inheritance hierarchy */
 SWIGRUNTIME(swig_type_info *) 
-SWIG_TypeDynamicCast(swig_type_info *ty, void **ptr) 
-{
+SWIG_TypeDynamicCast(swig_type_info *ty, void **ptr) {
   swig_type_info *lastty = ty;
   if (!ty || !ty->dcast) return ty;
   while (ty && (ty->dcast)) {
-     ty = (*ty->dcast)(ptr);
-     if (ty) lastty = ty;
+    ty = (*ty->dcast)(ptr);
+    if (ty) lastty = ty;
   }
   return lastty;
 }
+
+/* Return the name associated with this type */
+SWIGRUNTIME(const char *)
+SWIG_TypeName(const swig_type_info *ty) {
+  return ty->name;
+}
+
+/* 
+   Compare two type names skipping the space characters, therefore
+   "char*" == "char *" and "Class<int>" == "Class<int >", etc.
+
+   Return 0 when the two name types are equivalent, as in
+   strncmp, but skipping ' '.
+*/
+static int
+SWIG_TypeNameComp(const char *f1, const char *l1,
+		  const char *f2, const char *l2) {
+  for (;(f1 != l1) && (f2 != l2); ++f1, ++f2) {
+    while ((*f1 == ' ') && (f1 != l1)) ++f1;
+    while ((*f2 == ' ') && (f2 != l2)) ++f2;
+    if (*f1 != *f2) return *f1 - *f2;
+  }
+  return (l1 - f1) - (l2 - f2);
+}
+
+/*
+  Check type equivalence in a name list like <name1>|<name2>|...
+*/
+static int
+SWIG_TypeEquiv(const char *nb, const char *tb) {
+  int equiv = 0;
+  const char* te = tb + strlen(tb);
+  const char* ne = nb;
+  while (!equiv && *ne) {
+    for (nb = ne; *ne; ++ne) {
+      if (*ne == '|') break;
+    }
+    equiv = SWIG_TypeNameComp(nb, ne, tb, te) == 0;
+    if (*ne) ++ne;
+  }
+  return equiv;
+}
+  
 
 /* Search for a swig_type_info structure */
 SWIGRUNTIME(swig_type_info *)
 SWIG_TypeQuery(const char *name) {
   swig_type_info *ty = swig_type_list;
   while (ty) {
-    if (ty->str && (strcmp(name,ty->str) == 0)) return ty;
+    if (ty->str && (SWIG_TypeEquiv(ty->str,name))) return ty;
     if (ty->name && (strcmp(name,ty->name) == 0)) return ty;
     ty = ty->prev;
   }
@@ -182,17 +227,55 @@ SWIG_TypeClientData(swig_type_info *ti, void *clientdata) {
     if (!equiv->converter) {
       tc = swig_type_list;
       while (tc) {
-	if ((strcmp(tc->name, equiv->name) == 0))
-	  SWIG_TypeClientData(tc,clientdata);
-	tc = tc->prev;
+        if ((strcmp(tc->name, equiv->name) == 0))
+          SWIG_TypeClientData(tc,clientdata);
+        tc = tc->prev;
       }
     }
     equiv = equiv->next;
   }
 }
+
+/* Pack binary data into a string */
+SWIGRUNTIME(char *)
+SWIG_PackData(char *c, void *ptr, int sz) {
+  static char hex[17] = "0123456789abcdef";
+  int i;
+  unsigned char *u = (unsigned char *) ptr;
+  register unsigned char uu;
+  for (i = 0; i < sz; i++,u++) {
+    uu = *u;
+    *(c++) = hex[(uu & 0xf0) >> 4];
+    *(c++) = hex[uu & 0xf];
+  }
+  return c;
+}
+
+/* Unpack binary data from a string */
+SWIGRUNTIME(char *)
+SWIG_UnpackData(char *c, void *ptr, int sz) {
+  register unsigned char uu = 0;
+  register int d;
+  unsigned char *u = (unsigned char *) ptr;
+  int i;
+  for (i = 0; i < sz; i++, u++) {
+    d = *(c++);
+    if ((d >= '0') && (d <= '9'))
+      uu = ((d - '0') << 4);
+    else if ((d >= 'a') && (d <= 'f'))
+      uu = ((d - ('a'-10)) << 4);
+    d = *(c++);
+    if ((d >= '0') && (d <= '9'))
+      uu |= (d - '0');
+    else if ((d >= 'a') && (d <= 'f'))
+      uu |= (d - ('a'-10));
+    *u = uu;
+  }
+  return c;
+}
+
 #endif
 
 #ifdef __cplusplus
 }
-
 #endif

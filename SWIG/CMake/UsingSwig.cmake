@@ -1,0 +1,92 @@
+# set up mapping from language name to swig runtime library name
+# if SWIG_USE_SHARED_RUNTIME is set then the -c option will be used for swig
+MACRO(ADD_SWIG_SOURCE LANGUAGE INPUT SOURCE INCLUDES DEPENDS)
+  SET(SWIG_CXX_FLAGS "-c++")
+  IF(${SOURCE} MATCHES ".c$")
+    SET(SWIG_CXX_FLAGS "")
+  ENDIF(${SOURCE} MATCHES ".c$")
+
+  IF(EXISTS ${INPUT})
+    SET(swig_infile "${INPUT}")
+  ELSE(EXISTS ${INPUT})
+    SET(swig_infile "${CMAKE_CURRENT_SOURCE_DIR}/${INPUT}")
+  ENDIF(EXISTS ${INPUT})
+  IF(EXISTS ${swig_infile})
+  ELSE(EXISTS ${swig_infile})
+    MESSAGE(FATAL_ERROR "Cannot find input file ${INPUT}")
+  ENDIF(EXISTS ${swig_infile})
+
+  IF(${LANGUAGE} MATCHES "^perl$")
+    SET(SWIG_LANGUAGE_LIB "perl5")
+  ELSE(${LANGUAGE} MATCHES "^perl$")
+    IF(${LANGUAGE} MATCHES "^php$")
+      SET(SWIG_LANGUAGE_LIB "php4")
+    ELSE(${LANGUAGE} MATCHES "^php$")
+      SET(SWIG_LANGUAGE_LIB "${LANGUAGE}")
+    ENDIF(${LANGUAGE} MATCHES "^php$")
+  ENDIF(${LANGUAGE} MATCHES "^perl$")
+
+  SET(SWIG_INCLUDES "")
+  FOREACH(path ${INCLUDES} ${SWIG_COMMON_INCLUDES} ${SWIG_LIB_DIR}/${SWIG_LANGUAGE_LIB})
+    SET(SWIG_INCLUDES ${SWIG_INCLUDES} "-I${path}")
+  ENDFOREACH(path ${INCLUDES} ${SWIG_COMMON_INCLUDES})
+
+  SET(swig_current_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
+# if SWIG_SCRIPT_OUTPUT_DIR is set use it period
+  IF(SWIG_SCRIPT_OUTPUT_DIR)
+    SET(swig_current_output_dir "${SWIG_SCRIPT_OUTPUT_DIR}")
+  ELSE(SWIG_SCRIPT_OUTPUT_DIR)
+    # for python make sure the .py files go next to the libraries as they are needed 
+    # for loading
+    IF(${LANGUAGE} MATCHES "^python$")
+      SET(swig_current_output_dir "${LIBRARY_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}")
+    ENDIF(${LANGUAGE} MATCHES "^python$")
+  ENDIF(SWIG_SCRIPT_OUTPUT_DIR)
+
+  INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+  IF(SWIG_USE_SHARED_RUNTIME)
+    SET(SWIG_RUNTIME_FLAG "-noruntime")
+  ELSE(SWIG_USE_SHARED_RUNTIME)
+    SET(SWIG_RUNTIME_FLAG)
+  ENDIF(SWIG_USE_SHARED_RUNTIME)
+  ADD_CUSTOM_COMMAND(
+    OUTPUT "${SOURCE}"
+    DEPENDS "${swig_infile}" ${DEPENDS}
+    MAIN_DEPENDENCY "${swig_infile}"
+    COMMAND ${SWIG_EXECUTABLE}
+    ARGS ${SWIG_CXX_FLAGS} ${SWIG_CMD_FLAGS} -${LANGUAGE}
+    ${SWIG_INCLUDES} ${SWIG_RUNTIME_FLAG}
+    -outdir "${swig_current_output_dir}"
+    -o "${SOURCE}" "${swig_infile}"
+    )
+  SET_SOURCE_FILES_PROPERTIES(${SOURCE} PROPERTIES GENERATED 1)
+ENDMACRO(ADD_SWIG_SOURCE)
+
+MACRO(GET_SWIG_LIBRARY_NAME LANGUAGE LIBNAME VAR)
+  SET(${VAR} "${LIBNAME}")
+  IF("${LANGUAGE}" MATCHES "^python$")
+    SET(${VAR} "_${LIBNAME}")
+  ENDIF("${LANGUAGE}" MATCHES "^python$")
+ENDMACRO(GET_SWIG_LIBRARY_NAME)
+
+MACRO(ADD_SWIG_LIBRARY LANGUAGE LIBNAME SOURCES)
+  SET(SWIG_LIB_PREFIX "")
+  IF("${LANGUAGE}" MATCHES "^python$")
+    SET(SWIG_LIB_PREFIX "_")
+  ENDIF("${LANGUAGE}" MATCHES "^python$")
+  # tcl does not use MODULES 
+  IF("${LANGUAGE}" MATCHES "^tcl$")                                             
+    ADD_LIBRARY("${SWIG_LIB_PREFIX}${LIBNAME}" SHARED ${SOURCES})               
+  ELSE("${LANGUAGE}" MATCHES "^tcl$")                                            
+    ADD_LIBRARY("${SWIG_LIB_PREFIX}${LIBNAME}" MODULE ${SOURCES})               
+  ENDIF("${LANGUAGE}" MATCHES "^tcl$")   
+  IF(${LANGUAGE} MATCHES "java")
+  ELSE(${LANGUAGE} MATCHES "java")
+    SET_TARGET_PROPERTIES("${SWIG_LIB_PREFIX}${LIBNAME}" PROPERTIES PREFIX "")
+  ENDIF(${LANGUAGE} MATCHES "java")
+  IF(SWIG_SOURCE_DIR)
+    IF(CMAKE_CONFIGURATION_TYPES)
+      ADD_DEPENDENCIES("${SWIG_LIB_PREFIX}${LIBNAME}" swig)
+    ENDIF(CMAKE_CONFIGURATION_TYPES)
+  ENDIF(SWIG_SOURCE_DIR)
+ENDMACRO(ADD_SWIG_LIBRARY)

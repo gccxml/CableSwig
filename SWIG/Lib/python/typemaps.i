@@ -62,7 +62,7 @@ or you can use the %apply directive :
 */
 
 %define INPUT_TYPEMAP(type, converter)
-%typemap(in) type *INPUT(type temp), type &INPUT(type temp)
+%typemap(in) type *INPUT($*1_ltype temp), type &INPUT($*1_ltype temp)
 {
    temp = converter($input);
    if (PyErr_Occurred()) SWIG_fail;
@@ -84,9 +84,17 @@ INPUT_TYPEMAP(unsigned long, PyInt_AsLong);
 INPUT_TYPEMAP(unsigned long long, PyLong_AsUnsignedLongLong);
 INPUT_TYPEMAP(unsigned char, PyInt_AsLong);
 INPUT_TYPEMAP(signed char, PyInt_AsLong);
-INPUT_TYPEMAP(bool, PyInt_AsLong);
 
 #undef INPUT_TYPEMAP
+
+%typemap(in) bool *INPUT(bool temp), bool &INPUT(bool temp)
+{
+   temp = PyInt_AsLong($input) ? true : false;
+   if (PyErr_Occurred()) SWIG_fail;
+   $1 = &temp;
+}
+%typemap(typecheck) bool *INPUT = bool;
+%typemap(typecheck) bool &INPUT = bool;
 
 // OUTPUT typemaps.   These typemaps are used for parameters that
 // are output only.   The output value is appended to the result as
@@ -145,7 +153,7 @@ output values.
 %include "fragments.i"
 
 %define OUTPUT_TYPEMAP(type, converter, convtype)
-%typemap(in,numinputs=0) type *OUTPUT(type temp), type &OUTPUT(type temp) "$1 = &temp;";
+%typemap(in,numinputs=0) type *OUTPUT($*1_ltype temp), type &OUTPUT($*1_ltype temp) "$1 = &temp;";
 %typemap(argout,fragment="t_output_helper") type *OUTPUT, type &OUTPUT {
    PyObject *o = converter(convtype (*$1));
    $result = t_output_helper($result,o);
@@ -155,11 +163,11 @@ output values.
 OUTPUT_TYPEMAP(int, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(short, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(long, PyInt_FromLong, (long));
-OUTPUT_TYPEMAP(long long, PyLong_FromLongLong, (long long));
+OUTPUT_TYPEMAP(long long, PyLong_FromLongLong, ($*1_ltype));
 OUTPUT_TYPEMAP(unsigned int, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(unsigned short, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(unsigned long, PyInt_FromLong, (long));
-OUTPUT_TYPEMAP(unsigned long long, PyLong_FromUnsignedLongLong, (unsigned long long));
+OUTPUT_TYPEMAP(unsigned long long, PyLong_FromUnsignedLongLong, ($*1_ltype));
 OUTPUT_TYPEMAP(unsigned char, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(signed char, PyInt_FromLong, (long));
 OUTPUT_TYPEMAP(bool, PyInt_FromLong, (long));

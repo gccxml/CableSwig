@@ -1,8 +1,7 @@
 TOP        = ../..
 SWIG       = $(TOP)/../swig
-SWIGOPT    = -c
-#If your system requires linking with the runtime libraries then set the directory location here
-RUNTIMEDIR = /usr/local/lib
+SWIGOPT    = -noruntime
+RUNTIMEDIR = $(TOP)/../Runtime/.libs
  
 all::
 	$(MAKE) -f $(TOP)/Makefile SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' \
@@ -15,6 +14,6 @@ all::
 	RUNTIMEDIR='$(RUNTIMEDIR)' TARGET='spam' INTERFACE='spam.i' ruby_multi_cpp
 
 clean::
-	@rm -f *_wrap* *.o *~ *.so *.dll .~* core
+	$(MAKE) -f $(TOP)/Makefile ruby_clean
 
 check: all

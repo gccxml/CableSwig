@@ -1,8 +1,7 @@
 TOP        = ../..
 SWIG       = $(TOP)/../swig
-SWIGOPT    = -c -shadow 
-#If your system requires linking with the runtime libraries then set the directory location here
-RUNTIMEDIR = 
+SWIGOPT    = -noruntime -shadow 
+RUNTIMEDIR = $(TOP)/../Runtime/.libs
 
 all::
 	$(MAKE) -f $(TOP)/Makefile SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' \
@@ -16,6 +15,6 @@ all::
 
 
 clean::
-	rm -f *_wrap* *.o *~ *.so *.pm .~* core
+	$(MAKE) -f $(TOP)/Makefile perl5_clean
 
 check: all

@@ -12,7 +12,7 @@
  * See the file LICENSE for information on usage and redistribution.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_cscanner_c[] = "Header";
+char cvsroot_cscanner_c[] = "/cvsroot/SWIG/Source/CParse/cscanner.c,v 1.7 2004/01/15 22:46:04 cheetah Exp";
 
 #include "cparse.h"
 #include "parser.h"
@@ -269,9 +269,10 @@ void start_inline(char *text, int line) {
  * Inserts a comment into a documentation entry.
  **************************************************************/
 
+/*
 void yycomment(char *a, int b, int c) {
 }
-
+*/
 
 /* -----------------------------------------------------------------------------
  * skip_balanced()
@@ -391,7 +392,7 @@ void skip_decl(void) {
 static void get_escape() {
   int result = 0;
   int state = 0;
-  char  c;
+  int c;
 
   while(1) {
     c = nextchar();
@@ -446,8 +447,9 @@ static void get_escape() {
 	yylen--;
 	return;
       }
-      if (c == '0') {
+      if (isdigit(c)) {
 	state = 10;
+	result = (c-'0');
       }
       else if (c == 'x') {
 	state = 20;
@@ -494,7 +496,7 @@ static void get_escape() {
 int yylook(void) {
 
     int      state;
-    char     c = 0;
+    int      c = 0;
 
     state = 0;
     yylen = 0;
@@ -511,11 +513,11 @@ int yylook(void) {
 	  if (c == '\n') {
 	    state = 0;
 	    yylen = 0;
-	    last_id = 0;
+	    /*	    last_id = 0;*/
 	  } else if (isspace(c) || (c=='\\')) {
 	    state = 0;
 	    yylen = 0;
-	    last_id = 0;
+	    /*	    last_id = 0; */
 	  }
 
 	  else if ((isalpha(c)) || (c == '_')) state = 7;
@@ -761,8 +763,10 @@ int yylook(void) {
 	  if (( c = nextchar()) == 0) return 0;
 	  if (c == '*') {
 	    return DSTAR;
-	  } if (c == '~') {
+	  } else if (c == '~') {
 	    return DCNOT;
+	  } else if (isspace(c)) {
+	    /* Keep scanning ahead.  Might be :: * or :: ~ */
 	  } else {
 	    retract(1);
 	    if (!last_id) {
@@ -772,6 +776,7 @@ int yylook(void) {
 	      return DCOLON;
 	    }
 	  }
+	  break;
 
 	case 60: /* shift operators */
 	  if ((c = nextchar()) == 0) return (0);
@@ -997,6 +1002,7 @@ void scanner_ignore_typedef() {
 }
 
 void scanner_last_id(int x) {
+  /*  printf("Setting last_id = %d\n", x); */
   last_id = x;
 }
 
@@ -1028,14 +1034,18 @@ int yylex(void) {
       next_token = 0;
       return l;
     }
+    /*    Printf(stdout,"%d\n", last_id);*/
     l = yylook();
-
 
     if (l == NONID) {
       last_id = 1;
     } else {
       last_id = 0;
     }
+    /*
+    yytext[yylen]= 0;
+    Printf(stdout,"%d  '%s' %d\n", l, yytext, last_id);
+    */
 
     /* We got some sort of non-white space object.  We set the start_line
        variable unless it has already been set */

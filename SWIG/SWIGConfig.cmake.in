@@ -1,0 +1,20 @@
+#-----------------------------------------------------------------------------
+#
+# SWIGConfig.cmake - SWIG CMake configuration file for external projects.
+#
+# This file is configured by SWIG and used by the UseSWIG.cmake module
+# to load SWIG's settings for an external project.
+
+# The location of the UseSWIG.cmake file.
+SET(SWIG_USE_FILE "@SWIG_USE_FILE@")
+
+# The build settings file.
+SET(SWIG_BUILD_SETTINGS_FILE "@SWIG_BUILD_SETTINGS_FILE@")
+
+# The name of swig executable
+SET(SWIG_EXECUTABLE "@SWIG_EXECUTABLE@")
+
+SET(SWIG_USING_SWIG "@SWIG_USING_SWIG@")
+SET(SWIG_COMMON_INCLUDES "@SWIG_COMMON_INCLUDES@")
+SET(SWIG_LIB_DIR "@SWIG_LIB_DIR@")
+SET(SWIG_MODULES_PATH "@SWIG_MODULES_PATH@")

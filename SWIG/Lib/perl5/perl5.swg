@@ -4,8 +4,10 @@
  * Perl 5 configuration file
  * ----------------------------------------------------------------------------- */
 
+%runtime "precommon.swg"
 %runtime "common.swg"         // common type checking code
 %runtime "perlrun.swg"        // Perl runtime functions
+%runtime "noembed.h"          // undefine Perl5 macros
 
 /* Typemaps for input parameters */
 
@@ -21,8 +23,8 @@
 %typemap(in)  float, double 
        "$1 = ($1_ltype) SvNV($input);\n";
 
-%typemap(in)  long long "$1 = (long long) strtoll(SvPV($input, PL_na), 0, 0);";
-%typemap(in)  unsigned long long "$1 = (unsigned long long) strtoull(SvPV($input, PL_na), 0, 0);";
+%typemap(in)  long long "$1 = ($1_ltype) strtoll(SvPV($input, PL_na), 0, 0);";
+%typemap(in)  unsigned long long "$1 = ($1_ltype) strtoull(SvPV($input, PL_na), 0, 0);";
 
 %typemap(in) char *
        "if (!SvOK((SV*) $input)) $1 = 0;
@@ -52,6 +54,12 @@
     $1 = *argp;
 }
 
+/* Pointer to a class member */
+%typemap(in) SWIGTYPE (CLASS::*) {
+     if ((SWIG_ConvertPacked($input, (void *) &$1, sizeof($1_type), $1_descriptor,0)) < 0) {
+            SWIG_croak("Type error in argument $argnum of $symname. Expected $&1_mangle");
+     }          
+}
 
 /* Const primitive references.  Passed by value */
 
@@ -75,12 +83,12 @@
 	"temp = ($*1_ltype) SvNV($input);
          $1 = &temp;";
 
-%typemap(in) const long long & (long long temp) 
-        "temp = (long long) strtoll(SvPV($input,PL_na),0,0);
+%typemap(in) const long long & ($*1_ltype temp) 
+        "temp = ($*1_ltype) strtoll(SvPV($input,PL_na),0,0);
          $1 = &temp;";
 
-%typemap(in) const unsigned long long & (unsigned long long temp) 
-        "temp = (unsigned long long) strtoull(SvPV($input, PL_na),0,0);
+%typemap(in) const unsigned long long & ($*1_ltype temp) 
+        "temp = ($*1_ltype) strtoull(SvPV($input, PL_na),0,0);
          $1 = &temp;";
 
 %typemap(in) const char &(char temp) {
@@ -131,7 +139,7 @@
 
 %typemap(out) SWIGTYPE *, SWIGTYPE [], SWIGTYPE & 
     "ST(argvi) = sv_newmortal();
-     SWIG_MakePtr(ST(argvi++), (void *) $1, $1_descriptor,0);";
+     SWIG_MakePtr(ST(argvi++), (void *) $1, $1_descriptor, $shadow|$owner);";
 
 
 %typemap(out) SWIGTYPE 
@@ -139,14 +147,14 @@
 {
   $&1_ltype resultobj = new $1_ltype(($1_ltype &)$1);
   ST(argvi) = sv_newmortal();
-  SWIG_MakePtr(ST(argvi++), (void *) resultobj, $&1_descriptor,0);
+  SWIG_MakePtr(ST(argvi++), (void *) resultobj, $&1_descriptor, $shadow|$owner);
 }
 #else
 {
   $&1_ltype resultobj = ($&1_ltype) malloc(sizeof($1_type));
   memmove(resultobj, &$1, sizeof($1_type));
   ST(argvi) = sv_newmortal();
-  SWIG_MakePtr(ST(argvi++), (void *) resultobj, $&1_descriptor,0);
+  SWIG_MakePtr(ST(argvi++), (void *) resultobj, $&1_descriptor, $shadow|$owner);
 }
 #endif
 
@@ -155,7 +163,14 @@
 %typemap(out) SWIGTYPE *DYNAMIC, SWIGTYPE &DYNAMIC {
   swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor, (void **) &$1);
   ST(argvi) = sv_newmortal();
-  SWIG_MakePtr(ST(argvi++), (void *) $1, ty,0);
+  SWIG_MakePtr(ST(argvi++), (void *) $1, ty, $shadow|$owner);
+}
+
+/* Member pointer */
+%typemap(out) SWIGTYPE (CLASS::*) {
+  ST(argvi) = sv_newmortal();
+  SWIG_MakePackedObj(ST(argvi), (void *) &$1, sizeof($1_type), $1_descriptor);
+  argvi++;
 }
 
 %typemap(out) void "";
@@ -222,13 +237,31 @@
 %typemap(varin)  float, double 
        "$1 = ($1_ltype) SvNV($input);\n";
 
-%typemap(varin)  long long "$1 = (long long) strtoll(SvPV($input, PL_na), 0, 0);";
-%typemap(varin)  unsigned long long "$1 = (unsigned long long) strtoull(SvPV($input, PL_na), 0, 0);";
+%typemap(varin)  long long "$1 = ($1_ltype) strtoll(SvPV($input, PL_na), 0, 0);";
+%typemap(varin)  unsigned long long "$1 = ($1_ltype) strtoull(SvPV($input, PL_na), 0, 0);";
 
-%typemap(varin) SWIGTYPE *, SWIGTYPE [], SWIGTYPE & {
-	if (SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor,0) < 0) {
+%typemap(varin) SWIGTYPE * {
+        if (SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor,0) < 0) {
             croak("Type error in argument $argnum of $symname. Expected $1_mangle");
         }
+}
+
+%typemap(varin) SWIGTYPE [ANY] {
+	int  i;
+        $1_basetype *temp;
+        $1_basetype *b = ($1_basetype *) $1;
+        if (SWIG_ConvertPtr($input, (void **) &temp, $1_descriptor,0) < 0) {
+            croak("Type error in argument $argnum of $symname. Expected $1_mangle");
+        }
+        for (i = 0; i < $1_size; i++) b[i] = temp[i];
+}
+
+%typemap(varin) SWIGTYPE & {
+        void *temp;
+        if (SWIG_ConvertPtr($input, (void **) &temp, $1_descriptor,0) < 0) {
+            croak("Type error in argument $argnum of $symname. Expected $1_mangle");
+        }
+        $1 = *($1_ltype) temp;
 }
 
 %typemap(varin) void * {
@@ -244,6 +277,15 @@
             croak("Type error in argument $argnum of $symname. Expected $&1_mangle");
     }
     $1 = *argp;
+}
+
+/* Member pointer */
+%typemap(varin) SWIGTYPE (CLASS::*) {
+  char temp[sizeof($1_type)];
+  if (SWIG_ConvertPacked($input, (void *) temp, sizeof($1_type), $1_descriptor, 0) < 0) {
+            croak("Type error in argument $argnum of $symname. Expected $&1_mangle");
+  }
+  memmove((void *) &$1, temp, sizeof($1_type));
 }
 
 /* Const primitive references.  Passed by value */
@@ -268,12 +310,12 @@
 	"temp = ($*1_ltype) SvNV($input);
          $1 = &temp;";
 
-%typemap(varin) const long long & (long long temp) 
-        "temp = (long long) strtoll(SvPV($input,PL_na),0,0);
+%typemap(varin) const long long & ($*1_ltype temp) 
+        "temp = ($1_ltype) strtoll(SvPV($input,PL_na),0,0);
          $1 = &temp;";
 
-%typemap(varin) const unsigned long long & (unsigned long long temp) 
-        "temp = (unsigned long long) strtoull(SvPV($input, PL_na),0,0);
+%typemap(varin) const unsigned long long & ($*1_ltype temp) 
+        "temp = ($1_ltype) strtoull(SvPV($input, PL_na),0,0);
          $1 = &temp;";
 
 %typemap(varin) const char &(char temp) {
@@ -316,7 +358,8 @@
 %typemap(varin) char [ANY]
      "strncpy($1, (char *) SvPV(sv,PL_na), $1_dim0);";
 
-%typemap(varin) SWIGTYPE [] "croak(\"Value is read-only.\");";
+%typemap(varin,warning="462: Unable to set variable of type char []") char []
+     { croak("Variable $symname is read-only."); }
 
 %typemap(varin) enum SWIGTYPE
      "$1 = ($1_type) SvIV($input);";
@@ -357,14 +400,21 @@
 //%typemap(varout) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] 
 //    "SWIG_MakePtr($result, (void *) $1, $1_descriptor);";
 
-%typemap(varout,type="$1_descriptor") SWIGTYPE *, SWIGTYPE &, SWIGTYPE []  
+%typemap(varout,type="$1_descriptor") SWIGTYPE *, SWIGTYPE []  
     "sv_setiv(SvRV($result),(IV) $1);"; 
+
+%typemap(varout,type="$1_descriptor") SWIGTYPE &
+    "sv_setiv(SvRV($result),(IV) &$1);"; 
 
 //%typemap(varout) SWIGTYPE
 //    "SWIG_MakePtr($result, (void *) &$1, $&1_descriptor);";
 
 %typemap(varout,type="$&1_descriptor") SWIGTYPE
     "sv_setiv(SvRV($result), (IV) &$1);";
+
+%typemap(varout,type="$1_descriptor") SWIGTYPE (CLASS::*) {
+  SWIG_MakePackedObj($result, (void *) &$1, sizeof($1_type), $1_descriptor);
+}
 
 /* --- Typemaps for constants --- *
 
@@ -394,7 +444,7 @@
  * ------------------------------------------------------------ */
 
 %typemap(in) (char *STRING, int LENGTH) {
-    unsigned int temp;
+    STRLEN temp;
     $1 = ($1_ltype) SvPV($input,temp);
     $2 = ($2_ltype) temp;
 }
@@ -427,7 +477,7 @@
 	float, double,
 	const float &, const double &
 {
-  $1 = SvNOK($input) ? 1 : 0;
+  $1 = SvNIOK($input) ? 1 : 0;
 }
 
 %typecheck(SWIG_TYPECHECK_CHAR) char {
@@ -475,19 +525,22 @@
                   unsigned int, 
                   unsigned long, 
                   unsigned short {
-  sprintf(_swigmsg,"%d",$1);
-  SWIG_croak(_swigmsg);
+  SWIG_SetErrorf("%d", $1); SWIG_fail;
 }
 
-%typemap(throws) SWIGTYPE {
-  SWIG_croak("$1_type");
+/* throws real objects */
+%typemap(throws) SWIGTYPE 
+{
+  SV *esv=sv_newmortal();
+  $&1_ltype copy = new $1_ltype(($1_ltype &)$1);
+  SWIG_MakePtr(esv, (void *) copy,
+	       $&1_descriptor, SWIG_OWNER);
+  SWIG_croakSV(esv);
 }
 
 %typemap(throws) char * {
   SWIG_croak($1);
-  SWIG_fail;
 }
-
 
 /* Export the SWIG initialization function */
 %header %{
@@ -558,7 +611,7 @@ XS(SWIG_init) {
 	SWIG_MakePtr(sv, swig_constants[i].pvalue, *(swig_constants[i].ptype),0);
 	break;
       case SWIG_BINARY:
-	/*      obj = SWIG_NewPackedObj(swig_constants[i].pvalue, swig_constants[i].lvalue, *(swig_constants[i].ptype)); */
+	SWIG_MakePackedObj(sv, swig_constants[i].pvalue, swig_constants[i].lvalue, *(swig_constants[i].ptype));
 	break;
       default:
 	break;

@@ -1,4 +1,4 @@
-// Header
+// /cvsroot/SWIG/Lib/perl5/perlmain.i,v 1.2 2003/09/01 18:13:33 beazley Exp
 // Code to statically rebuild perl5.
 //
 
@@ -24,7 +24,7 @@ library is C++ safe.
 
 %{
 
-static void xs_init _((void));
+static void xs_init _((pTHX));
 static PerlInterpreter *my_perl;
 
 int perl_eval(char *string) {
@@ -64,7 +64,7 @@ main(int argc, char **argv, char **env)
 /* EXTERN_C void boot_DynaLoader _((CV* cv)); */
 
 static void
-xs_init()
+xs_init(pTHX)
 {
 /*  dXSUB_SYS; */
     char *file = __FILE__;

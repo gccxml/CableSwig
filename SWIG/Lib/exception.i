@@ -21,12 +21,12 @@
 
 #ifdef SWIGTCL8
 %{
-#define SWIG_exception(a,b)   { Tcl_SetResult(interp,const_cast<char *>(b),TCL_VOLATILE); SWIG_fail; }
+#define SWIG_exception(a,b)   { Tcl_SetResult(interp,b,TCL_VOLATILE); SWIG_fail; }
 %}
 #else
 #ifdef SWIGTCL
 %{
-#define SWIG_exception(a,b)   { Tcl_SetResult(interp,const_cast<char *>(b),TCL_VOLATILE); return TCL_ERROR; }
+#define SWIG_exception(a,b)   { Tcl_SetResult(interp,b,TCL_VOLATILE); return TCL_ERROR; }
 %}
 #endif
 #endif
@@ -46,7 +46,7 @@
 
 #ifdef SWIGPYTHON
 %{
-static void _SWIG_exception(int code, const char *msg) {
+static void SWIG_exception_(int code, const char *msg) {
   switch(code) {
   case SWIG_MemoryError:
     PyErr_SetString(PyExc_MemoryError,msg);
@@ -84,13 +84,13 @@ static void _SWIG_exception(int code, const char *msg) {
   }
 }
 
-#define SWIG_exception(a,b) { _SWIG_exception(a,b); SWIG_fail; }
+#define SWIG_exception(a,b) { SWIG_exception_(a,b); SWIG_fail; }
 %}
 #endif
 
 #ifdef SWIGGUILE
 %{
-  static void _SWIG_exception (int code, const char *msg,
+  static void SWIG_exception_ (int code, const char *msg,
                                const char *subr) {
 #define ERROR(scmerr)					\
 	scm_error(gh_symbol2scm((char *) (scmerr)),	\
@@ -118,14 +118,14 @@ static void _SWIG_exception(int code, const char *msg) {
 #undef MAP
   }
 
-#define SWIG_exception(a,b) _SWIG_exception(a, b, FUNC_NAME)
+#define SWIG_exception(a,b) SWIG_exception_(a, b, FUNC_NAME)
 %}
 #endif
 
 #ifdef SWIGMZSCHEME
 
 %{
-  static void _SWIG_exception (int code, const char *msg) {
+  static void SWIG_exception_ (int code, const char *msg) {
 #define ERROR(errname)				\
 	scheme_signal_error(errname " (%s)", msg);
 #define MAP(swigerr, errname)			\
@@ -150,7 +150,7 @@ static void _SWIG_exception(int code, const char *msg) {
 #undef MAP
   }
 
-#define SWIG_exception(a,b) _SWIG_exception(a, b)
+#define SWIG_exception(a,b) SWIG_exception_(a, b)
 %}
 #endif
 
@@ -195,18 +195,18 @@ static void SWIG_JavaException(JNIEnv *jenv, int code, const char *msg) {
 #ifdef SWIGOCAML
 %{
 #define OCAML_MSG_BUF_LEN 1024
-static void _SWIG_exception(int code, const char *msg) {
+static void SWIG_exception_(int code, const char *msg) {
   char msg_buf[OCAML_MSG_BUF_LEN];
   sprintf( msg_buf, "Exception(%d): %s\n", code, msg );
   failwith( msg_buf );  
 }
-#define SWIG_exception(a,b) _SWIG_exception((a),(b))
+#define SWIG_exception(a,b) SWIG_exception_((a),(b))
 %}
 #endif
 
 #ifdef SWIGRUBY
 %{
-static void _SWIG_exception(int code, const char *msg) {
+static void SWIG_exception_(int code, const char *msg) {
     switch (code) {
         case SWIG_MemoryError:
             rb_raise(rb_eNoMemError, msg);
@@ -246,8 +246,100 @@ static void _SWIG_exception(int code, const char *msg) {
     }
 }
 
-#define SWIG_exception(a, b) _SWIG_exception((a), (b))
+#define SWIG_exception(a, b) SWIG_exception_((a), (b))
 %}
 #endif
+
+#ifdef SWIGCHICKEN
+%{
+#define CHICKEN_MSG_BUF_LEN 1024
+static void SWIG_exception_(int code, const char *msg) {
+  char msg_buf[CHICKEN_MSG_BUF_LEN];
+  C_word *a;
+  C_word scmmsg;
+
+  sprintf (msg_buf, "Exception(%d): %.950s\n", code, msg);
+
+  a = C_alloc (C_SIZEOF_STRING (strlen (msg_buf)));
+  scmmsg = C_string2 (&a, msg_buf);
+  C_halt (scmmsg);
+}
+#define SWIG_exception(a,b) SWIG_exception_((a),(b))
+%}
+#endif
+
+#ifdef SWIGCSHARP
+%{
+static void SWIG_exception(int code, const char *msg) {
+  SWIG_CSharpExceptionCodes exception_code = SWIG_CSharpException;
+  switch(code) {
+  case SWIG_MemoryError:
+    exception_code = SWIG_CSharpOutOfMemoryException;
+    break;
+  case SWIG_IndexError:
+    exception_code = SWIG_CSharpIndexOutOfRangeException;
+    break;
+  case SWIG_DivisionByZero:
+    exception_code = SWIG_CSharpDivideByZeroException;
+    break;
+  case SWIG_ValueError:
+    exception_code = SWIG_CSharpArgumentOutOfRangeException;
+    break;
+  case SWIG_IOError:
+  case SWIG_RuntimeError:
+  case SWIG_TypeError:
+  case SWIG_OverflowError:
+  case SWIG_SyntaxError:
+  case SWIG_SystemError:
+  case SWIG_UnknownError:
+  default:
+    exception_code = SWIG_CSharpException;
+    break;
+  }
+  SWIG_CSharpThrowException(exception_code, msg);
+}
+%}
+#endif // SWIGCSHARP
+
+#ifdef __cplusplus
+/*
+  You can use the SWIG_CATCH_STDEXCEPT macro with the %exception
+  directive as follows:
+
+  %exception {
+    try {
+      $action
+    }
+    catch (my_except& e) {
+      ...
+    }
+    SWIG_CATCH_STDEXCEPT // catch std::exception 
+    catch (...) {
+     SWIG_exception(SWIG_UnknownError, "Unknown exception");
+    }
+  }  
+*/
+%{
+#include <stdexcept>
+%}
+%define SWIG_CATCH_STDEXCEPT
+  /* catching std::exception  */
+  catch (std::invalid_argument& e) {
+    SWIG_exception(SWIG_ValueError, e.what() );
+  } catch (std::domain_error& e) {
+    SWIG_exception(SWIG_ValueError, e.what() );
+  } catch (std::overflow_error& e) {
+    SWIG_exception(SWIG_OverflowError, e.what() );
+  } catch (std::out_of_range& e) {
+    SWIG_exception(SWIG_IndexError, e.what() );
+  } catch (std::length_error& e) {
+    SWIG_exception(SWIG_IndexError, e.what() );
+  } catch (std::runtime_error& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what() );
+  } catch (std::exception& e) {
+    SWIG_exception(SWIG_SystemError, e.what() );
+  }
+%enddef
+#endif // __cplusplus
 
 /* exception.i ends here */

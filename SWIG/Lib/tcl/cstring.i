@@ -1,6 +1,6 @@
 /*
  * cstring.i
- * Header
+ * /cvsroot/SWIG/Lib/tcl/cstring.i,v 1.4 2003/09/23 21:22:43 cheetah Exp
  *
  * Author(s): David Beazley (beazley@cs.uchicago.edu)
  *
@@ -167,7 +167,7 @@
 	SWIG_fail;
    }
    $2 = ($2_ltype) temp;
-#ifdef __cpluscplus
+#ifdef __cplusplus
    $1 = ($1_ltype) new char[$2+1];
 #else
    $1 = ($1_ltype) malloc($2+1);
@@ -204,7 +204,7 @@
    if (Tcl_GetLongFromObj(interp,$input,&n) != TCL_OK) {
 	SWIG_fail;
    }
-#ifdef __cpluscplus
+#ifdef __cplusplus
    $1 = ($1_ltype) new char[n+1];
    $2 = ($2_ltype) new $*1_ltype;
 #else

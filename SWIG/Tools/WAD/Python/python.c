@@ -27,7 +27,7 @@
 #include "Python.h"
 #include "wad.h"
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Python/python.c,v 1.8 2001/06/20 15:12:52 beazley Exp";
 
 /* These are the python exception objects we will add
    SegFault, BusError, AbortError */

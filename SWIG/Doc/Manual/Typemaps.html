@@ -41,30 +41,30 @@
 <li><a href="#n25">Common typemap methods</a>
 <ul>
 <li><a href="#n26">"in" typemap</a>
-<li><a href="#n27">"out" typemap</a>
-<li><a href="#n28">"arginit" typemap</a>
-<li><a href="#n29">"default" typemap</a>
-<li><a href="#n30">"check" typemap</a>
-<li><a href="#n31">"argout" typemap</a>
-<li><a href="#n32">"freearg" typemap</a>
-<li><a href="#n33">"newfree" typemap</a>
-<li><a href="#n34">"memberin" typemap</a>
-<li><a href="#n35">"varin" typemap</a>
-<li><a href="#n36">"varout" typemap</a>
+<li><a href="#n27">"typecheck" typemap</a>
+<li><a href="#n28">"out" typemap</a>
+<li><a href="#n29">"arginit" typemap</a>
+<li><a href="#n30">"default" typemap</a>
+<li><a href="#n31">"check" typemap</a>
+<li><a href="#n32">"argout" typemap</a>
+<li><a href="#n33">"freearg" typemap</a>
+<li><a href="#n34">"newfree" typemap</a>
+<li><a href="#n35">"memberin" typemap</a>
+<li><a href="#n36">"varin" typemap</a>
+<li><a href="#n37">"varout" typemap</a>
 </ul>
-<li><a href="#n37">Some typemap examples</a>
+<li><a href="#n38">Some typemap examples</a>
 <ul>
-<li><a href="#n38">Typemaps for arrays</a>
-<li><a href="#n39">Implementing constraints with typemaps</a>
+<li><a href="#n39">Typemaps for arrays</a>
+<li><a href="#n40">Implementing constraints with typemaps</a>
 </ul>
-<li><a href="#n40">Multi-argument typemaps</a>
-<li><a href="#n41">The run-time type checker</a>
-<li><a href="#n42">More about <tt>%apply</tt> and <tt>%clear</tt></a>
-<li><a href="#n43">Reducing wrapper code size</a>
-<ul>
-<li><a href="#n44">Passing data between typemaps</a>
-</ul>
-<li><a href="#n45">Where to go for more information?</a>
+<li><a href="#n41">Multi-argument typemaps</a>
+<li><a href="#n42">The run-time type checker</a>
+<li><a href="#n43">Typemaps and overloading</a>
+<li><a href="#n44">More about <tt>%apply</tt> and <tt>%clear</tt></a>
+<li><a href="#n45">Reducing wrapper code size</a>
+<li><a href="#n46">Passing data between typemaps</a>
+<li><a href="#n47">Where to go for more information?</a>
 </ul>
 <!-- INDEX -->
 
@@ -413,6 +413,7 @@ int foo(<b><font color="#ff0000">int x, double y, char *s</font></b>);
 <p>
 <ul>
 <li>Input argument conversion ("in" typemap).
+<li>Input argument type checking ("typecheck" typemap).
 <li>Output argument handling ("argout" typemap).
 <li>Input argument value checking ("check" typemap).
 <li>Input argument initialization ("arginit" typemap).
@@ -449,7 +450,6 @@ int foo(<b><font color="#ff0000">int x, double y, char *s</font></b>);
 <p>
 <ul>
 <li>Handling of C++ exception specifiers. ("throw" typemap).
-<li>Error checking of returned value. ("except" typemap).
 </ul>
 
 <p>
@@ -1653,7 +1653,28 @@ At this time, only zero or one arguments may be converted.
 <b>Compatibility note: </b> Specifying <tt>numinputs=0</tt>
 is the same as the old "ignore" typemap.
 
-<a name="n27"></a><H3>8.5.2 "out" typemap</H3>
+<a name="n27"></a><H3>8.5.2 "typecheck" typemap</H3>
+
+
+The "typecheck" typemap is used to support overloaded functions and methods.  It merely checks an argument
+to see whether or not it matches a specific type.  For example:
+
+<blockquote>
+<pre>
+%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) int {
+   $1 = PyInt_Check($input) ? 1 : 0;
+}
+</pre>
+</blockquote>
+
+For typechecking, the $1 variable is always a simple integer that is set to 1 or 0 depending on whether or not
+the input argument is the correct type.
+
+<p>
+If you define new "in" typemaps <em>and</em> your program uses overloaded methods, you should also define a collection of
+"typecheck" typemaps.  More details about this follow in a later section on "Typemaps and Overloading."
+
+<a name="n28"></a><H3>8.5.3 "out" typemap</H3>
 
 
 The "out" typemap is used to convert function/method return values from C
@@ -1675,7 +1696,7 @@ $symname          - Name of function/method being wrapped
 </pre>
 </blockquote>
 
-<a name="n28"></a><H3>8.5.3 "arginit" typemap</H3>
+<a name="n29"></a><H3>8.5.4 "arginit" typemap</H3>
 
 
 The "arginit" typemap is used to set the initial value of a function
@@ -1692,7 +1713,7 @@ For example:
 </pre>
 </blockquote>
 
-<a name="n29"></a><H3>8.5.4 "default" typemap</H3>
+<a name="n30"></a><H3>8.5.5 "default" typemap</H3>
 
 
 The "default" typemap is used to turn an argument into a default
@@ -1713,10 +1734,10 @@ default arguments or specify a default argument in a language where
 they aren't supported (like C).  
 
 <p>
-One a default typemap has been applied to an argument, all arguments
+Once a default typemap has been applied to an argument, all arguments
 that follow must have default values.
 
-<a name="n30"></a><H3>8.5.5 "check" typemap</H3>
+<a name="n31"></a><H3>8.5.6 "check" typemap</H3>
 
 
 The "check" typemap is used to supply value checking code during argument
@@ -1733,7 +1754,7 @@ converted.  For example:
 </pre>
 </blockquote>
 
-<a name="n31"></a><H3>8.5.6 "argout" typemap</H3>
+<a name="n32"></a><H3>8.5.7 "argout" typemap</H3>
 
 
 The "argout" typemap is used to return values from arguments.  This
@@ -1771,12 +1792,14 @@ return values are often appended to return value of the function.
 <p>
 See the <tt>typemaps.i</tt> library for examples.
 
-<a name="n32"></a><H3>8.5.7 "freearg" typemap</H3>
+<a name="n33"></a><H3>8.5.8 "freearg" typemap</H3>
 
 
 The "freearg" typemap is used to cleanup argument data.  It is only
 used when an argument might have allocated resources that need to be
-cleaned up when the wrapper function exits.  For example:
+cleaned up when the wrapper function exits.  The "freearg" typemap
+usually cleans up argument resources allocated by the "in" typemap.  
+For example:
 
 <blockquote>
 <pre>
@@ -1798,7 +1821,7 @@ code is also placed into a special variable <tt>$cleanup</tt> that may
 be used in other typemaps whenever a wrapper function needs to abort
 prematurely.
 
-<a name="n33"></a><H3>8.5.8 "newfree" typemap</H3>
+<a name="n34"></a><H3>8.5.9 "newfree" typemap</H3>
 
 
 The "newfree" typemap is used in conjunction with the <tt>%newobject</tt>
@@ -1821,7 +1844,7 @@ string *foo();
 </pre>
 </blockquote>
 
-<a name="n34"></a><H3>8.5.9 "memberin" typemap</H3>
+<a name="n35"></a><H3>8.5.10 "memberin" typemap</H3>
 
 
 The "memberin" typemap is used to copy data from <em>an already converted input value</em>
@@ -1839,26 +1862,26 @@ cases.  For example:
 It is rarely necessary to write "memberin" typemaps---SWIG already provides
 a default implementation for arrays, strings, and other objects.
 
-<a name="n35"></a><H3>8.5.10 "varin" typemap</H3>
+<a name="n36"></a><H3>8.5.11 "varin" typemap</H3>
 
 
 The "varin" typemap is used to convert objects in the target language to C for the
 purposes of assigning to a C/C++ global variable.    This is implementation specific.
 
-<a name="n36"></a><H3>8.5.11 "varout" typemap</H3>
+<a name="n37"></a><H3>8.5.12 "varout" typemap</H3>
 
 
 The "varout" typemap is used to convert a C/C++ object to an object in the target
 language when reading a C/C++ global variable.  This is implementation specific.
 
 
-<a name="n37"></a><H2>8.6 Some typemap examples</H2>
+<a name="n38"></a><H2>8.6 Some typemap examples</H2>
 
 
 This section contains a few examples.  Consult language module documentation
 for more examples.
 
-<a name="n38"></a><H3>8.6.1 Typemaps for arrays</H3>
+<a name="n39"></a><H3>8.6.1 Typemaps for arrays</H3>
 
 
 A common use of typemaps is to provide support for C arrays appearing both as
@@ -2088,7 +2111,7 @@ Now, you will find that member access is quite nice:
 <b>Compatibility Note:</b>  SWIG1.1 used to provide a special "memberout" typemap.  However, it was mostly
 useless and has since been eliminated.   To return structure members, simply use the "out" typemap.
 
-<a name="n39"></a><H3>8.6.2 Implementing constraints with typemaps</H3>
+<a name="n40"></a><H3>8.6.2 Implementing constraints with typemaps</H3>
 
 
 One particularly interesting application of typemaps is the
@@ -2134,7 +2157,7 @@ rather than blindly passing values to the underlying C/C++ program.<p>
 <p>
 Note: A more advanced constraint checking system is in development.  Stay tuned.
 
-<a name="n40"></a><H2>8.7 Multi-argument typemaps</H2>
+<a name="n41"></a><H2>8.7 Multi-argument typemaps</H2>
 
 
 So far, the typemaps presented have focused on the problem of dealing with
@@ -2370,7 +2393,7 @@ Numeric Python.  However, it should also be stressed that some care is in order.
 when crossing languages you may need to worry about issues such as row-major vs. column-major
 ordering (and perform conversions if needed).
 
-<a name="n41"></a><H2>8.8 The run-time type checker</H2>
+<a name="n42"></a><H2>8.8 The run-time type checker</H2>
 
 
 A critical part of SWIG's operation is that of its run-time type checker.  
@@ -2562,7 +2585,291 @@ type-checking.  This code is also included in every generated wrapped file so yo
 probably just look at the output of SWIG to get a better sense for how types are
 managed.
 
-<a name="n42"></a><H2>8.9 More about <tt>%apply</tt> and <tt>%clear</tt></H2>
+<a name="n43"></a><H2>8.9 Typemaps and overloading</H2>
+
+
+In many target languages, SWIG fully supports C++ overloaded methods and functions.   For example,
+if you have a collection of functions like this:
+
+<blockquote>
+<pre>
+int foo(int x);
+int foo(double x);
+int foo(char *s, int y);
+</pre>
+</blockquote>
+
+You can access the functions in a normal way from the scripting interpreter:
+
+<blockquote>
+<pre>
+# Python
+foo(3)           # foo(int)
+foo(3.5)         # foo(double)
+foo("hello",5)   # foo(char *, int)
+
+# Tcl
+foo 3            # foo(int)
+foo 3.5          # foo(double)
+foo hello 5      # foo(char *, int)
+</pre>
+</blockquote>
+
+To implement overloading, SWIG generates a separate wrapper function for each overloaded method.
+For example, the above functions would produce something roughly like this:
+
+<blockquote>
+<pre>
+// wrapper pseudocode
+_wrap_foo_0(argc, args[]) {       // foo(int)
+   int arg1;
+   int result;
+   ...
+   arg1 = FromInteger(args[0]);
+   result = foo(arg1);
+   return ToInteger(result);
+}
+
+_wrap_foo_1(argc, args[]) {       // foo(double)
+   double arg1;
+   int result;
+   ...
+   arg1 = FromDouble(args[0]);
+   result = foo(arg1);
+   return ToInteger(result);
+}
+
+_wrap_foo_2(argc, args[]) {       // foo(char *, int)
+   char *arg1;
+   int   arg2;
+   int result;
+   ...
+   arg1 = FromString(args[0]);
+   arg2 = FromInteger(args[1]);
+   result = foo(arg1,arg2);
+   return ToInteger(result);
+}
+
+</pre>
+</blockquote>
+
+Next, a dynamic dispatch function is generated:
+
+<blockquote>
+<pre>
+_wrap_foo(argc, args[]) {
+   if (argc == 1) {
+       if (IsInteger(args[0])) {
+           return _wrap_foo_0(argc,args);
+       } 
+       if (IsDouble(args[0])) {
+           return _wrap_foo_1(argc,args);
+       }
+   }
+   if (argc == 2) {
+       if (IsString(args[0]) && IsInteger(args[1])) {
+          return _wrap_foo_2(argc,args);
+       }
+   }
+   error("No matching function!\n");
+}
+</pre>
+</blockquote>
+
+The purpose of the dynamic dispatch function is to select the appropriate C++ function based on 
+argument types---a task that must be performed at runtime in most of SWIG's target languages.
+
+<p>
+The generation of the dynamic dispatch function is a relatively tricky affair.  Not only must input typemaps
+be taken into account (these typemaps can radically change the types of arguments accepted), but overloaded
+methods must also be sorted and checked in a very specific order to resolve potential ambiguity.   A high-level
+overview of this ranking process is found in the "<a href="SWIGPlus.html">SWIG and C++</a>" chapter.    What isn't mentioned in that chapter
+is the mechanism by which it is implemented---as a collection of typemaps.
+
+<p>
+To support dynamic dispatch, SWIG first defines a general purpose type hierarchy as follows:
+
+<blockquote>
+<pre>
+Symbolic Name                   Precedence Value
+------------------------------  ------------------
+SWIG_TYPECHECK_POINTER           0  
+SWIG_TYPECHECK_VOIDPTR           10 
+SWIG_TYPECHECK_BOOL              15 
+SWIG_TYPECHECK_UINT8             20 
+SWIG_TYPECHECK_INT8              25 
+SWIG_TYPECHECK_UINT16            30 
+SWIG_TYPECHECK_INT16             35 
+SWIG_TYPECHECK_UINT32            40 
+SWIG_TYPECHECK_INT32             45 
+SWIG_TYPECHECK_UINT64            50 
+SWIG_TYPECHECK_INT64             55 
+SWIG_TYPECHECK_UINT128           60 
+SWIG_TYPECHECK_INT128            65 
+SWIG_TYPECHECK_INTEGER           70 
+SWIG_TYPECHECK_FLOAT             80 
+SWIG_TYPECHECK_DOUBLE            90 
+SWIG_TYPECHECK_COMPLEX           100 
+SWIG_TYPECHECK_UNICHAR           110 
+SWIG_TYPECHECK_UNISTRING         120 
+SWIG_TYPECHECK_CHAR              130 
+SWIG_TYPECHECK_STRING            140 
+SWIG_TYPECHECK_BOOL_ARRAY        1015 
+SWIG_TYPECHECK_INT8_ARRAY        1025 
+SWIG_TYPECHECK_INT16_ARRAY       1035 
+SWIG_TYPECHECK_INT32_ARRAY       1045 
+SWIG_TYPECHECK_INT64_ARRAY       1055 
+SWIG_TYPECHECK_INT128_ARRAY      1065 
+SWIG_TYPECHECK_FLOAT_ARRAY       1080 
+SWIG_TYPECHECK_DOUBLE_ARRAY      1090 
+SWIG_TYPECHECK_CHAR_ARRAY        1130 
+SWIG_TYPECHECK_STRING_ARRAY      1140 
+</pre>
+</blockquote>
+
+(These precedence levels are defined in <tt>swig.swg</tt>, a library file that's included by all target language modules.)
+
+<p>
+In this table, the precedence-level determines the order in which types are going to be checked.  Low values
+are always checked before higher values.  For example, integers are checked before floats, single values are checked
+before arrays, and so forth.
+
+<p>
+Using the above table as a guide, each target language defines a collection of "typecheck" typemaps. 
+The follow excerpt from the Python module illustrates this:
+
+<blockquote>
+<pre>
+/* Python type checking rules */
+/* Note:  %typecheck(X) is a macro for %typemap(typecheck,precedence=X) */
+
+%typecheck(SWIG_TYPECHECK_INTEGER)
+	 int, short, long,
+ 	 unsigned int, unsigned short, unsigned long,
+	 signed char, unsigned char,
+	 long long, unsigned long long,
+	 const int &, const short &, const long &,
+ 	 const unsigned int &, const unsigned short &, const unsigned long &,
+	 const long long &, const unsigned long long &,
+	 enum SWIGTYPE,
+         bool, const bool & 
+{
+  $1 = (PyInt_Check($input) || PyLong_Check($input)) ? 1 : 0;
+}
+
+%typecheck(SWIG_TYPECHECK_DOUBLE)
+	float, double,
+	const float &, const double &
+{
+  $1 = (PyFloat_Check($input) || PyInt_Check($input) || PyLong_Check($input)) ? 1 : 0;
+}
+
+%typecheck(SWIG_TYPECHECK_CHAR) char {
+  $1 = (PyString_Check($input) && (PyString_Size($input) == 1)) ? 1 : 0;
+}
+
+%typecheck(SWIG_TYPECHECK_STRING) char * {
+  $1 = PyString_Check($input) ? 1 : 0;
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $1_descriptor, 0) == -1) {
+    $1 = 0;
+    PyErr_Clear();
+  } else {
+    $1 = 1;
+  }
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $&1_descriptor, 0) == -1) {
+    $1 = 0;
+    PyErr_Clear();
+  } else {
+    $1 = 1;
+  }
+}
+
+%typecheck(SWIG_TYPECHECK_VOIDPTR) void * {
+  void *ptr;
+  if (SWIG_ConvertPtr($input, (void **) &ptr, 0, 0) == -1) {
+    $1 = 0;
+    PyErr_Clear();
+  } else {
+    $1 = 1;
+  }
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER) PyObject *
+{
+  $1 = ($input != 0);
+}
+</pre>
+</blockquote>
+
+It might take a bit of contemplation, but this code has merely organized all of the basic C++ types, provided some simple type-checking
+code, and assigned each type a precedence value.
+
+<p>
+Finally, to generate the dynamic dispatch function, SWIG uses the following algorithm:
+
+<ul>
+<li>Overloaded methods are first sorted by the number of required arguments.
+<li>Methods with the same number of arguments are then sorted by precedence values of argument types.
+<li>Typecheck typemaps are then emitted to produce a dispatch function that checks arguments in the correct order.
+</ul>
+
+If you haven't written any typemaps of your own, it is unnecessary to worry about the typechecking rules.
+However, if you have written new input typemaps, you might have to supply a typechecking rule as well.
+An easy way to do this is to simply copy one of the existing typechecking rules. 
+Here is an example,
+
+<blockquote>
+<pre>
+// Typemap for a C++ string
+%typemap(in) std::string {
+    if (PyString_Check($input)) {
+         $1 = std::string(PyString_AsString($input));
+     } else {
+         SWIG_exception(SWIG_TypeError, "string expected");
+     }
+}
+// Copy the typecheck code for "char *".  
+%typemap(typecheck) std::string = char *;
+</pre>
+</blockquote>
+
+The bottom line:  If you are writing new typemaps and you are using overloaded methods, you will probably 
+have to write typecheck code or copy existing code.   Since this is a relatively new SWIG feature, there are
+few examples to work with.  However, you might look at some of the existing library files likes 'typemaps.i' for
+a guide.
+
+<p>
+<b>Notes:</b>
+
+<ul>
+<li>Typecheck typemaps are not used for non-overloaded methods.  Because of this, it is
+still always necessary to check types in any "in" typemaps.
+
+<p>
+<li>The dynamic dispatch process is only meant to be a heuristic.  There are many corner
+cases where SWIG simply can't disambiguate types to the same degree as C++.   The only way to
+resolve this ambiguity is to use the %rename directive to rename one of the overloaded methods (effectively
+eliminating overloading).
+
+<p>
+<li>
+Typechecking may be partial.  For example, if working with arrays, the typecheck code might 
+simply check the type of the first array element and use that to dispatch to the correct function.
+Subsequent "in" typemaps would then perform more extensive type-checking.
+
+<p>
+<Li>Make sure you read the section on overloading in the "<a href="SWIGPlus.html">SWIG and C++</a>" chapter.
+</ul>
+
+<a name="n44"></a><H2>8.10 More about <tt>%apply</tt> and <tt>%clear</tt></H2>
 
 
 In order to implement certain kinds of program behavior, it is sometimes necessary to
@@ -2635,7 +2942,7 @@ example:
 </pre>
 </blockquote>
 
-<a name="n43"></a><H2>8.10 Reducing wrapper code size</H2>
+<a name="n45"></a><H2>8.11 Reducing wrapper code size</H2>
 
 
 Since the code supplied to a typemap is inlined directly into wrapper functions, typemaps can result
@@ -2711,7 +3018,7 @@ convert_float_array(PyObject *input, int size) {
 </pre>
 </blockquote>
 
-<a name="n44"></a><H3>8.10.1 Passing data between typemaps</H3>
+<a name="n46"></a><H2>8.12 Passing data between typemaps</H2>
 
 
 <p>
@@ -2745,7 +3052,7 @@ in this manner should probably be avoided.  At the very least, you should make
 sure that the typemaps sharing information have exactly the same types and names.
 
 
-<a name="n45"></a><H2>8.11 Where to go for more information?</H2>
+<a name="n47"></a><H2>8.13 Where to go for more information?</H2>
 
 
 The
@@ -2759,6 +3066,6 @@ for how to define typemaps of your own.
 
 <p><hr>
 
-<address>SWIG 1.3 - Last Modified : October 13, 2002</address>
+<address>SWIG 1.3 - Last Modified : June 1 , 2003</address>
 </body>
 </html>

@@ -15,12 +15,18 @@
 #   define JCALL2(func, jenv, ar1, ar2) jenv->func(ar1, ar2)
 #   define JCALL3(func, jenv, ar1, ar2, ar3) jenv->func(ar1, ar2, ar3)
 #   define JCALL4(func, jenv, ar1, ar2, ar3, ar4) jenv->func(ar1, ar2, ar3, ar4)
+#   define JCALL5(func, jenv, ar1, ar2, ar3, ar4, ar5) jenv->func(ar1, ar2, ar3, ar4, ar5)
+#   define JCALL6(func, jenv, ar1, ar2, ar3, ar4, ar5, ar6) jenv->func(ar1, ar2, ar3, ar4, ar5, ar6)
+#   define JCALL7(func, jenv, ar1, ar2, ar3, ar4, ar5, ar6, ar7) jenv->func(ar1, ar2, ar3, ar4, ar5, ar6, ar7)
 #else
 #   define JCALL0(func, jenv) (*jenv)->func(jenv)
 #   define JCALL1(func, jenv, ar1) (*jenv)->func(jenv, ar1)
 #   define JCALL2(func, jenv, ar1, ar2) (*jenv)->func(jenv, ar1, ar2)
 #   define JCALL3(func, jenv, ar1, ar2, ar3) (*jenv)->func(jenv, ar1, ar2, ar3)
 #   define JCALL4(func, jenv, ar1, ar2, ar3, ar4) (*jenv)->func(jenv, ar1, ar2, ar3, ar4)
+#   define JCALL5(func, jenv, ar1, ar2, ar3, ar4, ar5) (*jenv)->func(jenv, ar1, ar2, ar3, ar4, ar5)
+#   define JCALL6(func, jenv, ar1, ar2, ar3, ar4, ar5, ar6) (*jenv)->func(jenv, ar1, ar2, ar3, ar4, ar5, ar6)
+#   define JCALL7(func, jenv, ar1, ar2, ar3, ar4, ar5, ar6, ar7) (*jenv)->func(jenv, ar1, ar2, ar3, ar4, ar5, ar6, ar7)
 #endif
 
 %insert(runtime) %{
@@ -42,6 +48,7 @@ typedef enum {
   SWIG_JavaArithmeticException,
   SWIG_JavaIllegalArgumentException,
   SWIG_JavaNullPointerException,
+  SWIG_JavaDirectorPureVirtual,
   SWIG_JavaUnknownError
 } SWIG_JavaExceptionCodes;
 
@@ -49,13 +56,10 @@ typedef struct {
   SWIG_JavaExceptionCodes code;
   const char *java_exception;
 } SWIG_JavaExceptions_t;
-
-#if defined(SWIG_NOINCLUDE)
-void SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const char *msg);
-#else
 %}
+
 %insert(runtime) {
-void SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const char *msg) {
+static void SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const char *msg) {
   jclass excep;
   static const SWIG_JavaExceptions_t java_exceptions[] = {
     { SWIG_JavaOutOfMemoryError, "java/lang/OutOfMemoryError" },
@@ -65,6 +69,7 @@ void SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const c
     { SWIG_JavaArithmeticException, "java/lang/ArithmeticException" },
     { SWIG_JavaIllegalArgumentException, "java/lang/IllegalArgumentException" },
     { SWIG_JavaNullPointerException, "java/lang/NullPointerException" },
+    { SWIG_JavaDirectorPureVirtual, "java/lang/RuntimeException" },
     { SWIG_JavaUnknownError,  "java/lang/UnknownError" },
     { (SWIG_JavaExceptionCodes)0,  "java/lang/UnknownError" } };
   const SWIG_JavaExceptions_t *except_ptr = java_exceptions;
@@ -78,7 +83,9 @@ void SWIG_JavaThrowException(JNIEnv *jenv, SWIG_JavaExceptionCodes code, const c
     JCALL2(ThrowNew, jenv, excep, msg);
 }
 }
-%insert(runtime) %{
-#endif
-%}
 
+%insert(runtime) %{
+/* Contract support */
+
+#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_JavaThrowException(jenv, SWIG_JavaIllegalArgumentException, msg); return nullreturn; } else
+%}

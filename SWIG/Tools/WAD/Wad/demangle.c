@@ -27,7 +27,7 @@
 
 #include "wad.h"
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Wad/demangle.c,v 1.3 2001/06/20 15:12:53 beazley Exp";
 
 char *wad_cplus_demangle(WadSymbol *ws) {
   static char buffer[4096];

@@ -9,7 +9,7 @@
  * See the file LICENSE for information on usage and redistribution.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_symbol_c[] = "Header";
+char cvsroot_symbol_c[] = "/cvsroot/SWIG/Source/Swig/symbol.c,v 1.9 2004/01/21 21:27:43 cheetah Exp";
 
 #include "swig.h"
 #include "swigwarn.h"
@@ -383,8 +383,12 @@ Swig_symbol_cadd(String_or_char *name, Node *n) {
     Setattr(ccurrent,name,n);
     append = cn;
   } else if (cn && (Strcmp(nodeType(cn),"templateparm") == 0)) {
-    Swig_error(Getfile(n),Getline(n),"Error. Declaration of '%s' shadows template parameter at %s:%d\n",
-	       name,Getfile(cn),Getline(cn));
+    Swig_error(Getfile(n),Getline(n),
+	       "Declaration of '%s' shadows template parameter,\n",
+	       name);
+    Swig_error(Getfile(cn),Getline(cn),
+	       "previous template parameter declaration '%s'.\n",
+	       name);
     return;
   } else if (cn) {
     append = n;
@@ -624,7 +628,10 @@ Swig_symbol_add(String_or_char *symname, Node *n) {
     /* Well, we made it this far.  Guess we can drop the symbol in place */
     Setattr(n,"sym:symtab",current_symtab);
     Setattr(n,"sym:name",symname);
+    /* Printf(stdout,"%s %x\n", Getattr(n,"sym:overname"), current_symtab); */
+    assert(!Getattr(n,"sym:overname"));
     Setattr(n,"sym:overname", NewStringf("__SWIG_%d", pn));
+    /*Printf(stdout,"%s %s %s\n", symname, Getattr(n,"decl"), Getattr(n,"sym:overname")); */
     Setattr(cl,"sym:nextSibling",n);
     Setattr(n,"sym:previousSibling",cl);
     Setattr(cl,"sym:overloaded",c);
@@ -635,7 +642,9 @@ Swig_symbol_add(String_or_char *symname, Node *n) {
   /* No conflict.  Just add it */
   Setattr(n,"sym:symtab",current_symtab);
   Setattr(n,"sym:name",symname);
+  /* Printf(stdout,"%s\n", Getattr(n,"sym:overname")); */
   Setattr(n,"sym:overname", NewStringf("__SWIG_%d", pn));
+  /* Printf(stdout,"%s %s %s\n", symname, Getattr(n,"decl"), Getattr(n,"sym:overname")); */
   Setattr(current,symname,n);
   return n;
 }
@@ -648,10 +657,14 @@ Swig_symbol_add(String_or_char *symname, Node *n) {
  * towards the global scope. 
  *
  * This function operates in the C namespace, not the target namespace.
+ *
+ * The check function is an optional callback that can be used to verify a particular
+ * symbol match.   This is only used in some of the more exotic parts of SWIG. For instance,
+ * verifying that a class hierarchy implements all pure virtual methods.
  * ----------------------------------------------------------------------------- */
 
 static Node *
-symbol_lookup(String_or_char *name, Symtab *symtab) {
+symbol_lookup(String_or_char *name, Symtab *symtab, int (*check)(Node *n)) {
   Node *n;
   List *inherit;
   Hash *sym = Getattr(symtab,"csymtab");
@@ -661,15 +674,30 @@ symbol_lookup(String_or_char *name, Symtab *symtab) {
 
   n = Getattr(sym,name);
   if (n) {
-    Setmark(symtab,0);
-    return n;
+    /* if a check-function is defined.  Call it to determine a match */
+    if (check) {
+      int c = check(n);
+      if (c == 1) {
+	Setmark(symtab,0);
+	return n;
+      }
+      if (c < 0) {
+	/* Terminate the search right away */
+	Setmark(symtab,0);
+	return 0;
+      }
+    } else {
+      Setmark(symtab,0);
+      return n;
+    }
   }
+
   inherit = Getattr(symtab,"inherit");
   if (inherit) {
     int  i,len;
     len = Len(inherit);
     for (i = 0; i < len; i++) {
-      n = symbol_lookup(name, Getitem(inherit,i));
+      n = symbol_lookup(name, Getitem(inherit,i),check);
       if (n) {
 	Setmark(symtab,0);
 	return n;
@@ -681,7 +709,7 @@ symbol_lookup(String_or_char *name, Symtab *symtab) {
 }
 
 static Node *
-symbol_lookup_qualified(String_or_char *name, Symtab *symtab, String *prefix, int local) {
+symbol_lookup_qualified(String_or_char *name, Symtab *symtab, String *prefix, int local, int (*checkfunc)(Node *n)) {
   /* This is a little funky, we search by fully qualified names */
 
   if (!symtab) return 0;
@@ -691,7 +719,7 @@ symbol_lookup_qualified(String_or_char *name, Symtab *symtab, String *prefix, in
     String *prefix;
     bname = Swig_scopename_last(name);
     prefix = Swig_scopename_prefix(name);
-    n = symbol_lookup_qualified(bname,symtab,prefix,local);
+    n = symbol_lookup_qualified(bname,symtab,prefix,local,checkfunc);
     Delete(bname);
     Delete(prefix);
     return n;
@@ -713,13 +741,13 @@ symbol_lookup_qualified(String_or_char *name, Symtab *symtab, String *prefix, in
     /* Found a scope match */
     if (st) {
       if (!name) return st;
-      n = symbol_lookup(name, st);
+      n = symbol_lookup(name, st,checkfunc);
     }
     Delete(qname);
     if (!n) {
       if (!local) {
 	Node *pn = parentNode(symtab);
-	if (pn) n = symbol_lookup_qualified(name,pn, prefix, local);
+	if (pn) n = symbol_lookup_qualified(name,pn, prefix, local,checkfunc);
       } else {
 	n = 0;
       }
@@ -738,7 +766,7 @@ symbol_lookup_qualified(String_or_char *name, Symtab *symtab, String *prefix, in
 
 Node *
 Swig_symbol_clookup(String_or_char *name, Symtab *n) {
-  Hash *hsym;
+  Hash *hsym = 0;
   Node *s = 0;
   
   if (!n) {
@@ -757,12 +785,12 @@ Swig_symbol_clookup(String_or_char *name, Symtab *n) {
     if (Strncmp(name,"::",2) == 0) {
       String *nname = NewString(Char(name)+2);
       if (Swig_scopename_check(nname)) {
-	s = symbol_lookup_qualified(nname,global_scope,0,0);
+	s = symbol_lookup_qualified(nname,global_scope,0,0,0);
       }
     } else {
       String *prefix = Swig_scopename_prefix(name);
       if (prefix) {
-	s = symbol_lookup_qualified(name,hsym,0,0);
+	s = symbol_lookup_qualified(name,hsym,0,0,0);
 	Delete(prefix);
 	if (!s) {
 	  return 0;
@@ -772,7 +800,7 @@ Swig_symbol_clookup(String_or_char *name, Symtab *n) {
   }
   if (!s) {
     while (hsym) {
-      s = symbol_lookup(name,hsym);
+      s = symbol_lookup(name,hsym,0);
       if (s) break;
       hsym = parentNode(hsym);
       if (!hsym) break;
@@ -786,6 +814,73 @@ Swig_symbol_clookup(String_or_char *name, Symtab *n) {
     Node *ss;
     ss = Swig_symbol_clookup(Getattr(s,"uname"), Getattr(s,"sym:symtab"));
     if (!ss) {
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s,"uname"));
+    }
+    s = ss;
+  }
+  return s;
+}
+
+/* -----------------------------------------------------------------------------
+ * Swig_symbol_clookup_check()
+ *
+ * This function is identical to Swig_symbol_clookup() except that it
+ * accepts a callback function that is invoked to determine a symbol match.
+ * The purpose of this function is to support complicated algorithms that need
+ * to examine multiple definitions of the same symbol that might appear in an
+ * inheritance hierarchy. 
+ * ----------------------------------------------------------------------------- */
+
+Node *
+Swig_symbol_clookup_check(String_or_char *name, Symtab *n, int (*checkfunc)(Node *n)) {
+  Hash *hsym = 0;
+  Node *s = 0;
+  
+  if (!n) {
+    hsym = current_symtab;
+  } else {
+    if (Strcmp(nodeType(n),"symboltable")) {
+      n = Getattr(n,"sym:symtab");
+    }
+    assert(n);
+    if (n) {
+      hsym = n;
+    }
+  }
+  
+  if (Swig_scopename_check(name)) {
+    if (Strncmp(name,"::",2) == 0) {
+      String *nname = NewString(Char(name)+2);
+      if (Swig_scopename_check(nname)) {
+	s = symbol_lookup_qualified(nname,global_scope,0,0,checkfunc);
+      }
+    } else {
+      String *prefix = Swig_scopename_prefix(name);
+      if (prefix) {
+	s = symbol_lookup_qualified(name,hsym,0,0,checkfunc);
+	Delete(prefix);
+	if (!s) {
+	  return 0;
+	}
+      }
+    }
+  }
+  if (!s) {
+    while (hsym) {
+      s = symbol_lookup(name,hsym,checkfunc);
+      if (s) break;
+      hsym = parentNode(hsym);
+      if (!hsym) break;
+    }
+  }
+  if (!s) {
+    return 0;
+  }
+  /* Check if s is a 'using' node */
+  while (s && Strcmp(nodeType(s),"using") == 0) {
+    Node *ss;
+    ss = Swig_symbol_clookup(Getattr(s,"uname"), Getattr(s,"sym:symtab"));
+    if (!ss && !checkfunc) {
       Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s,"uname"));
     }
     s = ss;
@@ -812,13 +907,13 @@ Swig_symbol_clookup_local(String_or_char *name, Symtab *n) {
 
   if (Swig_scopename_check(name)) {
     if (Strncmp(name,"::",2) == 0) {
-      s = symbol_lookup_qualified(Char(name)+2,global_scope,0,0);
+      s = symbol_lookup_qualified(Char(name)+2,global_scope,0,0,0);
     } else {
-      s = symbol_lookup_qualified(name,hsym,0,0);
+      s = symbol_lookup_qualified(name,hsym,0,0,0);
     }
   }
   if (!s) {
-    s = symbol_lookup(name,hsym);
+    s = symbol_lookup(name,hsym,0);
   }
   if (!s) return 0;
   /* Check if s is a 'using' node */
@@ -832,6 +927,47 @@ Swig_symbol_clookup_local(String_or_char *name, Symtab *n) {
   return s;
 }
 
+
+Node *
+Swig_symbol_clookup_local_check(String_or_char *name, Symtab *n, int (*checkfunc)(Node *)) {
+  Hash *h, *hsym;
+  Node *s = 0;
+
+  if (!n) {
+    hsym = current_symtab;
+    h = ccurrent;
+  } else {
+    if (Strcmp(nodeType(n),"symboltable")) {
+      n = Getattr(n,"sym:symtab");
+    }
+    assert(n);
+    hsym = n;
+    h = Getattr(n,"csymtab");
+  }
+
+  if (Swig_scopename_check(name)) {
+    if (Strncmp(name,"::",2) == 0) {
+      s = symbol_lookup_qualified(Char(name)+2,global_scope,0,0,checkfunc);
+    } else {
+      s = symbol_lookup_qualified(name,hsym,0,0,checkfunc);
+    }
+  }
+  if (!s) {
+    s = symbol_lookup(name,hsym,checkfunc);
+  }
+  if (!s) return 0;
+  /* Check if s is a 'using' node */
+  while (s && Strcmp(nodeType(s),"using") == 0) {
+    Node *ss = Swig_symbol_clookup_local_check(Getattr(s,"uname"), Getattr(s,"sym:symtab"),checkfunc);
+    if (!ss && !checkfunc) {
+      Swig_warning(WARN_PARSE_USING_UNDEF, Getfile(s), Getline(s), "Nothing known about '%s'.\n", Getattr(s,"uname"));
+    }
+    s = ss;
+  }
+  return s;
+}
+
+
 /* -----------------------------------------------------------------------------
  * Swig_symbol_cscope()
  *
@@ -840,8 +976,8 @@ Swig_symbol_clookup_local(String_or_char *name, Symtab *n) {
 
 Symtab *
 Swig_symbol_cscope(String_or_char *name, Symtab *symtab) {
-  if (Strncmp(name,"::",2) == 0) return symbol_lookup_qualified(0, global_scope, name, 0);
-  return symbol_lookup_qualified(0,symtab,name,0);
+  if (Strncmp(name,"::",2) == 0) return symbol_lookup_qualified(0, global_scope, name, 0,0);
+  return symbol_lookup_qualified(0,symtab,name,0,0);
 }
 
 /* -----------------------------------------------------------------------------
@@ -877,9 +1013,48 @@ Swig_symbol_remove(Node *n) {
       Delattr(symtab,symname);
     }
   }
+  if (symnext) {
+    if (symprev) {
+      Setattr(symnext,"sym:previousSibling",symprev);
+    } else {
+      Delattr(symnext,"sym:previousSibling");
+    }
+  }
   Delattr(n,"sym:symtab");
   Delattr(n,"sym:previousSibling");
   Delattr(n,"sym:nextSibling");
+  Delattr(n,"csym:nextSibling");
+  Delattr(n,"sym:overname");
+  Delattr(n,"csym:previousSibling");
+  Delattr(n,"sym:overloaded");
+  return;
+
+#if 0
+  symtab  = Getattr(n,"sym:symtab");        /* Get symbol table object */
+  symtab  = Getattr(symtab,"csymtab");       /* Get actual hash table of symbols */
+  symprev = Getattr(n,"csym:previousSibling");
+  symnext = Getattr(n,"csym:nextSibling");
+
+  /* If previous symbol, just fix the links */
+  if (symprev) {
+    if (symnext) {
+      Setattr(symprev,"csym:nextSibling",symnext);
+    } else {
+      Delattr(symprev,"csym:nextSibling");
+    }
+  } else {
+    /* If no previous symbol, see if there is a next symbol */
+    if (symnext) {
+      Setattr(symtab,Getattr(n,"name"),symnext);
+    } else {
+      Delattr(symtab,Getattr(n,"name"));
+    }
+  }
+
+  Delattr(n,"sym:symtab");
+  Delattr(n,"csym:previousSibling");
+  Delattr(n,"csym:nextSibling");
+#endif
 }
 
 /* -----------------------------------------------------------------------------
@@ -947,15 +1122,15 @@ Swig_symbol_type_qualify(SwigType *t, Symtab *st) {
 	String *tprefix, *tsuffix;
 	SwigType *qprefix;
 	List   *targs;
-	String  *tparm;
+	Iterator ti;
 	tprefix = SwigType_templateprefix(e);
 	tsuffix = SwigType_templatesuffix(e);
 	qprefix = Swig_symbol_type_qualify(tprefix,st);
 	targs = SwigType_parmlist(e);
 	Printf(qprefix,"<(");
-	for (tparm = Firstitem(targs); tparm;) {
-	  String *qparm = Swig_symbol_type_qualify(tparm,st);
-	  /*	  Printf(stdout,"qparm = '%s', tparm = '%s'\n", qparm, tparm);*/
+	for (ti = First(targs); ti.item;) {
+	  String *qparm = Swig_symbol_type_qualify(ti.item,st);
+	  /*	  Printf(stdout,"qparm = '%s', tparm = '%s'\n", qparm, ti.item);*/
 	  while (1) {
 	    /* It is possible for an integer to show up here.  If so, we need to evaluate it */
 	    {
@@ -984,8 +1159,8 @@ Swig_symbol_type_qualify(SwigType *t, Symtab *st) {
 	    }
 	  }
 	  Append(qprefix,qparm);
-	  tparm = Nextitem(targs);
-	  if (tparm) {
+	  ti = Next(ti);
+	  if (ti.item) {
 	    Putc(',',qprefix);
 	  }
 	  Delete(qparm);
@@ -1004,14 +1179,14 @@ Swig_symbol_type_qualify(SwigType *t, Symtab *st) {
       }
       Append(result,e);
     } else if (SwigType_isfunction(e)) {
+      Iterator pi;
       List *parms = SwigType_parmlist(e);
       String *s = NewString("f(");
-      String *p;
-      p = Firstitem(parms);
-      while (p) {
-	Append(s,Swig_symbol_type_qualify(p,st));
-	p = Nextitem(parms);
-	if (p) {
+      pi = First(parms);
+      while (pi.item) {
+	Append(s,Swig_symbol_type_qualify(pi.item,st));
+	pi = Next(pi);
+	if (pi.item) {
 	  Append(s,",");
 	}
       }
@@ -1098,7 +1273,7 @@ Swig_symbol_string_qualify(String *s, Symtab *st) {
   r = NewString("");
   c = Char(s);
   while (*c) {
-    if (isalpha(*c) || (*c == '_') || (*c == ':')) {
+    if (isalpha((int)*c) || (*c == '_') || (*c == ':')) {
       Putc(*c,id);
       have_id = 1;
     } else {

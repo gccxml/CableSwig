@@ -6,7 +6,7 @@
  * This library file contains macros that can be used to manipulate simple
  * pointer objects.
  *
- * Header
+ * /cvsroot/SWIG/Lib/cpointer.i,v 1.3 2002/11/30 22:10:07 beazley Exp
  * ----------------------------------------------------------------------------- */
 
 /* -----------------------------------------------------------------------------

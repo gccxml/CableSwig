@@ -1,10 +1,7 @@
 %module template_specialization
 
-%rename(__not__) *::operator!() const;
-
-#ifdef SWIGJAVA
+%rename(not1) *::operator!() const;
 %rename(negate) *::operator-() const;
-#endif
 
 %inline %{
   

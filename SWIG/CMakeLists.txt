@@ -1,58 +1,160 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 1.8)
 PROJECT(SWIG)
 
-# there is a bug with vs 7, if you optimize the
-# c file building cswig does not run correctly.
-# so add the -Od flag which will turn off
-IF(CMAKE_SYSTEM_AND_CXX_COMPILER_INFO_FILE MATCHES "Windows-cl")
-  SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Od")
-  SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -Od")
-  IF(CMAKE_MAKE_PROGRAM MATCHES devenv)
-    SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Od")
-  ENDIF(CMAKE_MAKE_PROGRAM MATCHES devenv)
-ENDIF(CMAKE_SYSTEM_AND_CXX_COMPILER_INFO_FILE MATCHES "Windows-cl")
-
+INCLUDE(${SWIG_SOURCE_DIR}/CMake/Macros.cmake)
 
 SET(-swig_lib- ${SWIG_SOURCE_DIR}/Lib)
-SET(SWIG_VERSION 1.3.17)
 SET(SWIG_MAJOR_VERSION 3)
-SET(SWIG_MINOR_VERSION 17)
+SET(SWIG_MINOR_VERSION 20)
+SET(SWIG_VERSION 1.${SWIG_MAJOR_VERSION}.${SWIG_MINOR_VERSION})
 SET(SWIG_SPIN 0)
 
-CONFIGURE_FILE(
-${SWIG_SOURCE_DIR}/Source/Include/swigver.h.in
-${SWIG_BINARY_DIR}/swigver.h)
+SET(VERSION "\"${SWIG_VERSION}\"")
+SET(PACKAGE "\"swig\"")
+SET(PACKAGE_NAME ${PACKAGE})
+SET(PACKAGE_TARNAME ${PACKAGE})
+SET(PACKAGE_VERSION ${VERSION})
+SET(PACKAGE_STRING "\"swig ${SWIG_VERSION}\"")
+SET(PACKAGE_BUGREPORT "\"http://www.swig.org\"")
+SET(RELEASE_SUFFIX "\"\"")
+SET(SWIG_DIR "${SWIG_BINARY_DIR}")
+
+SET(SWIG_LIBDIR "${CMAKE_INSTALL_PREFIX}/lib")
+SET(LIBDIR "\"${SWIG_LIBDIR}\"")
+SET(SWIG_LIB "\"${SWIG_LIBDIR}/swig1.${SWIG_MAJOR_VERSION}\"")
+SET(SWIG_CXX "\"${CMAKE_CXX_COMPILER}\"")
+SET(SWIG_PLATFORM "\"${CMAKE_SYSTEM}-${CMAKE_C_COMPILER}\"")
+
+INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
+INCLUDE (${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake)
+
+OPTION(SWIG_BUILD_EXAMPLES "Build some examples" OFF)
+
+OPTION(BUILD_TESTING "Perform tests of swig" OFF)
+IF(BUILD_TESTING)
+  ENABLE_TESTING()
+  INCLUDE (${CMAKE_ROOT}/Modules/Dart.cmake)
+  MARK_AS_ADVANCED(DART_ROOT)
+ENDIF(BUILD_TESTING)
+
+# if examples or testing is on then try and find all
+# the extra stuff
+
+SET(SWIG_FIND_LANGS)
+IF(BUILD_TESTING)
+  SET(SWIG_FIND_LANGS 1)
+ENDIF(BUILD_TESTING)
+IF(SWIG_BUILD_EXAMPLES)
+  SET(SWIG_FIND_LANGS 1)
+ENDIF(SWIG_BUILD_EXAMPLES)
+
+
+
+# Check if header file exists and add it to the list.
+MACRO(CHECK_INCLUDE_FILE_CONCAT FILE VARIABLE)
+  CHECK_INCLUDE_FILES("${PROJECT_INCLUDES};${FILE}" ${VARIABLE})
+  IF(${VARIABLE})
+    SET(PROJECT_INCLUDES ${PROJECT_INCLUDES} ${FILE})
+  ENDIF(${VARIABLE})
+ENDMACRO(CHECK_INCLUDE_FILE_CONCAT)
+
+
+IF("HAVE_BOOL" MATCHES "^HAVE_BOOL$")
+  MESSAGE(STATUS "Checking support for C++ type bool")
+  TRY_COMPILE(HAVE_BOOL
+              ${SWIG_BINARY_DIR}/CMakeTmp/Bool
+              ${SWIG_SOURCE_DIR}/CMake/swigTestBoolType.cxx
+              OUTPUT_VARIABLE OUTPUT)
+  IF(HAVE_BOOL)
+    MESSAGE(STATUS "Checking support for C++ type bool -- yes")
+    SET(HAVE_BOOL 1 CACHE INTERNAL "Support for C++ type bool")
+  ELSE(HAVE_BOOL)
+    MESSAGE(STATUS "Checking support for C++ type bool -- no")
+    SET(HAVE_BOOL 0 CACHE INTERNAL "Support for C++ type bool")
+    WRITE_FILE(${CMAKE_BINARY_DIR}/CMakeError.log
+      "Determining if the C++ compiler supports type bool "
+      "failed with the following output:\n"
+      "${OUTPUT}\n" APPEND)
+  ENDIF(HAVE_BOOL)
+ENDIF("HAVE_BOOL" MATCHES "^HAVE_BOOL$")
+
+# Check for include files
+CHECK_INCLUDE_FILE_CONCAT("dlfcn.h"      HAVE_DLFCN_H)
+CHECK_INCLUDE_FILE_CONCAT("inttypes.h"   HAVE_INTTYPES_H)
+CHECK_INCLUDE_FILE_CONCAT("memory.h"     HAVE_MEMORY_H)
+CHECK_INCLUDE_FILE_CONCAT("stdint.h"     HAVE_STDINT_H)
+CHECK_INCLUDE_FILE_CONCAT("stdlib.h"     HAVE_STDLIB_H)
+CHECK_INCLUDE_FILE_CONCAT("stdarg.h"     HAVE_STDARG_H)
+CHECK_INCLUDE_FILE_CONCAT("float.h"      HAVE_FLOAT_H)
+CHECK_INCLUDE_FILE_CONCAT("string.h"     HAVE_STRING_H)
+CHECK_INCLUDE_FILE_CONCAT("strings.h"    HAVE_STRINGS_H)
+CHECK_INCLUDE_FILE_CONCAT("unistd.h"     HAVE_UNISTD_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/types.h"  HAVE_SYS_TYPES_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/stat.h"   HAVE_SYS_STAT_H)
+SET(STDC_HEADERS 0)
+IF(HAVE_STDLIB_H AND HAVE_STDARG_H)
+  IF(HAVE_STRING_H AND HAVE_FLOAT_H)
+    SET(STDC_HEADERS 1)
+  ENDIF(HAVE_STRING_H AND HAVE_FLOAT_H)
+ENDIF(HAVE_STDLIB_H AND HAVE_STDARG_H)
+
+# This macro checks if the symbol exists in the library and if it
+# does, it appends library to the list.
+SET(project_LIBS "")
+MACRO(CHECK_LIBRARY_EXISTS_CONCAT LIBRARY SYMBOL VARIABLE)
+  CHECK_LIBRARY_EXISTS("${LIBRARY};${project_LIBS}" ${SYMBOL} "" 
+    ${VARIABLE})
+  IF(${VARIABLE})
+    SET(project_LIBS ${project_LIBS} ${LIBRARY})
+  ENDIF(${VARIABLE})
+ENDMACRO(CHECK_LIBRARY_EXISTS_CONCAT)
+CHECK_LIBRARY_EXISTS_CONCAT("dl"     dlopen       HAVE_LIBDL)
+CHECK_LIBRARY_EXISTS_CONCAT("dld"    dlopen       HAVE_LIBDLD)
 
 CONFIGURE_FILE(
-${SWIG_SOURCE_DIR}/Source/Include/swigconfig.h.in
-${SWIG_BINARY_DIR}/swigconfig.h)
+  ${SWIG_SOURCE_DIR}/Source/Include/swigconfig.h.cmake.in
+  ${SWIG_BINARY_DIR}/Source/Include/swigconfig.h)
 
-# find python and tcl
-INCLUDE (${CMAKE_ROOT}/Modules/FindTCL.cmake)
-INCLUDE (${CMAKE_ROOT}/Modules/FindPythonLibs.cmake)
+SET(SWIG_MODULES_PATH ${SWIG_SOURCE_DIR}/CMake)
 
-#INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
-#INCLUDE_DIRECTORIES(${TCL_INCLUDE_PATH})
+IF(SWIG_FIND_LANGS)
+  FIND_PROGRAM(PYTHON_EXECUTABLE
+    NAMES python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 python
+    PATHS
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.3\\InstallPath]
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.2\\InstallPath]
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.1\\InstallPath]
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\2.0\\InstallPath]
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.6\\InstallPath]
+    [HKEY_LOCAL_MACHINE\\SOFTWARE\\Python\\PythonCore\\1.5\\InstallPath]
+  )
+  SET(CMAKE_MODULE_PATH ${SWIG_MODULES_PATH})
+  FIND_PACKAGE(Java)
+  FIND_PACKAGE(JNI)
+  FIND_PACKAGE(PythonLibs)
+  FIND_PACKAGE(TCL)
+  FIND_PACKAGE(Guile)
+  FIND_PACKAGE(PHP4)
+  FIND_PACKAGE(PerlLibs)
+  FIND_PACKAGE(Pike)
+  FIND_PACKAGE(Ruby)
+ENDIF(SWIG_FIND_LANGS)
 
 
-SET(LIBRARY_OUTPUT_PATH ${SWIG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all libraries.")
-SET(EXECUTABLE_OUTPUT_PATH ${SWIG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables.")
-INCLUDE_DIRECTORIES(
-${SWIG_BINARY_DIR}
-${SWIG_SOURCE_DIR}/Source/Include
-${SWIG_SOURCE_DIR}/Source/DOH/Include
-${SWIG_SOURCE_DIR}/Source/Preprocessor
-${SWIG_SOURCE_DIR}/Source/Swig
-)
 
+#SET(LIBRARY_OUTPUT_PATH ${SWIG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all libraries." FORCE)
+#SET(EXECUTABLE_OUTPUT_PATH ${SWIG_BINARY_DIR}/bin CACHE PATH "Single output directory for building all executables." FORCE)
 
-SUBDIRS(Source/Modules1.1
-Source/CParse
-Source/Preprocessor
-Source/Swig
-Source/DOH
-)
+SET(SWIG_EXECUTABLE "${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/swig")
+SET(SWIG_LIB_DIR "${SWIG_SOURCE_DIR}/Lib")
+SET(SWIG_COMMON_INCLUDES "${SWIG_LIB_DIR}")
 
-# Install support library.
-SET(SWIG_LIB_INSTALL
-  ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
-SUBDIRS(Lib)
+# Build swig wrapper
+SUBDIRS(Source)
+
+# Prepare find/use files
+SET(SWIG_USE_FILE ${SWIG_SOURCE_DIR}/UseSWIG.cmake)
+SET(SWIG_USING_SWIG ${SWIG_SOURCE_DIR}/CMake/UsingSwig.cmake)
+CONFIGURE_FILE(${SWIG_SOURCE_DIR}/SWIGConfig.cmake.in
+  ${SWIG_BINARY_DIR}/SWIGConfig.cmake @ONLY IMMEDIATE)
+

@@ -1,5 +1,5 @@
 /*
- * Header
+ * /cvsroot/SWIG/Lib/math.i,v 1.3 2002/11/30 22:10:07 beazley Exp
  *
  * math.i
  * Dave Beazley

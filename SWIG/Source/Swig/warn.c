@@ -10,7 +10,7 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_warn_c[] = "Header";
+char cvsroot_warn_c[] = "/cvsroot/SWIG/Source/Swig/warn.c,v 1.3 2002/11/30 22:10:17 beazley Exp";
 
 #include "swig.h"
 

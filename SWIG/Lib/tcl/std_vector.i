@@ -76,6 +76,7 @@ int SwigString_AsString(Tcl_Interp *interp, Tcl_Obj *o, std::string *val) {
     if(temp == NULL)
         return TCL_ERROR;
     *val = temp;
+    return TCL_OK;
 }
 
 // behaviour of this is such as the real Tcl_GetIntFromObj
@@ -110,7 +111,7 @@ namespace std {
             int       i;
             T*        temp;
 
-            if (SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if (SWIG_ConvertPtr($input, (void **) &v, \
                                 $&1_descriptor, 0) == 0){
                 $1 = *v;
             } else {
@@ -120,7 +121,7 @@ namespace std {
                     return TCL_ERROR;
                 $1 = std::vector<T>();
                 for (i = 0; i < nitems; i++) {
-                    if ((SWIG_ConvertPtr(interp, listobjv[i],(void **) &temp,
+                    if ((SWIG_ConvertPtr(listobjv[i],(void **) &temp,
                                          $descriptor(T),0)) != 0) {
                         char message[] = 
                             "list of type $descriptor(T) expected";
@@ -139,7 +140,7 @@ namespace std {
             int       i;
             T*        temp;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $&1_descriptor, 0) == 0) {
                 $1 = v;
             } else {
@@ -149,7 +150,7 @@ namespace std {
                     return TCL_ERROR;
                 w = std::vector<T>();
                 for (i = 0; i < nitems; i++) {
-                    if ((SWIG_ConvertPtr(interp, listobjv[i],(void **) &temp,
+                    if ((SWIG_ConvertPtr(listobjv[i],(void **) &temp,
                                          $descriptor(T),0)) != 0) {
                         char message[] = 
                             "list of type $descriptor(T) expected";
@@ -179,7 +180,7 @@ namespace std {
             T*         temp;
             std::vector<T> *v;
             
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $&1_descriptor, 0) == 0) {
                 /* wrapped vector */
                 $1 = 1;
@@ -192,7 +193,7 @@ namespace std {
                     if (nitems == 0)
                         $1 = 1;
                 //check the first value to see if it is of correct type
-                    else if ((SWIG_ConvertPtr(interp, listobjv[i],
+                    else if ((SWIG_ConvertPtr(listobjv[i],
                                               (void **) &temp, 
                                               $descriptor(T),0)) != 0)
                         $1 = 0;
@@ -209,7 +210,7 @@ namespace std {
             T*         temp;
             std::vector<T> *v;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $1_descriptor, 0) == 0){
                 /* wrapped vector */
                 $1 = 1;
@@ -222,7 +223,7 @@ namespace std {
                     if (nitems == 0)
                         $1 = 1;
                 //check the first value to see if it is of correct type
-                    else if ((SWIG_ConvertPtr(interp, listobjv[i],
+                    else if ((SWIG_ConvertPtr(listobjv[i],
                                               (void **) &temp,
                                               $descriptor(T),0)) != 0)
                         $1 = 0;
@@ -232,8 +233,8 @@ namespace std {
         }
       
       public:
-        vector();
-        vector(unsigned int size, const T& value=T());
+        vector(unsigned int size = 0);
+        vector(unsigned int size, const T& value);
         vector(const vector<T> &);
 
         unsigned int size() const;
@@ -280,7 +281,7 @@ namespace std {
             int       i;
             T         temp;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $&1_descriptor, 0) == 0) {
                 $1 = *v;
             } else {
@@ -304,7 +305,7 @@ namespace std {
             int       i;
             T         temp;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $1_descriptor, 0) == 0) {
                 $1 = v;
             } else {
@@ -332,11 +333,10 @@ namespace std {
         %typecheck(SWIG_TYPECHECK_VECTOR) vector<T> {
             Tcl_Obj **listobjv;
             int       nitems;
-            int       i;
             T         temp;
             std::vector<T> *v;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $&1_descriptor, 0) == 0){
                 /* wrapped vector */
                 $1 = 1;
@@ -360,11 +360,10 @@ namespace std {
 	                                      const vector<T>*{
             Tcl_Obj **listobjv;
             int       nitems;
-            int       i;
             T         temp;
             std::vector<T> *v;
 
-            if(SWIG_ConvertPtr(interp, $input, (void **) &v, \
+            if(SWIG_ConvertPtr($input, (void **) &v, \
                                $1_descriptor, 0) == 0){
                 /* wrapped vector */
                 $1 = 1;
@@ -385,8 +384,8 @@ namespace std {
         }
         
       public:
-        vector();
-        vector(unsigned int size, const T& value=T());
+        vector(unsigned int size = 0);
+        vector(unsigned int size, const T& value);
         vector(const vector<T> &);
 
         unsigned int size() const;
@@ -423,9 +422,12 @@ namespace std {
     %enddef
 
     specialize_std_vector(bool, Tcl_GetBoolFromObj, Tcl_NewBooleanObj);
+    specialize_std_vector(char, Tcl_GetIntFromObj,Tcl_NewIntObj);
     specialize_std_vector(int, Tcl_GetIntFromObj,Tcl_NewIntObj);
     specialize_std_vector(short, SwigInt_As<short>, Tcl_NewIntObj);
     specialize_std_vector(long, SwigInt_As<long>, Tcl_NewIntObj);
+    specialize_std_vector(unsigned char, 
+                          SwigInt_As<unsigned int>, Tcl_NewIntObj);
     specialize_std_vector(unsigned int, 
                           SwigInt_As<unsigned int>, Tcl_NewIntObj);
     specialize_std_vector(unsigned short, 

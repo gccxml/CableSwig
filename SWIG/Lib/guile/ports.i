@@ -1,7 +1,7 @@
 /* ports.i --- Guile typemaps for handling ports -*- c -*-
    Copyright (C) 2000 Matthias Koeppe <mkoeppe@mail.math.uni-magdeburg.de>
 
-   Header
+   /cvsroot/SWIG/Lib/guile/ports.i,v 1.4 2002/11/30 22:10:07 beazley Exp
 */
 
 %{

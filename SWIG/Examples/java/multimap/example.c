@@ -1,7 +1,6 @@
 /* File : example.c */
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 /* Compute the greatest common divisor of positive integers */
 int gcd(int x, int y) {
@@ -39,7 +38,7 @@ int count(char *bytes, int len, char c) {
 void capitalize(char *str, int len) {
   int i;
   for (i = 0; i < len; i++) {
-    str[i] = toupper(str[i]);
+    str[i] = (char)toupper(str[i]);
   }
 }
 

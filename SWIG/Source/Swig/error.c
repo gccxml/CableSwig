@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-char cvsroot_error_c[] = "Header";
+char cvsroot_error_c[] = "/cvsroot/SWIG/Source/Swig/error.c,v 1.7 2004/01/15 08:33:12 mmatus Exp";
 
 /* -----------------------------------------------------------------------------
  * Commentary on the warning filter.
@@ -34,10 +34,22 @@ char cvsroot_error_c[] = "Header";
  * is reenabled.
  * ----------------------------------------------------------------------------- */
 
+#if defined(_WIN32)
+#  define  DEFAULT_ERROR_MSG_FORMAT EMF_MICROSOFT
+#else
+#  define  DEFAULT_ERROR_MSG_FORMAT EMF_STANDARD
+#endif
+static ErrorMessageFormat msg_format = DEFAULT_ERROR_MSG_FORMAT;
 static int silence = 0;            /* Silent operation */
 static String *filter = 0;         /* Warning filter */
 static int warnall = 0;
-static int   nwarning = 0;
+static int nwarning = 0;
+
+static int init_fmt = 0;
+static char wrn_wnum_fmt[64];
+static char wrn_nnum_fmt[64];
+static char err_line_fmt[64];
+static char err_eof_fmt[64];
 
 /* -----------------------------------------------------------------------------
  * Swig_warning()
@@ -52,6 +64,7 @@ Swig_warning(int wnum, const String_or_char *filename, int line, const char *fmt
   int     wrn = 1;
   va_list ap;
   if (silence) return;
+  if (!init_fmt) Swig_error_msg_format(DEFAULT_ERROR_MSG_FORMAT);
   
   va_start(ap,fmt);
 
@@ -61,11 +74,12 @@ Swig_warning(int wnum, const String_or_char *filename, int line, const char *fmt
     char temp[64], *t;
     t = temp;
     msg = Char(out);
-    while (isdigit(*msg)) {
+    while (isdigit((int) *msg)) {
       *(t++) = *(msg++);
     }
     if (t != temp) {
       msg++;
+      *t = 0;
       wnum = atoi(temp);
     }
   }
@@ -83,9 +97,9 @@ Swig_warning(int wnum, const String_or_char *filename, int line, const char *fmt
   }
   if (warnall || wrn) {
     if (wnum) {
-      Printf(stderr,"%s:%d: Warning(%d): ", filename, line, wnum);
+      Printf(stderr, wrn_wnum_fmt, filename, line, wnum);
     } else {
-      Printf(stderr,"%s:%d: Warning: ", filename, line, wnum);
+      Printf(stderr, wrn_nnum_fmt, filename, line);
     }
     Printf(stderr,"%s",msg);
     nwarning++;
@@ -107,12 +121,13 @@ Swig_error(const String_or_char *filename, int line, const char *fmt, ...) {
   va_list ap;
 
   if (silence) return;
-
+  if (!init_fmt) Swig_error_msg_format(DEFAULT_ERROR_MSG_FORMAT);
+  
   va_start(ap,fmt);
   if (line > 0) {
-    Printf(stderr,"%s:%d: ", filename, line);
+    Printf(stderr, err_line_fmt, filename, line);
   } else {
-    Printf(stderr,"%s:EOF: ", filename);
+    Printf(stderr, err_eof_fmt, filename);
   }
   vPrintf(stderr,fmt,ap);
   va_end(ap);
@@ -158,15 +173,15 @@ Swig_warnfilter(const String_or_char *wlist, int add) {
   c = Char(s);
   c = strtok(c,", ");
   while (c) {
-    if (isdigit(*c) || (*c == '+') || (*c == '-')) {
+    if (isdigit((int) *c) || (*c == '+') || (*c == '-')) {
       if (add) {
 	Insert(filter,0,c);
-	if (isdigit(*c)) {
+	if (isdigit((int) *c)) {
 	  Insert(filter,0,"-");
 	}
       } else {
 	char temp[32];
-	if (isdigit(*c)) {
+	if (isdigit((int) *c)) {
 	  sprintf(temp,"-%s",c);
 	} else {
 	  strcpy(temp,c);
@@ -196,3 +211,36 @@ Swig_warn_count(void) {
   return nwarning;
 }
 
+/* -----------------------------------------------------------------------------
+ * Swig_error_msg_format()
+ *
+ * Set the type of error/warning message display
+ * ----------------------------------------------------------------------------- */
+
+void
+Swig_error_msg_format(ErrorMessageFormat format) {
+  const char* error    = "Error";
+  const char* warning  = "Warning";
+
+  const char* fmt_eof  = "%s:EOF";
+
+  /* here 'format' could be directly a string instead of an enum, but
+     by now a switch is used to translated into one. */
+  const char* fmt_line = 0;
+  switch (format) {
+  case EMF_MICROSOFT:
+    fmt_line = "%s(%d)";
+    break;
+  case EMF_STANDARD:
+  default:
+    fmt_line = "%s:%d";
+  }
+
+  sprintf(wrn_wnum_fmt, "%s: %s(%%d): ", fmt_line, warning);
+  sprintf(wrn_nnum_fmt, "%s: %s: ",      fmt_line, warning);
+  sprintf(err_line_fmt, "%s: %s: ",      fmt_line, error);
+  sprintf(err_eof_fmt,  "%s: %s: ",      fmt_eof,  error);
+
+  msg_format = format;
+  init_fmt = 1;
+}

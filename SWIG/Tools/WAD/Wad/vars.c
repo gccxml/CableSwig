@@ -31,7 +31,7 @@
 
 #include "wad.h"
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Wad/vars.c,v 1.8 2001/06/20 15:12:53 beazley Exp";
 
 /* -----------------------------------------------------------------------------
  * wad_build_vars()

@@ -2,11 +2,7 @@
 ADD_EXECUTABLE( cswig CableSwig.cxx cableSwigMain.cxx)
 
 TARGET_LINK_LIBRARIES(cswig
-        modules11 
-        cparse
-        swigcpp
-        swig
-        doh
+        swigLib
         CableGenerators
         CableParsers
         CableExpat 

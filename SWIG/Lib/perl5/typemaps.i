@@ -31,10 +31,13 @@ you would use a real value instead.
          int            *INPUT
          short          *INPUT
          long           *INPUT
+         long long      *INPUT
          unsigned int   *INPUT
          unsigned short *INPUT
          unsigned long  *INPUT
+         unsigned long long *INPUT
          unsigned char  *INPUT
+         bool           *INPUT
          float          *INPUT
          double         *INPUT
          
@@ -79,6 +82,21 @@ INPUT_TYPEMAP(unsigned char, SvUV);
 INPUT_TYPEMAP(bool, SvIV);
 
 
+%typemap(in) long long *INPUT($*1_ltype temp), long long &INPUT($*1_ltype temp) {
+  temp = strtoll(SvPV($input,PL_na), 0, 0);
+  $1 = &temp;
+}
+%typemap(typecheck) long long *INPUT = long long;
+%typemap(typecheck) long long &INPUT = long long;
+
+%typemap(in) unsigned long long *INPUT($*1_ltype temp), unsigned long long &INPUT($*1_ltype temp) {
+  temp = strtoull(SvPV($input,PL_na), 0, 0);
+  $1 = &temp;
+}
+%typemap(typecheck) unsigned long long *INPUT = unsigned long long;
+%typemap(typecheck) unsigned long long &INPUT = unsigned long long;
+
+
 #undef INPUT_TYPEMAP
                  
 // OUTPUT typemaps.   These typemaps are used for parameters that
@@ -94,10 +112,13 @@ multiple output values, functions will return a Perl array.
          int            *OUTPUT
          short          *OUTPUT
          long           *OUTPUT
+         long long      *OUTPUT
          unsigned int   *OUTPUT
          unsigned short *OUTPUT
          unsigned long  *OUTPUT
+         unsigned long long *OUTPUT
          unsigned char  *OUTPUT
+         bool           *OUTPUT
          float          *OUTPUT
          double         *OUTPUT
          
@@ -135,7 +156,9 @@ output values.
                  signed char    *OUTPUT(signed char temp), signed char &OUTPUT(signed char temp),
                  bool           *OUTPUT(bool temp), bool &OUTPUT(bool temp),
                  float          *OUTPUT(float temp), float &OUTPUT(float temp),
-                 double         *OUTPUT(double temp), double &OUTPUT(double temp)
+                 double         *OUTPUT(double temp), double &OUTPUT(double temp),
+                 long long      *OUTPUT($*1_ltype temp), long long &OUTPUT($*1_ltype temp),
+                 unsigned long long *OUTPUT($*1_ltype temp), unsigned long long &OUTPUT($*1_ltype temp) 
 "$1 = &temp;";
 
 %typemap(argout)  int            *OUTPUT, int &OUTPUT,
@@ -178,6 +201,28 @@ output values.
   argvi++;
 }
 
+%typemap(argout) long long *OUTPUT, long long &OUTPUT {
+    char temp[256];
+    if (argvi >= items) {
+	EXTEND(sp,1);
+    }
+    sprintf(temp,"%lld", $1);
+    $result = sv_newmortal();
+    sv_setpv($result,temp);
+    argvi++;
+}
+
+%typemap(argout) unsigned long long *OUTPUT, unsigned long long &OUTPUT {
+    char temp[256];
+    if (argvi >= items) {
+	EXTEND(sp,1);
+    }
+    sprintf(temp,"%llu", $1);
+    $result = sv_newmortal();
+    sv_setpv($result,temp);
+    argvi++;
+}
+
 // INOUT
 // Mappings for an argument that is both an input and output
 // parameter
@@ -191,10 +236,13 @@ returned in the form of a Perl array.
          int            *INOUT
          short          *INOUT
          long           *INOUT
+         long long      *INOUT
          unsigned int   *INOUT
          unsigned short *INOUT
          unsigned long  *INOUT
+         unsigned long long *INOUT
          unsigned char  *INOUT
+         bool           *INOUT
          float          *INOUT
          double         *INOUT
          
@@ -235,6 +283,8 @@ do this :
 %typemap(in) bool *INOUT = bool *INPUT;
 %typemap(in) float *INOUT = float *INPUT;
 %typemap(in) double *INOUT = double *INPUT;
+%typemap(in) long long *INOUT = long long *INPUT;
+%typemap(in) unsigned long long *INOUT = unsigned long long *INPUT;
 
 %typemap(in) int &INOUT = int &INPUT;
 %typemap(in) short &INOUT = short &INPUT;
@@ -247,6 +297,8 @@ do this :
 %typemap(in) bool &INOUT = bool &INPUT;
 %typemap(in) float &INOUT = float &INPUT;
 %typemap(in) double &INOUT = double &INPUT;
+%typemap(in) long long &INOUT = long long &INPUT;
+%typemap(in) unsigned long long &INOUT = unsigned long long &INPUT;
 
 
 %typemap(argout) int *INOUT = int *OUTPUT;
@@ -260,6 +312,9 @@ do this :
 %typemap(argout) bool *INOUT = bool *OUTPUT;
 %typemap(argout) float *INOUT = float *OUTPUT;
 %typemap(argout) double *INOUT = double *OUTPUT;
+%typemap(argout) long long *INOUT = long long *OUTPUT;
+%typemap(argout) unsigned long long *INOUT = unsigned long long *OUTPUT;
+
 
 %typemap(argout) int &INOUT = int &OUTPUT;
 %typemap(argout) short &INOUT = short &OUTPUT;
@@ -272,6 +327,8 @@ do this :
 %typemap(argout) bool &INOUT = bool &OUTPUT;
 %typemap(argout) float &INOUT = float &OUTPUT;
 %typemap(argout) double &INOUT = double &OUTPUT;
+%typemap(argout) long long &INOUT = long long &OUTPUT;
+%typemap(argout) unsigned long long &INOUT = unsigned long long &OUTPUT;
 
 // REFERENCE
 // Accept Perl references as pointers
@@ -513,4 +570,20 @@ as follows :
 %typemap(typecheck) short *INOUT = short;
 %typemap(typecheck) int *INOUT = int;
 %typemap(typecheck) float *INOUT = float;
+%typemap(typecheck) long long *INOUT = long long;
+%typemap(typecheck) unsigned long long *INOUT = unsigned long long;
+
+%typemap(typecheck) double &INOUT = double;
+%typemap(typecheck) bool &INOUT = bool;
+%typemap(typecheck) signed char &INOUT = signed char;
+%typemap(typecheck) unsigned char &INOUT = unsigned char;
+%typemap(typecheck) unsigned long &INOUT = unsigned long;
+%typemap(typecheck) unsigned short &INOUT = unsigned short;
+%typemap(typecheck) unsigned int &INOUT = unsigned int;
+%typemap(typecheck) long &INOUT = long;
+%typemap(typecheck) short &INOUT = short;
+%typemap(typecheck) int &INOUT = int;
+%typemap(typecheck) float &INOUT = float;
+%typemap(typecheck) long long &INOUT = long long;
+%typemap(typecheck) unsigned long long &INOUT = unsigned long long;
 

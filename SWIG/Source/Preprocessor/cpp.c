@@ -15,8 +15,9 @@
  * See the file LICENSE for information on usage and redistribution.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_cpp_c[] = "Header";
+char cvsroot_cpp_c[] = "/cvsroot/SWIG/Source/Preprocessor/cpp.c,v 1.52 2004/01/15 22:46:06 cheetah Exp";
 
+#include "swig.h"
 #include "preprocessor.h"
 #include <ctype.h>
 
@@ -78,11 +79,15 @@ copy_location(DOH *s1, DOH *s2) {
 
 static String *cpp_include(String_or_char *fn) {
   String *s;
-  if (single_include) {
-    if (Getattr(included_files,fn)) return 0;
-    Setattr(included_files,fn,fn);
-  }
   s = Swig_include(fn);
+  if (s && single_include) {
+    String *file = Getfile(s);
+    if (Getattr(included_files,file)) {
+      Delete(s);
+      return 0;
+    }
+    Setattr(included_files,file,file);
+  }
   if (!s) {
     Seek(fn,0,SEEK_SET);
     if (ignore_missing) {
@@ -107,8 +112,7 @@ List *Preprocessor_depend(void) {
 /* -----------------------------------------------------------------------------
  * void Preprocessor_cpp_init() - Initialize the preprocessor
  * ----------------------------------------------------------------------------- */
-void Preprocessor_init() {
-  extern void Preprocessor_expr_init(void);
+void Preprocessor_init(void) {
   Hash *s;
   cpp = NewHash();
   s =   NewHash();
@@ -138,6 +142,32 @@ void Preprocessor_ignore_missing(int a) {
  * Defines a new C preprocessor symbol.   swigmacro specifies whether or not the macro has
  * SWIG macro semantics.
  * ----------------------------------------------------------------------------- */
+
+ 
+String_or_char *Macro_vararg_name(String_or_char *str,
+                                  String_or_char *line)
+{
+  String_or_char *argname, *varargname;
+  char *s, *dots;
+
+  argname = Copy(str);
+  s = Char(argname);
+  dots = strchr(s, '.');
+  if (!dots) return NULL;
+  if (strcmp(dots, "...") != 0) {
+    Swig_error(Getfile(line), Getline(line),
+               "Illegal macro argument name '%s'\n", str);  
+    return NULL;
+  }
+  if (dots == s) {
+      varargname = NewString("__VA_ARGS__");
+  } else {
+    *dots = '\0';
+    varargname = NewStringf(argname);
+  }
+  Delete(argname);
+  return varargname;
+}
 
 Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
 {
@@ -186,9 +216,18 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
       Putc(c,macroname);
     } else if (isspace(c)) {
       break;
+    } else if (c == '\\') {
+      c = Getc(str);
+      if (c != '\n') {
+	Ungetc(c,str);
+	Ungetc('\\',str);
+	break;
+      }
     } else {
-      Swig_error(Getfile(str),Getline(str),"Illegal character in macro name\n");
-      goto macro_error;
+      /*Swig_error(Getfile(str),Getline(str),"Illegal character in macro name\n");
+	goto macro_error; */
+      Ungetc(c,str);
+      break;
     }
   }
   if (!swigmacro)
@@ -200,20 +239,15 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
 
   /* If there are any macro arguments, convert into a list */
   if (argstr) {
-    DOH *argname;
+    String *argname, *varargname;
     arglist = NewList();
     Seek(argstr,0,SEEK_SET);
     argname = NewString("");
     while ((c = Getc(argstr)) != EOF) {
       if (c == ',') {
-	/* Check for varargs */
-	if (Strstr(argname,".")) {
-	  if (Strcmp(argname,"...") != 0) {
-	    Swig_error(Getfile(str),Getline(str),"Illegal macro argument name '%s'\n", argname);
-	  } else {
-	    Append(arglist,"__VA_ARGS__");
-	    varargs = 1;
-	  }
+	varargname = Macro_vararg_name(argname, str);
+	if (varargname) {
+          Swig_error(Getfile(str),Getline(str),"Variable-length macro argument must be last parameter\n");	  
 	} else {
 	  Append(arglist,argname);
 	}
@@ -228,13 +262,11 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
     }
     if (Len(argname)) {
       /* Check for varargs */
-      if (Strstr(argname,".")) {
-	if (Strcmp(argname,"...") != 0) {
-	  Swig_error(Getfile(str),Getline(str),"Illegal macro argument name '%s'\n", argname);
-	} else {
-	  Append(arglist,"__VA_ARGS__");
-	  varargs = 1;
-	}
+      varargname = Macro_vararg_name(argname, str);
+      if (varargname) {
+	Append(arglist,varargname);
+	Delete(varargname);
+	varargs = 1;
       } else {
 	Append(arglist,argname);
       }
@@ -313,7 +345,6 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
   /* Go create the macro */
   macro = NewHash();
   Setattr(macro,"name", macroname);
-  Delete(macroname);
   if (arglist) {
     Setattr(macro,"args",arglist);
     Delete(arglist);
@@ -330,17 +361,23 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
   }
   symbols = Getattr(cpp,"symbols");
   if ((m1 = Getattr(symbols,macroname))) {
-    if (Cmp(Getattr(m1,"value"),macrovalue))
-      Swig_error(Getfile(str),Getline(str),"Macro '%s' redefined. Previous definition in \'%s\', Line %d\n", macroname, Getfile(m1), Getline(m1));
+    if (Cmp(Getattr(m1,"value"),macrovalue)) {
+      Swig_error(Getfile(str),Getline(str),"Macro '%s' redefined,\n",macroname);    
+      Swig_error(Getfile(m1),Getline(m1),"previous definition of '%s'.\n",macroname);
+      goto macro_error;
+    }
   }
   Setattr(symbols,macroname,macro);
+  
   Delete(str);
   Delete(argstr);
+  Delete(macroname);
   return macro;
 
  macro_error:
   Delete(str);
   Delete(argstr);
+  Delete(macroname);
   return 0;
 }
 
@@ -349,7 +386,7 @@ Hash *Preprocessor_define(const String_or_char *_str, int swigmacro)
  *
  * Undefines a macro.
  * ----------------------------------------------------------------------------- */
-void Preprocessor_undef(String_or_char *str)
+void Preprocessor_undef(const String_or_char *str)
 {
   Hash *symbols;
   assert(cpp);
@@ -384,7 +421,8 @@ find_args(String *s)
   if (c != '(') {
     /* Not a macro, bail out now! */
     Seek(s,pos, SEEK_SET);
-    return args;
+    Delete(args);
+    return 0;
   }
   c = Getc(s);
   /* Okay.  This appears to be a macro so we will start isolating arguments */
@@ -459,6 +497,14 @@ get_filename(String *str) {
     while (((c = Getc(str)) != EOF) && (!isspace(c))) Putc(c,fn);
     if (isspace(c)) Ungetc(c,str);
   }
+#if defined(_WIN32) || defined(MACSWIG)
+  /* accept Unix path separator on non-Unix systems */
+  Replaceall(fn, "/", SWIG_FILE_DELIMETER);
+#endif
+#if defined(__CYGWIN__)
+  /* accept Windows path separator in addition to Unix path separator */
+  Replaceall(fn, "\\", SWIG_FILE_DELIMETER);
+#endif
   Seek(fn,0,SEEK_SET);
   return fn;
 }
@@ -495,8 +541,6 @@ get_options(String *str) {
  * of error occurred.
  * ----------------------------------------------------------------------------- */
 
-DOH *expanded_value = 0;
-
 static String *
 expand_macro(String_or_char *name, List *args)
 {
@@ -532,7 +576,7 @@ expand_macro(String_or_char *name, List *args)
   assert(mvalue);
   margs = Getattr(macro,"args");
 
-  if (Getattr(macro,"varargs")) {
+  if (args && Getattr(macro,"varargs")) {
     isvarargs = 1;
     /* Variable length argument macro.  We need to collect all of the extra arguments into a single argument */
     if (Len(args) >= (Len(margs)-1)) {
@@ -556,7 +600,7 @@ expand_macro(String_or_char *name, List *args)
     }
   }
   /* If there are arguments, see if they match what we were given */
-  if ((margs) && (Len(margs) != Len(args))) {
+  if (args && (margs) && (Len(margs) != Len(args))) {
     if (Len(margs) > (1+isvarargs))
       Swig_error(Getfile(args),Getline(args),"Macro '%s' expects %d arguments\n", name, Len(margs)-isvarargs);
     else if (Len(margs) == (1+isvarargs))
@@ -566,6 +610,11 @@ expand_macro(String_or_char *name, List *args)
     return 0;
   }
 
+  /* If the macro expects arguments, but none were supplied, we leave it in place */
+  if (!args && (margs)) {
+    return NewString(name);
+  }
+
   /* Copy the macro value */
   ns = Copy(mvalue);
   copy_location(mvalue,ns);
@@ -573,19 +622,15 @@ expand_macro(String_or_char *name, List *args)
   /* Tag the macro as being expanded.   This is to avoid recursion in
      macro expansion */
 
-  if (!expanded_value) {
-    expanded_value = NewString("");
-    DohIntern(expanded_value);
-  }
-  Setattr(macro,"*expanded*",expanded_value);
-
   temp = NewString("");
   tempa = NewString("");
-  if (margs) {
+  if (args && margs) {
     l = Len(margs);
     for (i = 0; i < l; i++) {
       DOH *arg, *aname;
+      String *reparg;
       arg = Getitem(args,i);           /* Get an argument value */
+      reparg = Preprocessor_replace(arg);
       aname = Getitem(margs,i);        /* Get macro argument name */
       if (strstr(Char(ns),"\001")) {
 	/* Try to replace a quoted version of the argument */
@@ -593,7 +638,20 @@ expand_macro(String_or_char *name, List *args)
 	Clear(tempa);
 	Printf(temp,"\001%s", aname);
 	Printf(tempa,"\"%s\"",arg);
-	Replace(ns, temp, tempa, DOH_REPLACE_ANY);
+	Replace(ns, temp, tempa, DOH_REPLACE_ID_END);
+      }
+      if (strstr(Char(ns),"\002")) {
+	/* Look for concatenation tokens */
+	Clear(temp);
+	Clear(tempa);
+	Printf(temp,"\002%s",aname);
+	Append(tempa,"\002\003");
+	Replace(ns, temp, tempa, DOH_REPLACE_ID_END);
+	Clear(temp);
+	Clear(tempa);
+	Printf(temp,"%s\002",aname);
+	Append(tempa,"\003\002");
+	Replace(ns,temp,tempa, DOH_REPLACE_ID_BEGIN);
       }
 
       /* Non-standard macro expansion.   The value `x` is replaced by a quoted
@@ -615,13 +673,17 @@ expand_macro(String_or_char *name, List *args)
 	}
 	Replace(ns,temp,rep, DOH_REPLACE_ANY);
       }
-      if (isvarargs) {
-	if ((Strcmp(aname,"__VA_ARGS__") == 0) && (Len(arg) == 0)) {
-	  /* Zero length __VA_ARGS__ macro argument.   We search for commas that might appear before and nuke them */
-	  char *a, *s, *t;
-	  s = Char(ns);
-	  a = strstr(s,"__VA_ARGS__");
-	  while (a) {
+      if (isvarargs && i == l-1 && Len(arg) == 0) {
+	/* Zero length varargs macro argument.   We search for commas that might appear before and nuke them */
+	char *a, *s, *t, *name;
+        int namelen;
+	s = Char(ns);
+        name = Char(aname);
+        namelen = Len(aname);
+	a = strstr(s,name);
+	while (a) {
+          if (!isidchar(a[namelen+1])) {
+          /* Matched the entire vararg name, not just a prefix */
 	    t = a-1;
 	    if (*t == '\002') {
 	      t--;
@@ -632,21 +694,27 @@ expand_macro(String_or_char *name, List *args)
 		} else break;
 	      }
 	    }
-	    a = strstr(a+11,"__VA_ARGS__");
 	  }
+	  a = strstr(a+namelen,name);
 	}
       }
-      Replace(ns, aname, arg, DOH_REPLACE_ID);
+      /*      Replace(ns, aname, arg, DOH_REPLACE_ID); */
+      Replace(ns, aname, reparg, DOH_REPLACE_ID);   /* Replace expanded args */
+      Replace(ns, "\003", arg, DOH_REPLACE_ANY);    /* Replace unexpanded arg */
+      Delete(reparg);
     }
   }
   Replace(ns,"\002","",DOH_REPLACE_ANY);    /* Get rid of concatenation tokens */
   Replace(ns,"\001","#",DOH_REPLACE_ANY);   /* Put # back (non-standard C) */
 
   /* Expand this macro even further */
+  Setattr(macro,"*expanded*","1"); 
+
   e = Preprocessor_replace(ns);
 
-  Delete(ns);
   Delattr(macro,"*expanded*");
+  Delete(ns);
+
   if (Getattr(macro,"swigmacro")) {
     String *g;
     String *f = NewString("");
@@ -674,13 +742,12 @@ expand_macro(String_or_char *name, List *args)
  * ----------------------------------------------------------------------------- */
 
 List *evaluate_args(List *x) {
-  String *a;
+  Iterator i;
   String *Preprocessor_replace(String *);
-
   List *nl = NewList();
-  
-  for (a = Firstitem(x); a; a = Nextitem(x)) {
-    Append(nl,Preprocessor_replace(a));
+
+  for (i = First(x); i.item; i = Next(i)) {
+    Append(nl,Preprocessor_replace(i.item));
   }
   return nl;
 }
@@ -799,15 +866,13 @@ Preprocessor_replace(DOH *s)
 	  if (Getattr(m,"args")) {
 	    /* Yep.  We need to go find the arguments and do a substitution */
 	    args = find_args(s);
+	    if (!Len(args)) {
+	      Delete(args);
+	      args = 0;
+	    }
 	  } else {
 	    args = 0;
 	  }
-	  if (args) {
-	    List *nargs = evaluate_args(args);
-	    Delete(args);
-	    args = nargs;
-	  }
-
 	  e = expand_macro(id,args);
 	  if (e) {
 	    Printf(ns,"%s",e);
@@ -858,9 +923,9 @@ Preprocessor_replace(DOH *s)
 	DOH *e;
 	/* Yes.  There is a macro here */
 	/* See if the macro expects arguments */
-	if (Getattr(m,"args")) {
+	/*	if (Getattr(m,"args")) {
 	  Swig_error(Getfile(id),Getline(id),"Macro arguments expected.\n");
-	}
+	  } */
 	e = expand_macro(id,0);
 	Printf(ns,"%s",e);
 	Delete(e);
@@ -885,6 +950,7 @@ check_id(DOH *s)
 {
   static SwigScanner *scan = 0;
   int c;
+  int hastok = 0;
 
   Seek(s,0,SEEK_SET);
 
@@ -897,10 +963,11 @@ check_id(DOH *s)
   Seek(s,SEEK_SET,0);
   SwigScanner_push(scan,s);
   while ((c = SwigScanner_token(scan))) {
+    hastok = 1;
     if ((c == SWIG_TOKEN_ID) || (c == SWIG_TOKEN_LBRACE) || (c == SWIG_TOKEN_RBRACE)) return 1;
   }
+  if (!hastok) return 1;
   return 0;
-
 }
 
 /* addline().  Utility function for adding lines to a chunk */
@@ -1101,8 +1168,12 @@ Preprocessor_parse(String *s)
       break;
 
     case 44:
-      if (c == '\n') cpp_lines++;
-      Putc(c,value);
+      if (c == '\n') {
+	Putc(c,value);
+	cpp_lines++;
+      } else {
+	Ungetc(c,s);
+      }
       state = 43;
       break;
 
@@ -1260,7 +1331,8 @@ Preprocessor_parse(String *s)
       } else if (Cmp(id,"line") == 0) {
       } else if (Cmp(id,"include") == 0) {
   	if (((include_all) || (import_all)) && (allow)) {
-  	  DOH *s1, *s2, *fn;
+  	  String *s1, *s2, *fn;
+	  char *dirname;
   	  Seek(value,0,SEEK_SET);
   	  fn = get_filename(value);
 	  s1 = cpp_include(fn);
@@ -1269,9 +1341,20 @@ Preprocessor_parse(String *s)
 	      Printf(ns,"%%includefile \"%s\" [\n", Swig_last_file());
 	    else if (import_all) 
 	      Printf(ns,"%%importfile \"%s\" [\n", Swig_last_file());
+
+	    /* See if the filename has a directory component */
+	    dirname = Swig_file_dirname(Swig_last_file());
+	    if (!strlen(dirname)) dirname = 0;
+	    if (dirname) {
+	      dirname[strlen(dirname)-1] = 0;   /* Kill trailing directory delimeter */
+	      Swig_push_directory(dirname);
+	    }
   	    s2 = Preprocessor_parse(s1);
   	    addline(ns,s2,allow);
-  	    Printf(ns,"\n]\n");
+  	    Printf(ns,"\n]");
+	    if (dirname) {
+	      Swig_pop_directory();
+	    }
 	    Delete(s2);
   	  }
 	  Delete(s1);
@@ -1375,6 +1458,7 @@ Preprocessor_parse(String *s)
   	    fn = get_filename(s);
 	    s1 = cpp_include(fn);
 	    if (s1) {
+	      char *dirname;
   	      add_chunk(ns,chunk,allow);
   	      copy_location(s,chunk);
   	      Printf(ns,"%sfile%s \"%s\" [\n", decl, opt, Swig_last_file());
@@ -1382,13 +1466,22 @@ Preprocessor_parse(String *s)
 		Preprocessor_define("WRAPEXTERN 1", 0);
 		Preprocessor_define("SWIGIMPORT 1", 0);
 	      }
+	      dirname = Swig_file_dirname(Swig_last_file());
+	      if (!strlen(dirname)) dirname = 0;
+	      if (dirname) {
+		dirname[strlen(dirname)-1] = 0;   /* Kill trailing directory delimeter */
+		Swig_push_directory(dirname);
+	      }
   	      s2 = Preprocessor_parse(s1);
+	      if (dirname) {
+		Swig_pop_directory();
+	      }
 	      if ((Cmp(decl,"%import") == 0) || (Cmp(decl,"%extern") == 0)) {
 		Preprocessor_undef("SWIGIMPORT");
 		Preprocessor_undef("WRAPEXTERN");
 	      }
   	      addline(ns,s2,allow);
-  	      Printf(ns,"\n]\n");
+  	      Printf(ns,"\n]");
 	      Delete(s2);
 	      Delete(s1);
   	    }

@@ -28,7 +28,7 @@
 #include "wad.h"
 #include <signal.h>
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Tcl/wadtcl.c,v 1.4 2001/06/26 15:54:53 beazley Exp";
 
 /* Handler function */	
 static void handler(int signo, WadFrame *frame, char *ret) {

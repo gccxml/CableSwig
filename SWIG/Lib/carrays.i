@@ -6,7 +6,7 @@
  * This library file contains macros that can be used to manipulate simple
  * pointers as arrays.
  *
- * Header
+ * /cvsroot/SWIG/Lib/carrays.i,v 1.4 2003/03/08 04:21:41 ljohnson Exp
  * ----------------------------------------------------------------------------- */
 
 /* -----------------------------------------------------------------------------
@@ -63,7 +63,7 @@ void NAME##_setitem(TYPE *ary, int index, TYPE value);
  * interface:
  *
  *          struct NAME {
- *              NAME(int nelements, TYPE value = 0);
+ *              NAME(int nelements);
  *             ~NAME();
  *              TYPE getitem(int index);
  *              void setitem(int index, TYPE value);
@@ -80,7 +80,7 @@ typedef TYPE NAME;
 typedef struct NAME {
   /* Put language specific enhancements here */
 
-#if SWIGPYTHON
+#if defined(SWIGPYTHON) || defined(SWIGRUBY)
   %rename(__getitem__) getitem;
   %rename(__setitem__) setitem;
 #endif
@@ -122,11 +122,4 @@ static NAME *frompointer(TYPE *t) {
 %types(NAME = TYPE);
 
 %enddef
-	    
-
-
-    
-     
-
-
 

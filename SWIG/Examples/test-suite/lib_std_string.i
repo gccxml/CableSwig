@@ -7,12 +7,38 @@ std::string test_value(std::string x) {
    return x;
 }
 
-std::string *test_pointer(std::string *x) {
+const std::string& test_const_reference(const std::string &x) {
    return x;
 }
 
-std::string test_reference(std::string &x) {
+void test_pointer(std::string *x) {
+}
+
+std::string *test_pointer_out() {
+   static std::string x = "x";
+   return &x;
+}
+
+void test_const_pointer(const std::string *x) {
+}
+
+const std::string *test_const_pointer_out() {
+   static std::string x = "x";
+   return &x;
+}
+
+void test_reference(std::string &x) {
+}
+
+std::string& test_reference_out() {
+   static std::string x = "x";
    return x;
+}
+
+void test_throw() throw(std::string){
+  static std::string x = "x";
+  
+  throw x;
 }
 
 %}

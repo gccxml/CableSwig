@@ -1,10 +1,10 @@
 //
-// Header
+// /cvsroot/SWIG/Lib/guile/interpreter.i,v 1.1 2000/01/11 21:15:50 beazley Exp
 //
 // SWIG file for a simple Guile interpreter
 //
 /* Revision History
- * $Log: interpreter.i,v $
+ * interpreter.i,v
  * Revision 1.1  2000/01/11 21:15:50  beazley
  * Added files
  *

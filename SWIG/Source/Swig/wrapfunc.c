@@ -14,10 +14,13 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_wrapfunc_c[] = "Header";
+char cvsroot_wrapfunc_c[] = "/cvsroot/SWIG/Source/Swig/wrapfunc.c,v 1.24 2003/04/30 17:42:24 beazley Exp";
 
 #include "swig.h"
 #include <ctype.h>
+
+static int Compact_mode = 0;   /* set to 0 on default */
+static int Max_line_size = 128;
 
 /* -----------------------------------------------------------------------------
  * NewWrapper()
@@ -52,6 +55,17 @@ DelWrapper(Wrapper *w) {
 }
 
 /* -----------------------------------------------------------------------------
+ * Wrapper_compact_print_mode_set()
+ *
+ * Set compact_mode.
+ * ----------------------------------------------------------------------------- */
+
+void 
+Wrapper_compact_print_mode_set(int flag) {
+  Compact_mode = flag;
+}
+
+/* -----------------------------------------------------------------------------
  * Wrapper_pretty_print()
  *
  * Formats a wrapper function and fixes up the indentation.
@@ -78,6 +92,7 @@ Wrapper_pretty_print(String *str, File *f) {
 	Putc(c,ts);
 	if (c == '\"') break;
       }
+      empty = 0;
     } else if (c == '\'') {
       Putc(c,ts);
       while ((c = Getc(str)) != EOF) {
@@ -88,6 +103,7 @@ Wrapper_pretty_print(String *str, File *f) {
 	Putc(c,ts);
 	if (c == '\'') break;
       }
+      empty = 0;
     } else if (c == '{') {
       Putc(c,ts);
       Putc('\n',ts);
@@ -102,6 +118,7 @@ Wrapper_pretty_print(String *str, File *f) {
 	  break;
 	}
       }
+      empty = 0;
     } else if (c == '}') {
       if (!empty) {
 	Putc('\n',ts);
@@ -112,14 +129,21 @@ Wrapper_pretty_print(String *str, File *f) {
       }
       level-=4;
       Putc(c,ts);
+      empty = 0;
     } else if (c == '\n') {
       Putc(c,ts);
-      for (i = 0; i < level; i++)
-	Putc(' ',f);
-      Printf(f,"%s",ts);
+      empty = 0;
+      if (!empty) {
+	if ((Char(ts))[0] != '#') {
+	  for (i = 0; i < level; i++)
+	    Putc(' ',f);
+	}
+	Printf(f,"%s",ts);
+      }
       Clear(ts);
       empty = 1;
     } else if (c == '/') {
+      empty = 0;
       Putc(c,ts);
       c = Getc(str);
       if (c != EOF) {
@@ -160,11 +184,187 @@ Wrapper_pretty_print(String *str, File *f) {
   Printf(f,"\n");
 }
 
+/* -----------------------------------------------------------------------------
+ * Wrapper_compact_print()
+ *
+ * Formats a wrapper function and fixes up the indentation.
+ * Print out in compact format, with Compact enabled.
+ * ----------------------------------------------------------------------------- */
+
+void 
+Wrapper_compact_print(String *str, File *f) {
+  String *ts, *tf; /*temp string & temp file */
+  int level = 0;
+  int c, i;
+  int empty = 1;
+
+  ts = NewString("");
+  tf = NewString("");
+  Seek(str,0, SEEK_SET);
+  Clear(ts);
+  Clear(tf);
+
+  while ((c = Getc(str)) != EOF) {
+    if (c == '\"') { /* string 1 */
+      empty = 0;
+      Putc(c,ts);
+      while ((c = Getc(str)) != EOF) {
+	if (c == '\\') {
+	  Putc(c,ts);
+	  c = Getc(str);
+	}
+	Putc(c,ts);
+	if (c == '\"') break;
+      }
+    } else if (c == '\'') { /* string 2 */
+      empty = 0;
+      Putc(c,ts);
+      while ((c = Getc(str)) != EOF) {
+	if (c == '\\') {
+	  Putc(c,ts);
+	  c = Getc(str);
+	}
+	Putc(c,ts);
+	if (c == '\'') break;
+      }
+    } else if (c == '{') { /* start of {...} */
+      empty = 0;
+      Putc(c,ts);
+      if (Len(tf) == 0) {
+	for (i = 0; i < level; i++) 
+	  Putc(' ',tf);
+      } else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	Putc(' ',tf);
+      } else {
+	Putc('\n',tf);
+	Printf(f,"%s", tf);
+	Clear(tf);
+	for (i = 0; i < level; i++) 
+	  Putc(' ',tf);
+      }
+      Printf(tf,"%s",ts);
+      Clear(ts);
+      level+=4;
+      while ((c = Getc(str)) != EOF) {
+	if (!isspace(c)) {
+	  Ungetc(c,str);
+	  break;
+	}
+      }
+    } else if (c == '}') { /* end of {...} */
+      empty = 0;
+      if (Len(tf) == 0) {
+	for (i = 0; i < level; i++) 
+	  Putc(' ',tf);
+      } else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	Putc(' ',tf);
+      } else {
+	Putc('\n',tf);
+	Printf(f,"%s", tf);
+	Clear(tf);
+	for (i = 0; i < level; i++) 
+	  Putc(' ',tf);
+      }
+      Printf(tf, "%s", ts);
+      Putc(c, tf);
+      Clear(ts);
+      level-=4;
+    } else if (c == '\n') { /* line end */
+      while ((c = Getc(str)) != EOF) {
+	if (!isspace(c))
+	  break;
+      }
+      if (c == '#'){
+	Putc('\n',ts);
+      } else if (c == '}') {
+	Putc(' ',ts);
+      } else if ( (c != EOF) || (Len(ts)!=0) ){
+	if (Len(tf) == 0) {
+	  for (i = 0; i < level; i++) 
+	    Putc(' ',tf);
+	} else if ((Len(tf) + Len(ts)) < Max_line_size) {
+	  Putc(' ',tf);
+	} else {
+	  Putc('\n',tf);
+	  Printf(f,"%s", tf);
+	  Clear(tf);
+	  for (i = 0; i < level; i++) 
+	    Putc(' ',tf);
+	}
+	Printf(tf,"%s",ts);
+	Clear(ts);
+      }
+      Ungetc(c,str);
+
+      empty = 1;
+    } else if (c == '/') { /* comment */
+      empty = 0;
+      c = Getc(str);
+      if (c != EOF) {
+	if (c == '/') {         /* C++ comment */
+	  while ((c = Getc(str)) != EOF) {
+	    if (c == '\n') {
+	      Ungetc(c,str);
+	      break;
+	    }
+	  }
+	} else if (c == '*') {  /* C comment */
+	  int endstar = 0;
+	  while ((c = Getc(str)) != EOF) {
+	    if (endstar && c == '/') {  /* end of C comment */
+	      break;
+	    }
+            endstar = (c == '*');
+	  }
+        } else {
+	  Putc('/',ts);
+	  Putc(c,ts);
+	}
+      }
+    } else if (c == '#') { /* Preprocessor line */
+      Putc('#', ts);
+      while ((c = Getc(str)) != EOF) {
+	Putc(c, ts);
+	if (c == '\\') { /* Continued line of the same PP */
+	  c = Getc(str);
+	  if (c == '\n')
+	    Putc(c, ts);
+	  else
+	    Ungetc(c, str);
+	} else if (c == '\n') 
+	  break;
+      }
+      if (!empty) {
+	Printf(tf,"\n");
+      }
+      Printf(tf,"%s",ts);
+      Printf(f, "%s", tf);
+      Clear(tf);
+      Clear(ts);
+      for (i = 0; i < level; i++) 
+        Putc(' ',tf);
+      empty = 1;
+    } else {
+      if (!empty || !isspace(c)) {
+	Putc(c,ts);
+	empty = 0;
+      }
+    }
+  }
+  if (!empty) {
+    Printf(tf,"%s",ts);
+  }
+  if (Len(tf) != 0)
+    Printf(f,"%s",tf);
+  Delete(ts);
+  Delete(tf);
+  Printf(f,"\n");
+}
 
 /* -----------------------------------------------------------------------------
  * Wrapper_print()
  *
- * Print out a wrapper function.  Does pretty printing as well.
+ * Print out a wrapper function.  Does pretty or compact printing as well.
  * ----------------------------------------------------------------------------- */
 
 void 
@@ -175,7 +375,10 @@ Wrapper_print(Wrapper *w, File *f) {
   Printf(str,"%s\n", w->def);
   Printf(str,"%s\n", w->locals);
   Printf(str,"%s\n", w->code);
-  Wrapper_pretty_print(str,f);
+  if (Compact_mode == 1)
+    Wrapper_compact_print(str,f);
+  else
+    Wrapper_pretty_print(str,f);
 }
 
 /* -----------------------------------------------------------------------------

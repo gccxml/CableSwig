@@ -1,0 +1,308 @@
+/* A Bison parser, made by GNU Bison 1.875a.  */
+
+/* Skeleton parser for Yacc-like parsing with Bison,
+   Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2, or (at your option)
+   any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330,
+   Boston, MA 02111-1307, USA.  */
+
+/* As a special exception, when this file is copied by Bison into a
+   Bison output file, you may use that output file without restriction.
+   This special exception was added by the Free Software Foundation
+   in version 1.24 of Bison.  */
+
+/* Tokens.  */
+#ifndef YYTOKENTYPE
+# define YYTOKENTYPE
+   /* Put the tokens into the symbol table, so that GDB and other debuggers
+      know about them.  */
+   enum yytokentype {
+     ID = 258,
+     HBLOCK = 259,
+     POUND = 260,
+     STRING = 261,
+     INCLUDE = 262,
+     IMPORT = 263,
+     INSERT = 264,
+     CHARCONST = 265,
+     NUM_INT = 266,
+     NUM_FLOAT = 267,
+     NUM_UNSIGNED = 268,
+     NUM_LONG = 269,
+     NUM_ULONG = 270,
+     NUM_LONGLONG = 271,
+     NUM_ULONGLONG = 272,
+     TYPEDEF = 273,
+     TYPE_INT = 274,
+     TYPE_UNSIGNED = 275,
+     TYPE_SHORT = 276,
+     TYPE_LONG = 277,
+     TYPE_FLOAT = 278,
+     TYPE_DOUBLE = 279,
+     TYPE_CHAR = 280,
+     TYPE_VOID = 281,
+     TYPE_SIGNED = 282,
+     TYPE_BOOL = 283,
+     TYPE_TYPEDEF = 284,
+     TYPE_RAW = 285,
+     LPAREN = 286,
+     RPAREN = 287,
+     COMMA = 288,
+     SEMI = 289,
+     EXTERN = 290,
+     INIT = 291,
+     LBRACE = 292,
+     RBRACE = 293,
+     PERIOD = 294,
+     CONST = 295,
+     VOLATILE = 296,
+     STRUCT = 297,
+     UNION = 298,
+     EQUAL = 299,
+     SIZEOF = 300,
+     MODULE = 301,
+     LBRACKET = 302,
+     RBRACKET = 303,
+     ILLEGAL = 304,
+     CONSTANT = 305,
+     NAME = 306,
+     RENAME = 307,
+     NAMEWARN = 308,
+     EXTEND = 309,
+     PRAGMA = 310,
+     FEATURE = 311,
+     VARARGS = 312,
+     ENUM = 313,
+     CLASS = 314,
+     TYPENAME = 315,
+     PRIVATE = 316,
+     PUBLIC = 317,
+     PROTECTED = 318,
+     COLON = 319,
+     STATIC = 320,
+     VIRTUAL = 321,
+     FRIEND = 322,
+     THROW = 323,
+     CATCH = 324,
+     USING = 325,
+     NAMESPACE = 326,
+     NATIVE = 327,
+     INLINE = 328,
+     TYPEMAP = 329,
+     EXCEPT = 330,
+     ECHO = 331,
+     APPLY = 332,
+     CLEAR = 333,
+     SWIGTEMPLATE = 334,
+     FRAGMENT = 335,
+     WARN = 336,
+     LESSTHAN = 337,
+     GREATERTHAN = 338,
+     MODULO = 339,
+     DELETE = 340,
+     TYPES = 341,
+     PARMS = 342,
+     NONID = 343,
+     DSTAR = 344,
+     DCNOT = 345,
+     TEMPLATE = 346,
+     OPERATOR = 347,
+     COPERATOR = 348,
+     PARSETYPE = 349,
+     PARSEPARM = 350,
+     CAST = 351,
+     LOR = 352,
+     LAND = 353,
+     OR = 354,
+     XOR = 355,
+     AND = 356,
+     RSHIFT = 357,
+     LSHIFT = 358,
+     MINUS = 359,
+     PLUS = 360,
+     SLASH = 361,
+     STAR = 362,
+     LNOT = 363,
+     NOT = 364,
+     UMINUS = 365,
+     DCOLON = 366
+   };
+#endif
+#define ID 258
+#define HBLOCK 259
+#define POUND 260
+#define STRING 261
+#define INCLUDE 262
+#define IMPORT 263
+#define INSERT 264
+#define CHARCONST 265
+#define NUM_INT 266
+#define NUM_FLOAT 267
+#define NUM_UNSIGNED 268
+#define NUM_LONG 269
+#define NUM_ULONG 270
+#define NUM_LONGLONG 271
+#define NUM_ULONGLONG 272
+#define TYPEDEF 273
+#define TYPE_INT 274
+#define TYPE_UNSIGNED 275
+#define TYPE_SHORT 276
+#define TYPE_LONG 277
+#define TYPE_FLOAT 278
+#define TYPE_DOUBLE 279
+#define TYPE_CHAR 280
+#define TYPE_VOID 281
+#define TYPE_SIGNED 282
+#define TYPE_BOOL 283
+#define TYPE_TYPEDEF 284
+#define TYPE_RAW 285
+#define LPAREN 286
+#define RPAREN 287
+#define COMMA 288
+#define SEMI 289
+#define EXTERN 290
+#define INIT 291
+#define LBRACE 292
+#define RBRACE 293
+#define PERIOD 294
+#define CONST 295
+#define VOLATILE 296
+#define STRUCT 297
+#define UNION 298
+#define EQUAL 299
+#define SIZEOF 300
+#define MODULE 301
+#define LBRACKET 302
+#define RBRACKET 303
+#define ILLEGAL 304
+#define CONSTANT 305
+#define NAME 306
+#define RENAME 307
+#define NAMEWARN 308
+#define EXTEND 309
+#define PRAGMA 310
+#define FEATURE 311
+#define VARARGS 312
+#define ENUM 313
+#define CLASS 314
+#define TYPENAME 315
+#define PRIVATE 316
+#define PUBLIC 317
+#define PROTECTED 318
+#define COLON 319
+#define STATIC 320
+#define VIRTUAL 321
+#define FRIEND 322
+#define THROW 323
+#define CATCH 324
+#define USING 325
+#define NAMESPACE 326
+#define NATIVE 327
+#define INLINE 328
+#define TYPEMAP 329
+#define EXCEPT 330
+#define ECHO 331
+#define APPLY 332
+#define CLEAR 333
+#define SWIGTEMPLATE 334
+#define FRAGMENT 335
+#define WARN 336
+#define LESSTHAN 337
+#define GREATERTHAN 338
+#define MODULO 339
+#define DELETE 340
+#define TYPES 341
+#define PARMS 342
+#define NONID 343
+#define DSTAR 344
+#define DCNOT 345
+#define TEMPLATE 346
+#define OPERATOR 347
+#define COPERATOR 348
+#define PARSETYPE 349
+#define PARSEPARM 350
+#define CAST 351
+#define LOR 352
+#define LAND 353
+#define OR 354
+#define XOR 355
+#define AND 356
+#define RSHIFT 357
+#define LSHIFT 358
+#define MINUS 359
+#define PLUS 360
+#define SLASH 361
+#define STAR 362
+#define LNOT 363
+#define NOT 364
+#define UMINUS 365
+#define DCOLON 366
+
+
+
+
+#if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
+#line 798 "/home/hoffman/Work/Andy/Swig/Swig/Source/CParse/parser.y"
+typedef union YYSTYPE {
+  char  *id;
+  List  *bases;
+  struct Define {
+    String *val;
+    String *rawval;
+    int     type;
+    String *qualifier;
+    String *bitfield;
+    Parm   *throws;
+  } dtype;
+  struct {
+    char *type;
+    char *filename;
+    int   line;
+  } loc;
+  struct {
+    char      *id;
+    SwigType  *type;
+    String    *defarg;
+    ParmList  *parms;
+    short      have_parms;
+    ParmList  *throws;
+  } decl;
+  Parm         *tparms;
+  struct {
+    String     *op;
+    Hash       *kwargs;
+  } tmap;
+  struct {
+    String     *type;
+    String     *us;
+  } ptype;
+  SwigType     *type;
+  String       *str;
+  Parm         *p;
+  ParmList     *pl;
+  int           ivalue;
+  Node         *node;
+} YYSTYPE;
+/* Line 1240 of yacc.c.  */
+#line 300 "/home/hoffman/Work/Andy/Swig/Swig-nightly-build/Source/CParse/parser.h"
+# define yystype YYSTYPE /* obsolescent; will be withdrawn */
+# define YYSTYPE_IS_DECLARED 1
+# define YYSTYPE_IS_TRIVIAL 1
+#endif
+
+extern YYSTYPE yylval;
+
+
+

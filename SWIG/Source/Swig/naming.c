@@ -9,7 +9,7 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_naming_c[] = "Header";
+char cvsroot_naming_c[] = "/cvsroot/SWIG/Source/Swig/naming.c,v 1.9 2004/01/15 22:46:06 cheetah Exp";
 
 #include "swig.h"
 #include <ctype.h>
@@ -44,7 +44,7 @@ static int name_mangle(String *r) {
   Replaceall(r,"::","_");
   c = Char(r);
   while (*c) {
-    if (!isalnum(*c) && (*c != '_')) {
+    if (!isalnum((int) *c) && (*c != '_')) {
       special = 1;
       switch(*c) {
       case '+':
@@ -341,6 +341,40 @@ String *Swig_name_destroy(const String_or_char *classname) {
   return r;
 }
 
+
+/* -----------------------------------------------------------------------------
+ * Swig_name_disown()
+ *
+ * Returns the name of the accessor function used to disown an object.
+ * ----------------------------------------------------------------------------- */
+
+String *Swig_name_disown(const String_or_char *classname) {
+  String *r;
+  String *f;
+  String *rclassname;
+  char *cname;
+  rclassname = SwigType_namestr(classname);
+  r = NewString("");
+  if (!naming_hash) naming_hash = NewHash();
+  f = Getattr(naming_hash,"disown");
+  if (!f) {
+    Append(r,"disown_%c");
+  } else {
+    Append(r,f);
+  }
+
+  cname = Char(rclassname);
+  if ((strncmp(cname,"struct ", 7) == 0) ||
+      ((strncmp(cname,"class ", 6) == 0)) ||
+      ((strncmp(cname,"union ", 6) == 0))) {
+    cname = strchr(cname, ' ')+1;
+  }
+  Replace(r,"%c",cname, DOH_REPLACE_ANY);
+  Delete(rclassname);
+  return r;
+}
+
+
 /* -----------------------------------------------------------------------------
  * Swig_name_object_set()
  *
@@ -446,7 +480,7 @@ Swig_name_object_get(Hash *namehash, String *prefix, String *name, SwigType *dec
 
 void
 Swig_name_object_inherit(Hash *namehash, String *base, String *derived) {
-  String *key;
+  Iterator ki;
   String *bprefix;
   String *dprefix;
   char *cbprefix;
@@ -458,23 +492,23 @@ Swig_name_object_inherit(Hash *namehash, String *base, String *derived) {
   dprefix = NewStringf("%s::",derived);
   cbprefix = Char(bprefix);
   plen = strlen(cbprefix);
-  for (key = Firstkey(namehash); key; key = Nextkey(namehash)) {
-    char *k = Char(key);
+  for (ki = First(namehash); ki.key; ki = Next(ki)) {
+    char *k = Char(ki.key);
     if (strncmp(k,cbprefix,plen) == 0) {
       Hash *n, *newh;
-      String *nkey, *okey;
-      
+      String *nkey;
+      Iterator oi;
+
       nkey = NewStringf("%s%s",dprefix,k+plen);
-      n = Getattr(namehash,key);
+      n = ki.item;
       newh = Getattr(namehash,nkey);
       if (!newh) {
 	newh = NewHash();
 	Setattr(namehash,nkey,newh);
       }
-      for (okey = Firstkey(n); okey; okey = Nextkey(n)) {
-	String *ovalue = Getattr(n,okey);
-	if (!Getattr(newh,okey)) {
-	  Setattr(newh,okey,Copy(ovalue));
+      for (oi = First(n); oi.key; oi = Next(oi)) {
+	if (!Getattr(newh,oi.key)) {
+	  Setattr(newh,oi.key,Copy(oi.item));
 	}
       }
     }
@@ -488,13 +522,14 @@ Swig_name_object_inherit(Hash *namehash, String *base, String *derived) {
  * ----------------------------------------------------------------------------- */
 
 static void merge_features(Hash *features, Node *n) {
-  String *key;
+  Iterator ki;
+
   if (!features) return;
-  for (key = Firstkey(features); key; key = Nextkey(features)) {
-    if (Getattr(n,key)) {
+  for (ki = First(features); ki.key; ki = Next(ki)) {
+    if (Getattr(n,ki.key)) {
       continue;
     }
-    Setattr(n,key,Copy(Getattr(features,key)));
+    Setattr(n,ki.key,Copy(ki.item));
   }
 }
 
@@ -590,7 +625,7 @@ Swig_features_get(Hash *features, String *prefix, String *name, SwigType *decl, 
  * ----------------------------------------------------------------------------- */
 
 void 
-Swig_feature_set(Hash *features, String *name, SwigType *decl, String *featurename, DOH *value) {
+Swig_feature_set(Hash *features, const String_or_char *name, SwigType *decl, const String_or_char *featurename, String *value) {
   Hash *n;
   Hash *fhash;
   /*  Printf(stdout,"feature: %s %s %s %s\n", name, decl, featurename, value);*/

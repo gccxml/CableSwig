@@ -9,10 +9,9 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_misc_c[] = "Header";
+char cvsroot_misc_c[] = "/cvsroot/SWIG/Source/Swig/misc.c,v 1.21 2004/01/22 22:42:18 cheetah Exp";
 
 #include "swig.h"
-#include "swigver.h"
 #include <ctype.h>
 
 /* -----------------------------------------------------------------------------
@@ -47,8 +46,10 @@ Swig_banner(File *f) {
  * This file is not intended to be easily readable and contains a number of \n\
  * coding conventions designed to improve portability and efficiency. Do not make\n\
  * changes to this file unless you know what you are doing--modify the SWIG \n\
- * interface file instead. \n\
- * ----------------------------------------------------------------------------- */\n\n", SWIG_VERSION);
+ * interface file instead. \n", PACKAGE_VERSION);
+  /* String too long for ISO compliance */
+  Printf(f,
+" * ----------------------------------------------------------------------------- */\n\n");
 
 }
 
@@ -79,7 +80,7 @@ String *Swig_string_escape(String *s) {
     } else if (c == ' ') {
       Putc(c,ns);
     } else if (!isgraph(c)) {
-      Printf(ns,"\\0%o", c);
+      Printf(ns,"\\%o", c);
     } else {
       Putc(c,ns);
     }

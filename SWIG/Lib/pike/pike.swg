@@ -4,6 +4,7 @@
  * Pike configuration module.
  * ----------------------------------------------------------------------------- */
 
+%insert(runtime) "precommon.swg"
 %insert(runtime) "common.swg";          // Common type-checking code
 %insert(runtime) "pikerun.swg";         // Pike run-time code
 
@@ -12,10 +13,8 @@
 extern "C" {
 #endif
 #include "global.h"
+#include "module.h"
 #include "interpret.h"
-
-/* This must be included last! */
-#include "module_magic.h"
 #ifdef __cplusplus
 }
 #endif
@@ -79,8 +78,8 @@ extern "C" {
              const signed char & (signed char temp),
              const unsigned char & (unsigned char temp),
              const bool & (bool temp),
-	     const long long & (long long temp),
-	     const unsigned long long & (unsigned long long temp)
+	     const long long & ($*1_ltype temp),
+	     const unsigned long long & ($*1_ltype temp)
 {
   if ($input.type != T_INT)
     Pike_error("Bad argument: Expected an integer.\n");
@@ -113,8 +112,7 @@ extern "C" {
 %typemap(out, pikedesc="tStr") char *		"push_text($1);";
 
 /* Pointers, references, and arrays */
-%typemap(out) SWIGTYPE*, SWIGTYPE &, SWIGTYPE []
-        "$result = SWIG_NewPointerObj((void *) $1, $1_descriptor, $owner);";
+%typemap(out, pikedesc="tObj") SWIGTYPE*, SWIGTYPE &, SWIGTYPE [] "push_object(SWIG_NewPointerObj((void *) $1, $1_descriptor, $owner));";
 
 /* Void return value; don't push anything */
 %typemap(out, pikedesc="tVoid") void		"";
@@ -130,19 +128,19 @@ extern "C" {
 %typemap(out, pikedesc="tStr") char [ANY], const char [ANY] "push_text($1);";
 
 /* Primitive types--return by value */
-%typemap(out) SWIGTYPE 
+%typemap(out, "tObj") SWIGTYPE 
 #ifdef __cplusplus
 {
   $&1_ltype resultptr;
   resultptr = new $1_ltype(($1_ltype &) $1);
-  $result = SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1);
+  push_object(SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1));
 }
 #else
 {
   $&1_ltype resultptr;
   resultptr = ($&1_ltype) malloc(sizeof($1_type));
   memmove(resultptr, &$1, sizeof($1_type));
-  $result = SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1);
+  push_object(SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1));
 }
 #endif
 
@@ -323,15 +321,20 @@ extern "C" {
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT(void) pike_module_exit(void) {}
+PIKE_MODULE_EXIT {}
 
 #ifdef __cplusplus
 extern "C"
 #endif
-SWIGEXPORT(void) pike_module_init(void) {
+PIKE_MODULE_INIT
+{
     struct program *pr;
     int i;
     for (i = 0; swig_types_initial[i]; i++) {
         swig_types[i] = SWIG_TypeRegister(swig_types_initial[i]);
     }
 %}
+
+/* pike keywords */
+/* please test and activate */
+//%include "pikekw.swg"

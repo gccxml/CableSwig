@@ -15,9 +15,11 @@
 
 #include "swigwarn.h"
 
+#include "cparse.h"
 extern "C" {
 #include "preprocessor.h"
 }
+#undef Iterator
 #include <string>
 #include "cableClass.h"
 #include "cxxCvQualifiedType.h"
@@ -106,13 +108,15 @@ private:
   bool ReadMasterIndexFile();
   void AddClassToBeImported(cable::Class*);
   void FindWrappedBases(List* bases, const cable::Class* c);
+  void AddImportClass( const cable::Type* rt);
 private:
   std::string m_DependFile;
   std::string m_WrapLanguage;
   const char* m_CurrentFile;
   int         m_CurrentLine;
+  std::string m_NativeStringName;
   std::vector<std::string> m_MasterIndexFiles;
-  
+  std::vector<std::string> m_Loaders;
   std::map<csString, csString> m_ClassGroupLookup;   // GetQualifiedName to cable group
   std::map<csString, csString> m_ImportTypedefLookup;  // GetQualifiedName to typedef
   std::map<const cable::Class*, cable::Typedef*> m_TypedefLookup;

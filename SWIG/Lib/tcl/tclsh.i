@@ -1,4 +1,4 @@
-// Header
+// /cvsroot/SWIG/Lib/tcl/tclsh.i,v 1.3 2002/11/30 22:10:09 beazley Exp
 //
 // SWIG File for building new tclsh program
 // Dave Beazley

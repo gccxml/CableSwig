@@ -5,6 +5,7 @@
  *
  */
 
+%runtime "precommon.swg"
 %runtime "common.swg"		// common type checking code
 %runtime "php4run.swg"		// Php4 runtime functions
 %include "utils.i"		// building blocks
@@ -496,3 +497,7 @@ deliberate error cos this code looks bogus to me
 /* Some ANSI C typemaps */
 
 %apply long { size_t };
+
+/* php kewords */
+/* please test and activate */
+//%include "phpkw.swg"

@@ -5,7 +5,7 @@
  *
  * This library file contains macros for manipulating raw C data as strings.
  *
- * Header
+ * /cvsroot/SWIG/Lib/cdata.i,v 1.3 2002/11/30 22:10:07 beazley Exp
  * ----------------------------------------------------------------------------- */
 
 %{

@@ -103,7 +103,7 @@ namespace std {
         bool empty() const;
         void clear();
         %rename(add) push_back;
-        void push_back(int x);
+        void push_back(T x);
         %extend {
             T get(int i) {
                 int size = int(self->size());
@@ -124,14 +124,17 @@ namespace std {
     %enddef
 
     specialize_std_vector(bool);
+    specialize_std_vector(char);
     specialize_std_vector(int);
     specialize_std_vector(short);
     specialize_std_vector(long);
+    specialize_std_vector(unsigned char);
     specialize_std_vector(unsigned int);
     specialize_std_vector(unsigned short);
     specialize_std_vector(unsigned long);
     specialize_std_vector(float);
     specialize_std_vector(double);
+    specialize_std_vector(std::string);
 
 }
 

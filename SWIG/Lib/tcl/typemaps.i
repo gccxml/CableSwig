@@ -28,10 +28,13 @@ you would use a real value instead.
          int            *INPUT
          short          *INPUT
          long           *INPUT
+         long long      *INPUT
          unsigned int   *INPUT
          unsigned short *INPUT
          unsigned long  *INPUT
+         unsigned long long *INPUT
          unsigned char  *INPUT
+         bool           *INPUT
          float          *INPUT
          double         *INPUT
          
@@ -153,7 +156,21 @@ or you can use the %apply directive :
   if (Tcl_GetIntFromObj(interp,$input,&ivalue) == TCL_ERROR) {
     SWIG_fail;
   }
-  temp = (bool) ivalue;
+  temp = ivalue ? true : false;
+  $1 = &temp;
+}
+
+%typemap(in) long long *INPUT($*1_ltype temp), 
+             long long &INPUT($*1_ltype temp)
+{
+  temp = ($*1_ltype) strtoll(Tcl_GetStringFromObj($input,NULL),0,0);
+  $1 = &temp;
+}
+
+%typemap(in) unsigned long long *INPUT($*1_ltype temp), 
+             unsigned long long &INPUT($*1_ltype temp)
+{
+  temp = ($*1_ltype) strtoull(Tcl_GetStringFromObj($input,NULL),0,0);
   $1 = &temp;
 }
   
@@ -170,10 +187,13 @@ multiple output values, they are returned in the form of a Tcl list.
          int            *OUTPUT
          short          *OUTPUT
          long           *OUTPUT
+         long long      *OUTPUT
          unsigned int   *OUTPUT
          unsigned short *OUTPUT
          unsigned long  *OUTPUT
+         unsigned long long *OUTPUT
          unsigned char  *OUTPUT
+         bool           *OUTPUT
          float          *OUTPUT
          double         *OUTPUT
          
@@ -210,6 +230,8 @@ output values.
                      bool           *OUTPUT(bool temp),
                      float          *OUTPUT(float temp),
                      double         *OUTPUT(double temp),
+                     long long      *OUTPUT($*1_ltype temp),
+                     unsigned long long *OUTPUT($*1_ltype temp),
 	             int            &OUTPUT(int temp),
                      short          &OUTPUT(short temp),
                      long           &OUTPUT(long temp),
@@ -220,7 +242,9 @@ output values.
                      bool           &OUTPUT(bool temp),
                      unsigned char  &OUTPUT(unsigned char temp),
                      float          &OUTPUT(float temp),
-                     double         &OUTPUT(double temp)
+                     double         &OUTPUT(double temp),
+                     long long      &OUTPUT($*1_ltype temp),
+                     unsigned long long &OUTPUT($*1_ltype temp)
 "$1 = &temp;";
 
 %typemap(argout)     int     *OUTPUT, int &OUTPUT,
@@ -246,6 +270,24 @@ output values.
   Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
 }
 
+%typemap(argout) long long *OUTPUT, long long &OUTPUT
+{
+  char temp[256];
+  Tcl_Obj *o;
+  sprintf(temp,"%lld",*($1));
+  o = Tcl_NewStringObj(temp,-1);
+  Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
+}
+
+%typemap(argout) unsigned long long *OUTPUT, unsigned long long &OUTPUT
+{
+  char temp[256];
+  Tcl_Obj *o;
+  sprintf(temp,"%llu",*($1));
+  o = Tcl_NewStringObj(temp,-1);
+  Tcl_ListObjAppendElement(interp,Tcl_GetObjResult(interp),o);
+}
+
 // INOUT
 // Mappings for an argument that is both an input and output
 // parameter
@@ -259,10 +301,13 @@ returned in the form of a Tcl list.
          int            *INOUT
          short          *INOUT
          long           *INOUT
+         long long      *INOUT
          unsigned int   *INOUT
          unsigned short *INOUT
          unsigned long  *INOUT
+         unsigned long long *INOUT
          unsigned char  *INOUT
+         bool           *INOUT
          float          *INOUT
          double         *INOUT
          
@@ -304,6 +349,8 @@ to a Tcl variable you might do this :
 %typemap(in) bool *INOUT = bool *INPUT;
 %typemap(in) float *INOUT = float *INPUT;
 %typemap(in) double *INOUT = double *INPUT;
+%typemap(in) long long *INOUT = long long *INPUT;
+%typemap(in) unsigned long long *INOUT = unsigned long long *INPUT;
 
 %typemap(in) int &INOUT = int &INPUT;
 %typemap(in) short &INOUT = short &INPUT;
@@ -316,6 +363,8 @@ to a Tcl variable you might do this :
 %typemap(in) bool &INOUT = bool &INPUT;
 %typemap(in) float &INOUT = float &INPUT;
 %typemap(in) double &INOUT = double &INPUT;
+%typemap(in) long long &INOUT = long long &INPUT;
+%typemap(in) unsigned long long &INOUT = unsigned long long &INPUT;
 
 %typemap(argout) int *INOUT = int *OUTPUT;
 %typemap(argout) short *INOUT = short *OUTPUT;
@@ -328,6 +377,8 @@ to a Tcl variable you might do this :
 %typemap(argout) bool *INOUT = bool *OUTPUT;
 %typemap(argout) float *INOUT = float *OUTPUT;
 %typemap(argout) double *INOUT = double *OUTPUT;
+%typemap(argout) long long *INOUT = long long *OUTPUT;
+%typemap(argout) unsigned long long *INOUT = unsigned long long *OUTPUT;
 
 %typemap(argout) int &INOUT = int &OUTPUT;
 %typemap(argout) short &INOUT = short &OUTPUT;
@@ -340,6 +391,8 @@ to a Tcl variable you might do this :
 %typemap(argout) bool &INOUT = bool &OUTPUT;
 %typemap(argout) float &INOUT = float &OUTPUT;
 %typemap(argout) double &INOUT = double &OUTPUT;
+%typemap(argout) long long &INOUT = long long &OUTPUT;
+%typemap(argout) unsigned long long &INOUT = unsigned long long &OUTPUT;
 
 // --------------------------------------------------------------------
 // Special types
@@ -401,6 +454,8 @@ int Tcl_Result
 %typemap(typecheck) short *INPUT = short;
 %typemap(typecheck) int *INPUT = int;
 %typemap(typecheck) float *INPUT = float;
+%typemap(typecheck) long long *INPUT = long long;
+%typemap(typecheck) unsigned long long *INPUT = unsigned long long;
 
 %typemap(typecheck) double &INPUT = double;
 %typemap(typecheck) bool &INPUT = bool;
@@ -413,6 +468,8 @@ int Tcl_Result
 %typemap(typecheck) short &INPUT = short;
 %typemap(typecheck) int &INPUT = int;
 %typemap(typecheck) float &INPUT = float;
+%typemap(typecheck) long long &INPUT = long long;
+%typemap(typecheck) unsigned long long &INPUT = unsigned long long;
 
 %typemap(typecheck) double *INOUT = double;
 %typemap(typecheck) bool *INOUT = bool;
@@ -425,6 +482,8 @@ int Tcl_Result
 %typemap(typecheck) short *INOUT = short;
 %typemap(typecheck) int *INOUT = int;
 %typemap(typecheck) float *INOUT = float;
+%typemap(typecheck) long long *INOUT = long long;
+%typemap(typecheck) unsigned long long *INOUT = unsigned long long;
 
 %typemap(typecheck) double &INOUT = double;
 %typemap(typecheck) bool &INOUT = bool;
@@ -437,6 +496,8 @@ int Tcl_Result
 %typemap(typecheck) short &INOUT = short;
 %typemap(typecheck) int &INOUT = int;
 %typemap(typecheck) float &INOUT = float;
+%typemap(typecheck) long long &INOUT = long long;
+%typemap(typecheck) unsigned long long &INOUT = unsigned long long;
 
 
   

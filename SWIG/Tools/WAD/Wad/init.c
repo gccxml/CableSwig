@@ -27,7 +27,7 @@
 
 #include "wad.h"
 
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Wad/init.c,v 1.17 2001/06/20 15:12:53 beazley Exp";
 
 /* Debugging flag */
 int    wad_debug_mode = 0;

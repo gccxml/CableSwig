@@ -14,7 +14,7 @@
 #include <stdarg.h>
 #include <assert.h>
 
-char cvsroot_tree_c[] = "Header";
+char cvsroot_tree_c[] = "/cvsroot/SWIG/Source/Swig/tree.c,v 1.13 2003/09/11 20:26:57 beazley Exp";
 
 /* -----------------------------------------------------------------------------
  * Swig_print_tags()
@@ -70,13 +70,14 @@ static void print_indent(int l) {
 
 void
 Swig_print_node(Node *obj) {
-  String *k;
+  Iterator ki;
   Node   *cobj;
   
   print_indent(0);
   Printf(stdout,"+++ %s ----------------------------------------\n", nodeType(obj));
-  k = Firstkey(obj);
-  while (k) {
+  ki = First(obj);
+  while (ki.key) {
+    String *k = ki.key;
     if ((Cmp(k,"nodeType") == 0) || (Cmp(k,"firstChild") == 0) || (Cmp(k,"lastChild") == 0) ||
 	(Cmp(k,"parentNode") == 0) || (Cmp(k,"nextSibling") == 0) ||
 	(Cmp(k,"previousSibling") == 0) || (*(Char(k)) == '$')) {
@@ -90,16 +91,16 @@ Swig_print_node(Node *obj) {
       print_indent(2);
       if (DohIsString(Getattr(obj,k))) {
 	o = Str(Getattr(obj,k));
-	if (Len(o) > 40) {
+	if (Len(o) > 200) {
 	  trunc = "...";
 	}
-	Printf(stdout,"%-12s - \"%(escape)-0.40s%s\"\n", k, o, trunc);
+	Printf(stdout,"%-12s - \"%(escape)-0.200s%s\"\n", k, o, trunc);
 	Delete(o);
       } else {
 	Printf(stdout,"%-12s - 0x%x\n", k, Getattr(obj,k));
       }
     }
-    k = Nextkey(obj);
+    ki = Next(ki);
   }
   cobj = firstChild(obj);
   if (cobj) {
@@ -187,13 +188,11 @@ deleteNode(Node *n) {
 
 Node *
 copyNode(Node *n) {
-  String *key;
-  DOH *v;
+  Iterator ki;
   Node *c = NewHash();
-  for (key = Firstkey(n); key; key = Nextkey(n)) {
-    v = Getattr(n,key);
-    if (DohIsString(v)) {
-      Setattr(c,key,Copy(v));
+  for (ki = First(n); ki.key; ki = Next(ki)) {
+    if (DohIsString(ki.item)) {
+      Setattr(c,ki.key,Copy(ki.item));
     }
   }
   Setfile(c,Getfile(n));
@@ -230,33 +229,14 @@ checkAttribute(Node *n, const String_or_char *name, const String_or_char *value)
  * Swig_require()
  * ----------------------------------------------------------------------------- */
 
-#define MAX_SWIG_STACK 256
-static Hash    *attr_stack[MAX_SWIG_STACK];
-static Node   **nodeptr_stack[MAX_SWIG_STACK];
-static Node    *node_stack[MAX_SWIG_STACK];
-static int      stackp = 0;
-static int      stack_direction = 0;
-
-static void set_direction(int n, int *x) {
-  if (n == 1) {
-    set_direction(0,&n);
-  } else {
-    if (&n < x) {
-      stack_direction = -1;   /* Stack grows down */
-    } else {
-      stack_direction = 1;    /* Stack grows up */
-    }
-  }
-}
-
 int 
-Swig_require(Node **nptr, ...) {
+Swig_require(const char *ns, Node *n, ...) {
   va_list ap;
   char *name;
   DOH *obj;
-  DOH *frame = 0;
-  Node *n = *nptr;
-  va_start(ap, nptr);
+  char   temp[512];
+
+  va_start(ap, n);
   name = va_arg(ap, char *);
   while (name) {
     int newref = 0;
@@ -277,80 +257,43 @@ Swig_require(Node **nptr, ...) {
     }
     if (!obj) obj = DohNone;
     if (newref) {
-      if (!attr_stack[stackp]) {
-	attr_stack[stackp]= NewHash();
-      }
-      frame = attr_stack[stackp];
-      if (Setattr(frame,name,obj)) {
-	Printf(stderr,"Swig_require('%s'): Warning, attribute '%s' was already saved.\n", nodeType(n), name);
-      }
+      /* Save a copy of the attribute */
+      strcpy(temp,ns);
+      strcat(temp,":");
+      strcat(temp,name);
+      Setattr(n,temp,obj);
     } 
     name = va_arg(ap, char *);
   }
   va_end(ap);
-  if (frame) {
-    /* This is a sanity check to make sure no one is saving data, but not restoring it */
-    if (stackp > 0) {
-      int e = 0;
-      if (!stack_direction) set_direction(1,0);
-      
-      if (stack_direction < 0) {
-	if ((((char *) nptr) >= ((char *) nodeptr_stack[stackp-1])) && (n != node_stack[stackp-1])) e = 1;
-      } else {
-	if ((((char *) nptr) <= ((char *) nodeptr_stack[stackp-1])) && (n != node_stack[stackp-1])) e = 1;
+
+  /* Save the view */
+  {
+    String *view = Getattr(n,"view");
+    if (view) {
+      if (Strcmp(view,ns) != 0) {
+	strcpy(temp,ns);
+	strcat(temp,":view");
+	Setattr(n,temp,view);
+	Setattr(n,"view",ns);
       }
-      if (e) {
-	Printf(stderr,
-"Swig_require('%s'): Fatal memory management error.  If you are seeing this\n\
-message. It means that the target language module is not managing its memory\n\
-correctly.  A handler for '%s' probably forgot to call Swig_restore().\n\
-Please report this problem to swig-dev@cs.uchicago.edu.\n", nodeType(n), nodeType(node_stack[stackp-1]));
-	assert(0);
-      }
+    } else {
+      Setattr(n,"view",ns);
     }
-    nodeptr_stack[stackp] = nptr;
-    node_stack[stackp] = n;
-    stackp++;
   }
+
   return 1;
 }
 
 
 int 
-Swig_save(Node **nptr, ...) {
+Swig_save(const char *ns, Node *n, ...) {
   va_list ap;
   char *name;
   DOH *obj;
-  DOH *frame;
-  Node *n = *nptr;
+  char temp[512];
 
-  if ((stackp > 0) && (nodeptr_stack[stackp-1] == nptr)) {
-      frame = attr_stack[stackp-1];
-  } else {
-    if (stackp > 0) {
-      int e = 0;
-      if (!stack_direction) set_direction(1,0);
-      if (stack_direction < 0) {
-	if ((((char *) nptr) >= ((char *) nodeptr_stack[stackp-1])) && (n != node_stack[stackp-1])) e = 1;
-      } else {
-	if ((((char *) nptr) <= ((char *) nodeptr_stack[stackp-1])) && (n != node_stack[stackp-1])) e = 1;
-      }
-      if (e) {
-	Printf(stderr,
-"Swig_save('%s'): Fatal memory management error.  If you are seeing this\n\
-message. It means that the target language module is not managing its memory\n\
-correctly.  A handler for '%s' probably forgot to call Swig_restore().\n\
-Please report this problem to swig-dev@cs.uchicago.edu.\n", nodeType(n), nodeType(node_stack[stackp-1]));
-	assert(0);
-      }
-    }
-    attr_stack[stackp] = NewHash();
-    nodeptr_stack[stackp] = nptr;
-    node_stack[stackp] = n;
-    frame = attr_stack[stackp];
-    stackp++;
-  }
-  va_start(ap, nptr);
+  va_start(ap, n);
   name = va_arg(ap, char *);
   while (name) {
     if (*name == '*') {
@@ -362,40 +305,60 @@ Please report this problem to swig-dev@cs.uchicago.edu.\n", nodeType(n), nodeTyp
     if (!obj) {
       obj = DohNone;
     }
-    if (Setattr(frame,name,obj)) {
-      Printf(stderr,"Swig_save('%s'): Warning, attribute '%s' was already saved.\n", nodeType(n), name);
+    strcpy(temp,ns);
+    strcat(temp,":");
+    strcat(temp,name);
+    if (Setattr(n,temp,obj)) {
+      Printf(stderr,"Swig_save('%s','%s'): Warning, attribute '%s' was already saved.\n", ns, nodeType(n), name);
     }
     name = va_arg(ap, char *);
   }
   va_end(ap);
+
+  /* Save the view */
+  {
+    String *view = Getattr(n,"view");
+    if (view) {
+      if (Strcmp(view,ns) != 0) {
+	strcpy(temp,ns);
+	strcat(temp,":view");
+	Setattr(n,temp,view);
+	Setattr(n,"view",ns);
+      }
+    } else {
+      Setattr(n,"view",ns);
+    }
+  }
+
   return 1;
 }
 
 void 
-Swig_restore(Node **nptr) {
-  String *key;
-  Hash   *frame;
-  Node   *n = *nptr;
-  assert(stackp > 0);
-  if (!(nptr==nodeptr_stack[stackp-1])) {
-	Printf(stderr,
-"Swig_restore('%s'): Fatal memory management error.  If you are seeing this\n\
-message. It means that the target language module is not managing its memory\n\
-correctly.  A handler for '%s' probably forgot to call Swig_restore().\n\
-Please report this problem to swig-dev@cs.uchicago.edu.\n", nodeType(n), nodeType(node_stack[stackp-1]));
-    assert(0);
-  }
-  stackp--;
-  frame = attr_stack[stackp];
-  nodeptr_stack[stackp] = 0;
-  node_stack[stackp] = 0;
-  for (key = Firstkey(frame); key; key = Nextkey(frame)) {
-    DOH *obj = Getattr(frame,key);
-    if (obj != DohNone) {
-      Setattr(n,key,obj);
-    } else {
-      Delattr(n,key);
+Swig_restore(Node *n) {
+  char  temp[512];
+  int   len;
+  List  *l;
+  String *ns;
+  Iterator ki;
+
+  ns = Getattr(n,"view");
+  assert(ns);
+
+  l = NewList();
+
+  strcpy(temp,Char(ns));
+  strcat(temp,":");
+  len = strlen(temp);
+
+  for (ki = First(n); ki.key; ki = Next(ki)) {
+    if (Strncmp(temp,ki.key,len) == 0) {
+      Append(l,ki.key);
     }
-    Delattr(frame,key);
   }
+  for (ki = First(l); ki.item; ki = Next(ki)) {
+    DOH *obj = Getattr(n,ki.item);
+    Setattr(n,Char(ki.item)+len,obj);
+    Delattr(n,ki.item);
+  }
+  Delete(l);
 }

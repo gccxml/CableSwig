@@ -7,42 +7,6 @@
 // Ocaml implementation
 
 %include std_common.i
-%include exception.i
-
-// __getitem__ is required to raise an IndexError for for-loops to work
-// other methods which can raise are made to throw an IndexError as well
-%exception std::vector::__getitem__ {
-    try {
-        $action
-	    } catch (std::out_of_range& e) {
-		SWIG_exception(SWIG_IndexError,const_cast<char*>(e.what()));
-	    }
-}
-
-%exception std::vector::__setitem__ {
-    try {
-        $action
-	    } catch (std::out_of_range& e) {
-		SWIG_exception(SWIG_IndexError,const_cast<char*>(e.what()));
-	    }
-}
-
-%exception std::vector::__delitem__  {
-    try {
-        $action
-	    } catch (std::out_of_range& e) {
-		SWIG_exception(SWIG_IndexError,const_cast<char*>(e.what()));
-	    }
-}
-
-%exception std::vector::pop  {
-    try {
-        $action
-	    } catch (std::out_of_range& e) {
-		SWIG_exception(SWIG_IndexError,const_cast<char*>(e.what()));
-	    }
-}
-
 
 // ------------------------------------------------------------------------
 // std::vector
@@ -72,19 +36,56 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
-    %}
+%}
 
 // exported class
 
 namespace std {
-    
-    template<class T> class vector {
+    template <class T> class vector {
+    public:
+        vector(unsigned int size = 0);
+        vector(unsigned int size, const T& value);
+        vector(const vector<T>&);
+        unsigned int size() const;
+        bool empty() const;
+        void clear();
+        void push_back(const T& x);
+	T operator [] ( int f );
+	vector <T> &operator = ( vector <T> &other );
+	%extend {
+	    void set( int i, const T &x ) {
+		self->resize(i+1);
+		(*self)[i] = x;
+	    }
+	};
+	%extend {
+	    T *to_array() {
+		T *array = new T[self->size() + 1];
+		for( int i = 0; i < self->size(); i++ ) 
+		    array[i] = (*self)[i];
+		return array;
+	    }
+	};
     };
-    
-    
-    // Partial specialization for vectors of pointers.  [ beazley ]
-    
-    template<class T> class vector<T*> {
-    };
+};
 
-}
+%insert(ml) %{
+  
+  let array_to_vector v argcons array = 
+    for i = 0 to (Array.length array) - 1 do
+	(invoke v) "set" (C_list [ C_int i ; (argcons array.(i)) ])
+    done ;
+    v
+    
+  let vector_to_array v argcons array =
+    for i = 0; to (get_int ((invoke v) "size" C_void)) - 1 do
+	array.(i) <- argcons ((invoke v) "[]" (C_int i))
+    done ; 
+    v
+      
+%}
+
+%insert(mli) %{
+    val array_to_vector : c_obj -> ('a -> c_obj) -> 'a array -> c_obj
+    val vector_to_array : c_obj -> (c_obj -> 'a) -> 'a array -> c_obj
+%}

@@ -7,7 +7,7 @@
  *
  * Copyright (C) 2001. University of Chicago. All rights reserved.
  *
- * Header
+ * /cvsroot/SWIG/Tools/WAD/Include/wad.h,v 1.26 2001/06/24 20:01:03 beazley Exp
  * ----------------------------------------------------------------------------- */
 
 #include <stdio.h>

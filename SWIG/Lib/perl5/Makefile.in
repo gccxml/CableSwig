@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------
-# Header
+# /cvsroot/SWIG/Lib/perl5/Makefile.in,v 1.3 2002/11/30 22:10:08 beazley Exp
 # SWIG Perl5 Makefile
 # 
 # This file can be used to build various Perl5 extensions with SWIG.
@@ -35,7 +35,7 @@ CC            = @CC@
 CXX           = @CXX@
 OBJC          = @CC@ -Wno-import # -Wno-import needed for gcc 
 CFLAGS        = 
-INCLUDE       =
+INCLUDES      =
 LIBS          =
 
 # SWIG Options
@@ -103,13 +103,13 @@ BUILD_LIBS    = $(LIBS) # Dynamic loading
 .SUFFIXES: .c .cxx .m
 
 .c.o:
-	$(CC) $(CCSHARED) $(CFLAGS) $(INCLUDE) -c $<
+	$(CC) $(CCSHARED) $(CFLAGS) $(INCLUDES) -c $<
 
 .cxx.o:
-	$(CXX) $(CCSHARED) $(CXXFLAGS) $(INCLUDE) -c $<
+	$(CXX) $(CCSHARED) $(CXXFLAGS) $(INCLUDES) -c $<
 
 .m.o:
-	$(OBJC) $(CCSHARED) $(CFLAGS) $(INCLUDE) -c $<
+	$(OBJC) $(CCSHARED) $(CFLAGS) $(INCLUDES) -c $<
 
 
 # ----------------------------------------------------------------------
@@ -121,7 +121,7 @@ all: $(TARGET)
 # Convert the wrapper file into an object file
 
 $(WRAPOBJ) : $(WRAPFILE)
-	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(INCLUDE) $(PERL_INCLUDE) $(PERL_FLAGS) $(WRAPFILE)
+	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(INCLUDES) $(PERL_INCLUDE) $(PERL_FLAGS) $(WRAPFILE)
 
 $(WRAPFILE) : $(INTERFACE)
 	$(SWIG) $(SWIGOPT) -o $(WRAPFILE) $(SWIGLIB) $(INTERFACE)

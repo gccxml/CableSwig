@@ -10,7 +10,7 @@
  * Copyright (C) 1999-2000.  The University of Chicago
  * See the file LICENSE for information on usage and redistribution.
  *
- * Header
+ * /cvsroot/SWIG/Source/Swig/swig.i,v 1.11 2002/11/30 22:10:17 beazley Exp
  * ------------------------------------------------------------------------- */
 
 /* todo: implement callable stuff -- ternaryfunc? */

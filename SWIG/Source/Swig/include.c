@@ -11,7 +11,7 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_include_c[] = "Header";
+char cvsroot_include_c[] = "/cvsroot/SWIG/Source/Swig/include.c,v 1.19 2003/12/28 21:38:58 cheetah Exp";
 
 #include "swig.h"
 
@@ -66,6 +66,37 @@ Swig_add_directory(const String_or_char *dirname) {
     assert(dirname);
   }
   Append(directories, dirname);
+}
+
+/* -----------------------------------------------------------------------------
+ * Swig_push_directory()
+ *
+ * Inserts a directory at the front of the SWIG search path.  This is used by
+ * the preprocessor to grab files in the same directory as other included files.
+ * ----------------------------------------------------------------------------- */
+
+void 
+Swig_push_directory(const String_or_char *dirname) {
+  if (!directories) directories = NewList();
+  assert(directories);
+  if (!DohIsString(dirname)) {
+    dirname = NewString((char *) dirname);
+    assert(dirname);
+  }
+  Insert(directories, 0, dirname);
+}
+
+/* -----------------------------------------------------------------------------
+ * Swig_pop_directory()
+ *
+ * Pops a directory off the front of the SWIG search path.  This is used by
+ * the preprocessor.
+ * ----------------------------------------------------------------------------- */
+
+void 
+Swig_pop_directory() {
+  if (!directories) return;
+  Delitem(directories,0);
 }
 
 /* -----------------------------------------------------------------------------
@@ -145,6 +176,10 @@ Swig_open(const String_or_char *name) {
       Delete(spath);
   }
   if (f) {
+#if defined(_WIN32) /* Note not on Cygwin else filename is displayed with double '/' */
+    Replaceall(filename,"\\\\","\\"); /* remove double '\' in case any already present */
+    Replaceall(filename,"\\","\\\\");
+#endif
     Delete(lastpath);
     lastpath = Copy(filename);
   }

@@ -9,11 +9,10 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_util_c[] = "Header";
+char cvsroot_util_c[] = "/cvsroot/SWIG/Source/CParse/util.c,v 1.9 2004/01/15 08:16:52 mmatus Exp";
 
 #include "swig.h"
-
-extern SwigType *Swig_cparse_type(String *);
+#include "cparse.h"
 
 /* -----------------------------------------------------------------------------
  * Swig_cparse_replace_descriptor()
@@ -69,3 +68,161 @@ void Swig_cparse_replace_descriptor(String *s) {
   }
 }
 
+/* -----------------------------------------------------------------------------
+ * cparse_normalize_void()
+ *
+ * This function is used to replace arguments of the form (void) with empty
+ * arguments in C++
+ * ----------------------------------------------------------------------------- */
+
+void cparse_normalize_void(Node *n) {
+  String *decl = Getattr(n,"decl");
+  Parm   *parms = Getattr(n,"parms");
+
+  if (SwigType_isfunction(decl)) {
+    if ((ParmList_len(parms) == 1) && (SwigType_type(Getattr(parms,"type")) == T_VOID)) {
+      Replaceall(decl,"f(void).","f().");
+      Delattr(n,"parms");
+    }
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * int need_protected(Node* n, int dirprot_mode)
+ *
+ * Detects when we need to fully register the protected member.
+ * 
+ * ----------------------------------------------------------------------------- */
+
+int need_protected(Node* n, int dirprot_mode)
+{
+  if (!(Swig_need_protected() || dirprot_mode)) return 0;
+
+  /* First, 'n' looks like a function */
+  if ((Strcmp(nodeType(n),"cdecl") == 0) &&
+      SwigType_isfunction(Getattr(n,"decl"))) {
+    String *storage = Getattr(n,"storage");
+    /* and the function is declared like virtual, or it has no
+       storage. This eliminates typedef, static and so on. */ 
+    return (!storage || (Strcmp(storage,"virtual") == 0));
+  }
+  return 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * int need_name_warning(Node *n)
+ *
+ * Detects if a node needs name warnings 
+ *
+ * ----------------------------------------------------------------------------- */
+
+int need_name_warning(Node *n)
+{
+  int need = 1;
+  /* 
+     we don't use name warnings for:
+     - class forwards, no symbol is generated at the target language.
+     - template declarations, only for real instances using %template(name).
+     - typedefs, they have no effect at the target language.
+  */
+  if (Strcmp(nodeType(n),"classforward") == 0) {
+    need = 0;
+  } else if (Getattr(n,"templatetype")) {
+    need = 0;
+  } else {
+    String *storage = Getattr(n,"storage");
+    if (storage && (Strcmp(storage,"typedef") == 0)) {
+      need = 0;
+    }
+  }
+  return need;
+}
+    
+
+int are_equivalent_nodes(Node* a, Node* b, int a_inclass)
+{
+  /* they must have the same type */
+  SwigType *ta = nodeType(a);
+  SwigType *tb = nodeType(b);  
+  if (Cmp(ta, tb) != 0) return 0;
+  
+  /* cdecl case */
+  if (Cmp(ta, "cdecl") == 0) {
+    /* typedef */
+    String *a_storage = Getattr(a,"storage");
+    String *b_storage = Getattr(b,"storage");
+
+    if ((Cmp(a_storage,"typedef") == 0)
+	|| (Cmp(b_storage,"typedef") == 0)) {	
+      if (Cmp(a_storage, b_storage) == 0) {
+	String *a_type = (Getattr(a,"type"));
+	String *b_type = (Getattr(b,"type"));
+	if (Cmp(a_type, b_type) == 0) return 1;
+      }
+      return 0;
+    }
+
+    /* static functions */
+    if ((Cmp(a_storage, "static") == 0) 
+	|| (Cmp(b_storage, "static") == 0)) {
+      if (Cmp(a_storage, b_storage) != 0) return 0;
+    }
+    
+    if (!a_inclass || (Cmp(a_storage,"friend") == 0)) {
+      /* check declaration */
+
+      String *a_decl = (Getattr(a,"decl"));
+      String *b_decl = (Getattr(b,"decl"));
+      if (Cmp(a_decl, b_decl) == 0) {
+	/* check return type */
+	String *a_type = (Getattr(a,"type"));
+	String *b_type = (Getattr(b,"type"));
+	if (Cmp(a_type, b_type) == 0) {
+	  /* check parameters */
+	  Parm *ap = (Getattr(a,"parms"));
+	  Parm *bp = (Getattr(b,"parms"));
+	  int la = Len(ap);
+	  int lb = Len(bp);
+	  
+	  if (la != lb) return 0;
+	  while (ap && bp) {
+	    SwigType *at = Getattr(ap,"type");
+	    SwigType *bt = Getattr(bp,"type");
+	    if (Cmp(at, bt) != 0) return 0;
+	    ap = nextSibling(ap);
+	    bp = nextSibling(bp);
+	  }
+	  return 1;
+	}
+      }
+    }
+  } else {
+    /* %constant case */  
+    String *a_storage = Getattr(a,"storage");
+    String *b_storage = Getattr(b,"storage");
+    if ((Cmp(a_storage, "%constant") == 0) 
+	|| (Cmp(b_storage, "%constant") == 0)) {
+      if (Cmp(a_storage, b_storage) == 0) {
+	String *a_type = (Getattr(a,"type"));
+	String *b_type = (Getattr(b,"type"));
+	if ((Cmp(a_type, b_type) == 0)
+	    && (Cmp(Getattr(a,"value"), Getattr(b,"value")) == 0))
+	  return 1;
+      }
+      return 0;
+    }
+  }
+  return 0;
+}
+
+int need_redefined_warn(Node* a, Node* b, int InClass)
+{
+  String *a_symname = Getattr(a,"sym:name");
+  String *b_symname = Getattr(b,"sym:name");
+  /* always send a warning if a 'rename' is involved */
+  if ((a_symname && Cmp(a_symname,Getattr(a,"name")))
+      || (b_symname && Cmp(b_symname,Getattr(b,"name"))))
+    return 1;
+
+  return !are_equivalent_nodes(a, b, InClass);
+}

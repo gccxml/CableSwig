@@ -1,1 +1,64 @@
-SUBDIRS(Modules1.1 CParse Preprocessor Swig DOH )
+MAKE_DIRECTORY(${CMAKE_CURRENT_BINARY_DIR}/CParse)
+
+FIND_PROGRAM(BISON_YACC bison)
+
+IF(BISON_YACC)
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.c
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.y
+    COMMAND ${BISON_YACC}
+    ARGS -y -d -o ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.y
+    )
+
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.h
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.y
+    COMMAND ${BISON_YACC}
+    ARGS -y -d -o ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.y
+    )
+ELSE(BISON_YACC)
+  CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.c.in
+    ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.c IMMEDIATE COPYONLY)
+  CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/CParse/parser.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.h IMMEDIATE COPYONLY)
+ENDIF(BISON_YACC)
+
+FILE(READ Makefile.am AUTOMAKE_FILE)
+
+STRING(REGEX MATCH "AM_CFLAGS[ \t\n\r]+=[ \t\n\r]+.*[^\\\\]\nAM_CXXFLAGS" CFLAGS ${AUTOMAKE_FILE})
+STRING(REGEX REPLACE "-I\\$\\(BUILD_SOURCE_DIR\\)" "${CMAKE_CURRENT_BINARY_DIR}" CFLAGS ${CFLAGS})
+STRING(REGEX REPLACE "-I\\$\\(SOURCE_DIR\\)" "${CMAKE_CURRENT_SOURCE_DIR}" CFLAGS ${CFLAGS})
+STRING(REGEX REPLACE "^AM_CFLAGS.*=[ \t\n\r]+" "" CFLAGS ${CFLAGS})
+STRING(REGEX REPLACE "[ \t\n\r]+AM_CXXFLAGS$" "" CFLAGS ${CFLAGS})
+STRING(REGEX REPLACE "[ \t\n\r]+\\\\[ \t\n\r]+" ";" CFLAGS ${CFLAGS})
+
+INCLUDE_DIRECTORIES(${CFLAGS})
+
+# find the eswig_SOURCES = ... .c stuff
+STRING(REGEX MATCH "eswig_SOURCES.*[\\]*.[\\.]c" OUT ${AUTOMAKE_FILE})
+# remove the eswig_SOURCES = stuff
+STRING(REGEX REPLACE "eswig_SOURCES*.=" "" OUT ${OUT})
+# get rid of spaces tabs and newlines
+STRING(REGEX REPLACE "[ \t\n\r]+" "" OUT ${OUT})
+# replace the line continue markers with ;
+STRING(REGEX REPLACE "[\\\\]" ";" OUT ${OUT})
+
+FOREACH(f ${OUT}) 
+        IF(${f} MATCHES ".*\\.y")
+                SET(YACC_SRCS ${YACC_SRCS} ${f})
+        ELSE(${f} MATCHES ".*\\.y")
+                SET(SWIG_AM_SOURCES ${SWIG_AM_SOURCES} ${f})
+        ENDIF(${f} MATCHES ".*\\.y")
+ENDFOREACH(f)
+
+SET(swig_CParse_SRCS
+  ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.c
+  )
+
+SET_SOURCE_FILES_PROPERTIES(CParse/parser.c PROPERTIES GENERATED 1)
+SET_SOURCE_FILES_PROPERTIES(${swig_CParse_SRCS} PROPERTIES OBJECT_DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/CParse/parser.h)
+SET(swig_SRCS ${SWIG_AM_SOURCES} ${swig_CParse_SRCS})
+ADD_LIBRARY(swigLib ${swig_SRCS})
+ADD_EXECUTABLE(swig ${swig_SRCS})

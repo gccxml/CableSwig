@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * swig.swg
  *
- * Header
+ * /cvsroot/SWIG/Lib/swig.swg,v 1.20 2004/01/28 01:34:32 mmatus Exp
  *
  * Common macro definitions for various SWIG directives.  This file is always 
  * included at the top of each input file.
@@ -71,6 +71,10 @@
 /* Warnings */
 #define %warnfilter(...) %feature("warnfilter",`__VA_ARGS__`)
 
+/* Contract support - Experimental and undocumented */
+
+#define %contract    %feature("contract")
+
 /* Default handling of certain overloaded operators */
 
 #ifdef __cplusplus
@@ -100,40 +104,72 @@ namespace std {
 #ifdef __cplusplus
 %typemap(memberin) char * {
   if ($1) delete [] $1;
-  $1 = ($1_type) (new char[strlen($input)+1]);
-  strcpy((char *) $1,$input);
+  if ($input) {
+     $1 = ($1_type) (new char[strlen($input)+1]);
+     strcpy((char *) $1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(memberin,warning="451:Setting const char * member may leak memory.") const char * {
-  $1 = ($1_type) (new char[strlen($input)+1]);
-  strcpy((char *) $1,$input);
+  if ($input) {
+     $1 = ($1_type) (new char[strlen($input)+1]);
+     strcpy((char *) $1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(globalin) char * {
   if ($1) delete [] $1;
-  $1 = ($1_type) (new char[strlen($input)+1]);
-  strcpy((char *) $1,$input);
+  if ($input) {
+     $1 = ($1_type) (new char[strlen($input)+1]);
+     strcpy((char *) $1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(globalin,warning="451:Setting const char * variable may leak memory.") const char * {
-  $1 = ($1_type) (new char[strlen($input)+1]);
-  strcpy((char *) $1,$input);
+  if ($input) {
+     $1 = ($1_type) (new char[strlen($input)+1]);
+     strcpy((char *) $1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 #else
 %typemap(memberin) char * {
   if ($1) free((char*)$1);
-  $1 = ($1_type) malloc(strlen($input)+1);
-  strcpy((char*)$1,$input);
+  if ($input) {
+     $1 = ($1_type) malloc(strlen($input)+1);
+     strcpy((char*)$1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(memberin,warning="451:Setting const char * member may leak memory.") const char * {
-  $1 = ($1_type) malloc(strlen($input)+1);
-  strcpy((char*)$1,$input);
+  if ($input) {
+     $1 = ($1_type) malloc(strlen($input)+1);
+     strcpy((char*)$1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(globalin) char * {
   if ($1) free((char*)$1);
-  $1 = ($1_type) malloc(strlen($input)+1);
-  strcpy((char*)$1,$input);
+  if ($input) {
+     $1 = ($1_type) malloc(strlen($input)+1);
+     strcpy((char*)$1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 %typemap(globalin,warning="451:Setting const char * variable may leak memory.") const char * {
-  $1 = ($1_type) malloc(strlen($input)+1);
-  strcpy((char*)$1,$input);
+  if ($input) {
+     $1 = ($1_type) malloc(strlen($input)+1);
+     strcpy((char*)$1,$input);
+  } else {
+     $1 = 0;
+  }
 }
 
 #endif
@@ -152,13 +188,13 @@ namespace std {
 
 /* memberin typemap for arrays.   */
 
-%typemap(memberin) SWIGTYPE [] {
+%typemap(memberin) SWIGTYPE [ANY] {
   int ii;
   $1_basetype *b = ($1_basetype *) $1;
   for (ii = 0; ii < $1_size; ii++) b[ii] = *(($1_basetype *) $input + ii);
 }
 
-%typemap(globalin) SWIGTYPE [] {
+%typemap(globalin) SWIGTYPE [ANY] {
   int ii;
   $1_basetype *b = ($1_basetype *) $1;
   for (ii = 0; ii < $1_size; ii++) b[ii] = *(($1_basetype *) $input + ii);
@@ -197,12 +233,16 @@ namespace std {
 %define SWIG_TYPECHECK_INTEGER       70    %enddef
 %define SWIG_TYPECHECK_FLOAT         80    %enddef
 %define SWIG_TYPECHECK_DOUBLE        90    %enddef
-%define SWIG_TYPECHECK_COMPLEX      100    %enddef
+%define SWIG_TYPECHECK_CPLXFLT       95    %enddef
+%define SWIG_TYPECHECK_CPLXDBL      100    %enddef
+%define SWIG_TYPECHECK_COMPLEX      105    %enddef
 %define SWIG_TYPECHECK_UNICHAR      110    %enddef
 %define SWIG_TYPECHECK_UNISTRING    120    %enddef
 %define SWIG_TYPECHECK_CHAR         130    %enddef
 %define SWIG_TYPECHECK_STRING       140    %enddef
 %define SWIG_TYPECHECK_VECTOR       150    %enddef
+%define SWIG_TYPECHECK_MAP          160    %enddef
+%define SWIG_TYPECHECK_PAIR         170    %enddef
 
 %define SWIG_TYPECHECK_BOOL_ARRAY        1015    %enddef
 %define SWIG_TYPECHECK_INT8_ARRAY        1025    %enddef
@@ -214,6 +254,17 @@ namespace std {
 %define SWIG_TYPECHECK_DOUBLE_ARRAY      1090    %enddef
 %define SWIG_TYPECHECK_CHAR_ARRAY        1130    %enddef
 %define SWIG_TYPECHECK_STRING_ARRAY      1140    %enddef
+%define SWIG_TYPECHECK_OBJECT_ARRAY      1150 %enddef
+
+/* Switch to enable runtime mode */
+
+#ifndef SWIGSEXP
+#ifdef SWIG_RUNTIME_MODE
+%insert("runtime") %{
+#define SWIG_GLOBAL 1
+%}
+#endif
+#endif
 
 /*  
  * This template wrapper is used to handle C++ objects that are passed or 
@@ -267,26 +318,82 @@ namespace std {
  * known as the "Fulton Transform" :-).
  */
 
+#ifndef SWIGSEXP
 #ifdef __cplusplus
 %insert("runtime") %{
 #ifdef __cplusplus
 template<class T> class SwigValueWrapper {
     T *tt;
 public:
-    inline SwigValueWrapper() : tt(0) { }
-    inline ~SwigValueWrapper() { if (tt) delete tt; } 
-    inline SwigValueWrapper& operator=(const T& t) { tt = new T(t); return *this; }
-    inline operator T&() const { return *tt; }
-    inline T *operator&() { return tt; }
+    SwigValueWrapper() : tt(0) { }
+    SwigValueWrapper(const SwigValueWrapper<T>& rhs) : tt(new T(*rhs.tt)) { }
+    SwigValueWrapper(const T& t) : tt(new T(t)) { }
+    ~SwigValueWrapper() { delete tt; } 
+    SwigValueWrapper& operator=(const T& t) { delete tt; tt = new T(t); return *this; }
+    operator T&() const { return *tt; }
+    T *operator&() { return tt; }
+private:
+    SwigValueWrapper& operator=(const SwigValueWrapper<T>& rhs);
 };                                                    
 #endif
 %}
+#endif
 #endif
 
 /* Macro for setting a dynamic cast function */
 %define DYNAMIC_CAST(mangle,func)
 %init %{
    mangle->dcast = (swig_dycast_func) func;
+%}
+%enddef
+
+/*
+
+   This macro performs constant aggregation.  Basically the idea of
+   constant aggregation is that you can group a collection of constants 
+   together.  For example, suppose you have some code like this:
+
+       #define UP  1
+       #define DOWN 2
+       #define LEFT 3
+       #define RIGHT 4
+
+   Now, suppose you had a function like this:
+
+       int move(int direction)
+
+   In this case, you might want to restrict the direction argument to one of the supplied
+   constant names. To do this, you could write some typemap code by hand.  Alternatively,
+   you can use the %aggregate_check macro defined here to create a simple check function
+   for you.  Here is an example:
+
+      %aggregate_check(int, check_direction, UP, DOWN, LEFT, RIGHT);
+
+   Now, using a typemap
+
+       %typemap(check) int direction {
+            if (!check_direction($1)) SWIG_exception(SWIG_ValueError,"Bad direction.");
+       }
+
+   or a contract (better)
+
+       %contract move(int x) {
+       require:
+           check_direction(x);
+       }
+*/
+   
+%define %aggregate_check(TYPE, NAME, FIRST, ...)
+%wrapper %{
+static int NAME(TYPE x) {
+    static  TYPE values[] = { FIRST, ##__VA_ARGS__ };
+    static  int size = sizeof(values);
+    int     i,j;
+    for (i = 0, j = 0; i < size; i+=sizeof(TYPE),j++) {
+        if (x == values[j]) return 1; 
+    }
+    return 0;
+}
 %}
 %enddef
 

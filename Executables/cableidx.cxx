@@ -143,33 +143,37 @@ bool GetGroupAndPackageInformation(Namespace* cns,
 
 int DetermineClassesToWrap(std::ofstream& fout, const Namespace* cns, const char* group)
 {
-  const Namespace* wns = 0;
-  Context::Iterator lower = cns->LowerBound("wrappers");
-  Context::Iterator upper = cns->UpperBound("wrappers"); 
-  if(lower != upper)
+  const char* namespaces[] = {"wrappers", "renames", 0};
+  for(const char** ns = namespaces; *ns; ++ns)
     {
-    wns = Namespace::SafeDownCast(*lower);
+    const Namespace* wns = 0;
+    Context::Iterator lower = cns->LowerBound(*ns);
+    Context::Iterator upper = cns->UpperBound(*ns);
+    if(lower != upper)
+      {
+      wns = Namespace::SafeDownCast(*lower);
+      if(!wns)
+        {
+        continue;
+        }
+      }
     if(!wns)
       {
-      return -1;
+      continue;
       }
-    }
-  if(!wns)
-    {
-    return -1;
-    } 
-  for(Context::Iterator w = wns->Begin(); w != wns->End(); ++w)
-    {
-    Typedef* td = Typedef::SafeDownCast(*w);
-    if(td)
+    for(Context::Iterator w = wns->Begin(); w != wns->End(); ++w)
       {
-      const ClassType* ct = ClassType::SafeDownCast(td->GetType());
-      if(ct)
+      Typedef* td = Typedef::SafeDownCast(*w);
+      if(td)
         {
-        const Class* c = ct->GetClass();
-        fout
-          << "{" << c->GetQualifiedName() << "} {" 
-          << td->GetName() << "} {" << group << "}\n";
+        const ClassType* ct = ClassType::SafeDownCast(td->GetType());
+        if(ct)
+          {
+          const Class* c = ct->GetClass();
+          fout
+            << "{" << c->GetQualifiedName() << "} {"
+            << td->GetName() << "} {" << group << "}\n";
+          }
         }
       }
     }
@@ -183,7 +187,6 @@ int CreateIndexFile(std::ofstream& fout, SourceRepresentation::Pointer sr)
   Context::Iterator lower = gns->LowerBound("_cable_");
   Context::Iterator upper = gns->UpperBound("_cable_");
   Namespace* cns = 0;
-  Namespace* wns = 0;
   if(lower != upper)
     {
     cns = Namespace::SafeDownCast(*lower);

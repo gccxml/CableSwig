@@ -1,8 +1,7 @@
 TOP        = ../..
 SWIG       = $(TOP)/../swig
-SWIGOPT    = -c 
-#If your system requires linking with the runtime libraries then set the directory location here
-RUNTIMEDIR = 
+SWIGOPT    = -noruntime
+RUNTIMEDIR = $(TOP)/../Runtime/.libs
 
 all::
 	$(MAKE) -f $(TOP)/Makefile SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' \
@@ -13,10 +12,9 @@ all::
 	RUNTIMEDIR='$(RUNTIMEDIR)' TARGET='bar' INTERFACE='bar.i' tcl_multi_cpp
 	$(MAKE) -f $(TOP)/Makefile SWIG='$(SWIG)' SWIGOPT='$(SWIGOPT)' \
 	RUNTIMEDIR='$(RUNTIMEDIR)' TARGET='spam' INTERFACE='spam.i' tcl_multi_cpp
-	
 
 
 clean::
-	rm -f *_wrap* *.o *~ *.so .~* core
+	$(MAKE) -f $(TOP)/Makefile tcl_clean
 
 check: all

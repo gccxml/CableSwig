@@ -21,7 +21,7 @@
  * 
  * See the file COPYING for a complete copy of the LGPL.
  * ----------------------------------------------------------------------------- */
-static char cvs[] = "Header";
+static char cvs[] = "/cvsroot/SWIG/Tools/WAD/Tcl/wadtclinit.cxx,v 1.4 2001/06/24 20:06:27 beazley Exp";
 
 extern "C" void tclwadinit();
 

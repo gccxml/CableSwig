@@ -12,7 +12,7 @@
  * See the file LICENSE for information on usage and redistribution.
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_typesys_c[] = "Header";
+char cvsroot_typesys_c[] = "/cvsroot/SWIG/Source/Swig/typesys.c,v 1.14 2004/02/10 08:37:30 mmatus Exp";
 
 #include "swig.h"
 
@@ -104,9 +104,22 @@ static Typetab *global_scope  = 0;                /* The global scope           
 static Hash    *scopes        = 0;                /* Hash table containing fully qualified scopes */
 
 /* Performance optimization */
+#define SWIG_TYPEDEF_RESOLVE_CACHE 
 static Hash     *typedef_resolve_cache = 0;
 static Hash     *typedef_all_cache = 0;
 static Hash     *typedef_qualified_cache = 0;
+
+/* common attribute keys, to avoid calling find_key all the times */
+static String *k_name = 0;
+static String *k_qname = 0;
+static String *k_symtab = 0;
+static String *k_using = 0;
+static String *k_scope = 0;
+static String *k_typetab = 0;
+static String *k_inherit = 0;
+static String *k_parent = 0;
+static String *k_value = 0;
+
 
 static void flush_cache() {
   typedef_resolve_cache = 0;
@@ -117,20 +130,31 @@ static void flush_cache() {
 /* Initialize the scoping system */
 
 void SwigType_typesystem_init() {
+  k_name = NewString("name");
+  k_qname = NewString("qname");
+  k_symtab = NewString("symtab");
+  k_using = NewString("using");
+  k_scope = NewString("scope");
+  k_typetab = NewString("typetab");
+  k_inherit = NewString("inherit");
+  k_parent = NewString("parent");
+  k_value = NewString("value");
+
   if (global_scope) Delete(global_scope);
   if (scopes)       Delete(scopes);
 
   current_scope = NewHash();
   global_scope  = current_scope;
 
-  Setattr(current_scope,"name","");              /* No name for global scope */
+  Setattr(current_scope,k_name,"");              /* No name for global scope */
   current_typetab = NewHash();
-  Setattr(current_scope,"typetab", current_typetab);
+  Setattr(current_scope,k_typetab, current_typetab);
 
   current_symtab = 0;
   scopes = NewHash();
   Setattr(scopes,"",current_scope);
 }
+
 
 /* -----------------------------------------------------------------------------
  * SwigType_typedef()
@@ -176,6 +200,7 @@ int SwigType_typedef_class(String_or_char *name) {
   cname = NewString(name);
   Setmeta(cname,"class","1");
   Setattr(current_typetab,cname,cname);
+  Delete(cname);
   flush_cache();
   return 0;
 }
@@ -188,15 +213,15 @@ int SwigType_typedef_class(String_or_char *name) {
 
 String *
 SwigType_scope_name(Typetab *ttab) {
-  String *qname = NewString(Getattr(ttab,"name"));
-  ttab = Getattr(ttab,"parent");
+  String *qname = NewString(Getattr(ttab,k_name));
+  ttab = Getattr(ttab,k_parent);
   while (ttab) {
-    String *pname = Getattr(ttab,"name");
+    String *pname = Getattr(ttab,k_name);
     if (Len(pname)) {
       Insert(qname,0,"::");
       Insert(qname,0,pname);
     }
-    ttab = Getattr(ttab,"parent");
+    ttab = Getattr(ttab,k_parent);
   }
   return qname;
 }
@@ -206,7 +231,7 @@ SwigType_scope_name(Typetab *ttab) {
  * Creates a new scope
  * ----------------------------------------------------------------------------- */
 
-void SwigType_new_scope(String_or_char *name) {
+void SwigType_new_scope(const String_or_char *name) {
   Typetab *s;
   Hash    *ttab;
   String  *qname;
@@ -215,15 +240,15 @@ void SwigType_new_scope(String_or_char *name) {
     name = "<unnamed>";
   }
   s = NewHash();
-  Setattr(s,"name", name);
-  Setattr(s,"parent", current_scope);
+  Setattr(s,k_name, name);
+  Setattr(s,k_parent, current_scope);
   ttab = NewHash();
-  Setattr(s,"typetab", ttab);
+  Setattr(s,k_typetab, ttab);
 
   /* Build fully qualified name and */
   qname = SwigType_scope_name(s);
   Setattr(scopes,qname,s);
-  Setattr(s,"qname",qname);
+  Setattr(s,k_qname,qname);
   Delete(qname);
 
   current_scope = s;
@@ -243,10 +268,10 @@ void
 SwigType_inherit_scope(Typetab *scope) {
   List *inherits;
   int   i, len;
-  inherits = Getattr(current_scope,"inherit");
+  inherits = Getattr(current_scope,k_inherit);
   if (!inherits) {
     inherits = NewList();
-    Setattr(current_scope,"inherit", inherits);
+    Setattr(current_scope,k_inherit, inherits);
   }
   assert(scope != current_scope);
   
@@ -289,10 +314,10 @@ SwigType_using_scope(Typetab *scope) {
   {
     List *ulist;
     int   i, len;
-    ulist = Getattr(current_scope,"using");
+    ulist = Getattr(current_scope,k_using);
     if (!ulist) {
       ulist = NewList();
-      Setattr(current_scope,"using", ulist);
+      Setattr(current_scope,k_using, ulist);
     }
     assert(scope != current_scope);
     len = Len(ulist);
@@ -314,7 +339,7 @@ SwigType_using_scope(Typetab *scope) {
 
 Typetab *SwigType_pop_scope() {
   Typetab *s, *s1;
-  s = Getattr(current_scope,"parent");
+  s = Getattr(current_scope,k_parent);
   if (!s) {
     current_scope = 0;
     current_typetab = 0;
@@ -323,8 +348,8 @@ Typetab *SwigType_pop_scope() {
   }
   s1 = current_scope;
   current_scope = s;
-  current_typetab = Getattr(s,"typetab");
-  current_symtab = Getattr(s,"symtab");
+  current_typetab = Getattr(s,k_typetab);
+  current_symtab = Getattr(s,k_symtab);
   flush_cache();
   return s1;
 }
@@ -340,8 +365,8 @@ SwigType_set_scope(Typetab *t) {
   Typetab *old = current_scope;
   if (!t) t = global_scope;
   current_scope = t;
-  current_typetab = Getattr(t,"typetab");
-  current_symtab = Getattr(t,"symtab");
+  current_typetab = Getattr(t,k_typetab);
+  current_symtab = Getattr(t,k_symtab);
   flush_cache();
   return old;
 }
@@ -354,7 +379,7 @@ SwigType_set_scope(Typetab *t) {
 
 void
 SwigType_attach_symtab(Symtab *sym) {
-  Setattr(current_scope,"symtab",sym);
+  Setattr(current_scope,k_symtab,sym);
   current_symtab = sym;
 }
 
@@ -365,27 +390,26 @@ SwigType_attach_symtab(Symtab *sym) {
  * ----------------------------------------------------------------------------- */
 
 void SwigType_print_scope(Typetab *t) {
-  String *key;
   Hash   *ttab;
-  String *tkey;
+  Iterator  i,j;
 
-  for (tkey = Firstkey(scopes); tkey; tkey = Nextkey(scopes)) {
-    t = Getattr(scopes,tkey);
-    ttab = Getattr(t,"typetab");
+  for (i = First(scopes); i.key; i = Next(i)) {
+    t = i.item;
+    ttab = Getattr(i.item,k_typetab);
     
-    Printf(stdout,"Type scope '%s' (%x)\n", tkey, t);
+    Printf(stdout,"Type scope '%s' (%x)\n", i.key, i.item);
     {
-      List *inherit = Getattr(t,"inherit");
+      List *inherit = Getattr(i.item,k_inherit);
       if (inherit) {
-	Typetab *it;
-	for (it = Firstitem(inherit); it; it = Nextitem(inherit)) {
-	  Printf(stdout,"    Inherits from '%s' (%x)\n", Getattr(it,"qname"), it);
+	Iterator j;
+	for (j = First(inherit); j.item; j = Next(j)) {
+	  Printf(stdout,"    Inherits from '%s' (%x)\n", Getattr(j.item,k_qname), j.item);
 	}
       }
     }
     Printf(stdout,"-------------------------------------------------------------\n");
-    for (key = Firstkey(ttab); key; key = Nextkey(ttab)) {
-      Printf(stdout,"%40s -> %s\n", key, Getattr(ttab,key));
+    for (j = First(ttab); j.key; j = Next(j)) {
+      Printf(stdout,"%40s -> %s\n", j.key, j.item);
     }
   }
 }
@@ -406,7 +430,7 @@ SwigType_find_scope(Typetab *s, String *nameprefix) {
   ss = s;
   while (ss) {
     String *full;
-    String *qname = Getattr(ss,"qname");
+    String *qname = Getattr(ss,k_qname);
     if (qname) {
       full = NewStringf("%s::%s", qname, nameprefix);
     } else {
@@ -425,7 +449,7 @@ SwigType_find_scope(Typetab *s, String *nameprefix) {
     if (!s) {
       /* Check inheritance */
       List *inherit;
-      inherit = Getattr(ss,"using");
+      inherit = Getattr(ss,k_using);
       if (inherit) {
 	Typetab *ttab;
 	int i, len;
@@ -444,7 +468,7 @@ SwigType_find_scope(Typetab *s, String *nameprefix) {
       }
     }
     if (!check_parent) break;
-    ss = Getattr(ss,"parent");
+    ss = Getattr(ss,k_parent);
   }
   if (nnameprefix) Delete(nnameprefix);
   return 0;
@@ -460,19 +484,21 @@ SwigType_find_scope(Typetab *s, String *nameprefix) {
 static Typetab  *resolved_scope = 0;
 
 /* Internal function */
+
 static SwigType *
 typedef_resolve(Typetab *s, String *base) {
   Hash     *ttab;
   SwigType *type;
   List     *inherit;
+  Typetab  *parent;
 
-  if (!s) return 0;
+  /* if (!s) return 0; *//* now is checked bellow */
   /* Printf(stdout,"Typetab %s : %s\n", Getattr(s,"name"), base);  */
 
   if (Getmark(s)) return 0;
   Setmark(s,1);
 
-  ttab = Getattr(s,"typetab");
+  ttab = Getattr(s,k_typetab);
   type = Getattr(ttab,base);
   if (type) {
     resolved_scope = s;
@@ -480,7 +506,7 @@ typedef_resolve(Typetab *s, String *base) {
     return type;
   }
   /* Hmmm. Not found in my scope.  It could be in an inherited scope */
-  inherit = Getattr(s,"inherit");
+  inherit = Getattr(s,k_inherit);
   if (inherit) {
     int i,len;
     len = Len(inherit);
@@ -492,7 +518,8 @@ typedef_resolve(Typetab *s, String *base) {
       }
     }
   }
-  type = typedef_resolve(Getattr(s,"parent"), base);
+  parent = Getattr(s,k_parent);
+  type = parent ? typedef_resolve(parent, base) : 0;
   Setmark(s,0);
   return type;
 }
@@ -507,22 +534,24 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
   String *nameprefix = 0;
   int     newtype = 0;
 
+  /*
+  if (!noscope) {
+    noscope = NewString("");
+  }
+  */
+
   resolved_scope = 0;
 
+#ifdef SWIG_TYPEDEF_RESOLVE_CACHE
   if (!typedef_resolve_cache) {
     typedef_resolve_cache = NewHash();
   }
-  /*
   r = Getattr(typedef_resolve_cache,t);
   if (r) {
-    if (r != DohNone) {
-      resolved_scope = Getmeta(r,"scope");
-      return Copy(r);
-    } else {
-      return 0;
-    }
+    resolved_scope = Getmeta(r,k_scope);
+    return Copy(r);
   }
-*/
+#endif
 
   base = SwigType_base(t);
 
@@ -533,7 +562,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
     ttab = current_typetab;
     if (Strncmp(base,"::",2) == 0) {
       s = global_scope;
-      ttab = Getattr(s,"typetab");
+      ttab = Getattr(s,k_typetab);
       Delitem(base,0);
       Delitem(base,0);
     }
@@ -551,6 +580,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
 	if (nameprefix) {
 	  /* Name had a prefix on it.   See if we can locate the proper scope for it */
 	  s = SwigType_find_scope(s,nameprefix);
+
 	  /* Couldn't locate a scope for the type.  */
 	  if (!s) {
 	    Delete(base);
@@ -565,7 +595,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
 	  /* Printf(stdout,"%s type = '%s'\n", Getattr(s,"name"), type); */
 	  if ((type) && (!Swig_scopename_check(type))) {
 	    Typetab *rtab = resolved_scope;
-	    String *qname = Getattr(resolved_scope,"qname");
+	    String *qname = Getattr(resolved_scope,k_qname);
 	    /* If qualified *and* the typename is defined from the resolved scope, we qualify */
 	    if ((qname) && typedef_resolve(resolved_scope,type)) {
 	      type = Copy(type);
@@ -586,7 +616,10 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
     }
     
     if (type && (Strcmp(base,type) == 0)) {
+      if (newtype) Delete(type);
       Delete(base);
+      Delete(namebase);
+      Delete(nameprefix);
       r = 0;
       goto return_result;
     }
@@ -600,6 +633,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
       int i,sz;
       int rep = 0;
       type = SwigType_templateprefix(base);
+      newtype = 1;
       suffix = SwigType_templatesuffix(base);
       Append(type,"<(");
       tparms = SwigType_parmlist(base);
@@ -614,6 +648,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
 	}
 	if (tpr) {
 	  Append(type,tpr);
+	  Delete(tpr);
 	  rep = 1;
 	} else {
 	  Append(type,tp);
@@ -631,12 +666,15 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
     }
     if (namebase) Delete(namebase);
     if (nameprefix) Delete(nameprefix);
+    namebase = 0;
+    nameprefix = 0;
   } else {
     if (SwigType_isfunction(base)) {
       List *parms;
       int i,sz;
       int rep = 0;
       type = NewString("f(");
+      newtype = 1;
       parms = SwigType_parmlist(base);
       sz = Len(parms);
       for (i = 0; i < sz; i++) {
@@ -649,6 +687,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
 	}
 	if (tpr) {
 	  Append(type,tpr);
+	  Delete(tpr);
 	  rep = 1;
 	} else {
 	  Append(type,tp);
@@ -667,6 +706,7 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
       rt = SwigType_typedef_resolve(mtype);
       if (rt) {
 	type = NewStringf("m(%s).", rt);
+	newtype = 1;
 	Delete(rt);
       }
       Delete(mtype);
@@ -700,16 +740,22 @@ SwigType *SwigType_typedef_resolve(SwigType *t) {
   }
 
  return_result:
-  if (!r) {
-    Setattr(typedef_resolve_cache,NewString(t),DohNone);
-  } else {
-    Setattr(typedef_resolve_cache,NewString(t),r);
-    Setmeta(r,"scope",resolved_scope);
-    r = Copy(r);
+#ifdef SWIG_TYPEDEF_RESOLVE_CACHE
+  {
+    String *key = NewString(t);
+    if (r) {
+      SwigType *r1;
+      Setattr(typedef_resolve_cache,key,r);
+      Setmeta(r,k_scope,resolved_scope);
+      r1 = Copy(r);
+      Delete(r);
+      r = r1;
+    }
+    Delete(key);
   }
+#endif
   return r;
 }
-
 
 /* -----------------------------------------------------------------------------
  * SwigType_typedef_resolve_all()
@@ -734,8 +780,12 @@ SwigType *SwigType_typedef_resolve_all(SwigType *t) {
     r = n;
   }
   {
+    String *key;
     SwigType *rr = Copy(r);
-    Setattr(typedef_all_cache,NewString(t),rr);
+    key = NewString(t);
+    Setattr(typedef_all_cache,key,rr);
+    Delete(key);
+    Delete(rr);
   }
   return r;
 }
@@ -754,12 +804,13 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
   String *result;
   int     i,len;
 
- if (!typedef_qualified_cache) typedef_qualified_cache = NewHash();
+  if (!typedef_qualified_cache) typedef_qualified_cache = NewHash();
   result = Getattr(typedef_qualified_cache,t);
   if (result) {
     String *rc = Copy(result);
     return rc;
   }
+
   result = NewString("");
   elements = SwigType_split(t);
   len = Len(elements);
@@ -775,7 +826,7 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	resolved_scope = 0;
 	if (typedef_resolve(current_scope,e)) {
 	  /* resolved_scope contains the scope that actually resolved the symbol */
-	  String *qname = Getattr(resolved_scope,"qname");
+	  String *qname = Getattr(resolved_scope,k_qname);
 	  if (qname) {
 	    Insert(e,0,"::");
 	    Insert(e,0,qname);
@@ -786,7 +837,6 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	    }
 	  }
 	} else {
-
 	  if (Swig_scopename_check(e)) {
 	    String *tqname;
 	    String *qlast;
@@ -801,7 +851,27 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	      Delete(tqname);
 	    }
 	    /* Automatic template instantiation might go here??? */
-
+	  } else {
+	    /* It's a bare name.  It's entirely possible, that the
+               name is part of a namespace. We'll check this by unrolling
+               out of the current scope */
+	    
+	    Typetab *cs = current_scope;
+	    while (cs) {
+	      String *qs = SwigType_scope_name(cs);
+	      if (Len(qs)) {
+		Append(qs,"::");
+	      }
+	      Append(qs,e);
+	      if (Getattr(scopes,qs)) {
+		Clear(e);
+		Append(e,qs);
+		Delete(qs);
+		break;
+	      }
+	      Delete(qs);
+	      cs = Getattr(cs,k_parent);
+	    }
 	  }
 	}
 	if (isenum) e = isenum;
@@ -810,14 +880,15 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	/* Template.  We need to qualify template parameters as well as the template itself */
 	String *tprefix, *qprefix;
 	String *tsuffix;
+	Iterator pi;
 	Parm   *p;
 	List *parms = SwigType_parmlist(e);
 	tprefix = SwigType_templateprefix(e);
 	tsuffix = SwigType_templatesuffix(e);
 	qprefix = SwigType_typedef_qualified(tprefix);
-	Printf(qprefix,"<(");
-	p = Firstitem(parms);
-	while (p) {
+	Printv(qprefix,"<(",NIL);
+	pi = First(parms);
+	while ((p = pi.item)) {
 	  String *qt = SwigType_typedef_qualified(p);
 	  if ((Strcmp(qt,p) == 0)) { /*  && (!Swig_scopename_check(qt))) { */
 	    /* No change in value.  It is entirely possible that the parameter is an integer value.
@@ -836,22 +907,24 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 		    String *qn = Swig_symbol_qualified(n);
 		    if (Len(qn)) {
 		      Append(qn,"::");
-		      Append(qn,Getattr(n,"name"));
+		      Append(qn,Getattr(n,k_name));
 		      Delete(value);
 		      value = qn;
 		      continue;
 		    } else {
+		      Delete(qn);
 		      break;
 		    }
-		  } else if ((Strcmp(nodeType(n),"cdecl") == 0) && (Getattr(n,"value"))) {
+		  } else if ((Strcmp(nodeType(n),"cdecl") == 0) && (Getattr(n,k_value))) {
 		    Delete(value);
-		    value = Copy(Getattr(n,"value"));
+		    value = Copy(Getattr(n,k_value));
 		    continue;
 		  }
 		}
 		break;
 	      }
 	      Append(qprefix,value);
+	      Delete(value);
 	    } else {
 	      Append(qprefix,p);
 	    }
@@ -859,8 +932,8 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	    Append(qprefix,qt);
 	  }
 	  Delete(qt);
-	  p= Nextitem(parms);
-	  if (p) {
+	  pi= Next(pi);
+	  if (pi.item) {
 	    Append(qprefix,",");
 	  }
 	}
@@ -871,6 +944,7 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
 	Append(e,qprefix);
 	Delete(tprefix);
 	Delete(qprefix);
+	Delete(parms);
       }
       if (Strncmp(e,"::",2) == 0) {
 	Delitem(e,0);
@@ -880,18 +954,21 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
     } else if (SwigType_isfunction(e)) {
       List *parms = SwigType_parmlist(e);
       String *s = NewString("f(");
-      String *p;
-      p = Firstitem(parms);
-      while (p) {
-	Append(s,SwigType_typedef_qualified(p));
-	p = Nextitem(parms);
-	if (p) {
+      Iterator pi;
+      pi = First(parms);
+      while (pi.item) {
+	String *pq = SwigType_typedef_qualified(pi.item);
+	Append(s,pq);
+	Delete(pq);
+	pi = Next(pi);
+	if (pi.item) {
 	  Append(s,",");
 	}
       }
       Append(s,").");
       Append(result,s);
       Delete(s);
+      Delete(parms);
     } else if (SwigType_isarray(e)) {
       String *ndim;
       String *dim = SwigType_parm(e);
@@ -904,7 +981,14 @@ SwigType *SwigType_typedef_qualified(SwigType *t)
     }
   }
   Delete(elements);
-  Setattr(typedef_qualified_cache,NewString(t),NewString(result));
+  {
+    String *key, *cresult;
+    key = NewString(t);
+    cresult = NewString(result);
+    Setattr(typedef_qualified_cache,key,cresult);
+    Delete(key);
+    Delete(cresult);
+  }
   return result;
 }
 
@@ -965,7 +1049,7 @@ int SwigType_typedef_using(String_or_char *name) {
   td = SwigType_typedef_resolve(name);
   /*  Printf(stdout,"td = '%s' %x\n", td, resolved_scope); */
   if (resolved_scope) {
-    defined_name = Getattr(resolved_scope,"qname");
+    defined_name = Getattr(resolved_scope,k_qname);
     if (defined_name) {
       defined_name = Copy(defined_name);
       Append(defined_name,"::");
@@ -982,7 +1066,7 @@ int SwigType_typedef_using(String_or_char *name) {
     prefix = Swig_scopename_prefix(name);
     s = SwigType_find_scope(current_scope,prefix);
     if (s) {
-      Hash *ttab = Getattr(s,"typetab");
+      Hash *ttab = Getattr(s,k_typetab);
       if (!Getattr(ttab,base) && defined_name) {
 	Setattr(ttab,base, defined_name);
       }
@@ -1026,10 +1110,11 @@ SwigType_isclass(SwigType *t) {
       isclass = 1;
     }
     /* Hmmm. Not a class.  If a template, it might be uninstantiated */
-    /* make sure isclass has not yet been set WAH*/
     if (!isclass && SwigType_istemplate(qtys)) {
       String *tp = SwigType_templateprefix(qtys);
-      isclass = SwigType_isclass(tp);
+      if (Strcmp(tp,t) != 0) {
+	isclass = SwigType_isclass(tp);
+      }
       Delete(tp);
     }
   }
@@ -1158,6 +1243,7 @@ void SwigType_remember_clientdata(SwigType *t, const String_or_char *clientdata)
   Hash   *h;
   SwigType *fr;
   SwigType *qr;
+  String   *tkey;
 
   if (!r_mangled) {
     r_mangled = NewHash();
@@ -1173,7 +1259,9 @@ void SwigType_remember_clientdata(SwigType *t, const String_or_char *clientdata)
     if (last && (Cmp(last,clientdata) == 0)) return;
   }
 
-  Setattr(r_remembered, Copy(t), clientdata ? NewString(clientdata) : (void *) "");
+  tkey = Copy(t);
+  Setattr(r_remembered, tkey, clientdata ? NewString(clientdata) : (void *) "");
+  Delete(tkey);
 
   mt = SwigType_manglestr(t);               /* Create mangled string */
 
@@ -1181,10 +1269,11 @@ void SwigType_remember_clientdata(SwigType *t, const String_or_char *clientdata)
     (*r_tracefunc)(t,mt, (String *) clientdata);
   }
 
-  if (SwigType_istypedef(t))
+  if (SwigType_istypedef(t)) {
     lt = Copy(t);
-  else
+  } else {
     lt = SwigType_ltype(t);
+  }
   Setattr(r_ltype, mt, lt);
   fr = SwigType_typedef_resolve_all(t);     /* Create fully resolved type */
   qr = SwigType_typedef_qualified(fr);
@@ -1230,6 +1319,17 @@ void SwigType_remember_clientdata(SwigType *t, const String_or_char *clientdata)
       Setattr(r_clientdata, fr, NewString(clientdata));
     }
   }
+
+  /* If the remembered type is a reference, we also remember the pointer version.
+     This is to prevent odd problems with mixing pointers and references--especially
+     when different functions are using different typenames (via typedef). */
+
+  if (SwigType_isreference(t)) {
+    SwigType *tt = Copy(t);
+    SwigType_del_reference(tt);
+    SwigType_add_pointer(tt);
+    SwigType_remember_clientdata(tt,clientdata);
+  }
 }
 
 void
@@ -1273,26 +1373,26 @@ List *SwigType_equivalent_mangle(String *ms, Hash *checked, Hash *found) {
   Setattr(ch, ms, "1");
   mh = Getattr(r_mangled,ms);
   if (mh) {
-    String *key;
-    key = Firstkey(mh);
-    while (key) {
+    Iterator ki;
+    ki = First(mh);
+    while (ki.key) {
       Hash *rh;
-      if (Getattr(ch,key)) {
-	key = Nextkey(mh);
+      if (Getattr(ch,ki.key)) {
+	ki = Next(ki);
 	continue;
       }
-      Setattr(ch,key,"1");
-      rh = Getattr(r_resolved,key);
+      Setattr(ch,ki.key,"1");
+      rh = Getattr(r_resolved,ki.key);
       if (rh) {
-	String *rkey;
-	rkey = Firstkey(rh);
-	while (rkey) {
-	  Setattr(h,rkey,"1");
-	  SwigType_equivalent_mangle(rkey,ch,h);
-	  rkey = Nextkey(rh);
+	Iterator rk;
+	rk = First(rh);
+	while (rk.key) {
+	  Setattr(h,rk.key,"1");
+	  SwigType_equivalent_mangle(rk.key,ch,h);
+	  rk = Next(rk);
 	}
       }
-      key = Nextkey(mh);
+      ki = Next(ki);
     }
   }
  check_exit:
@@ -1327,24 +1427,24 @@ String *SwigType_clientdata_collect(String *ms, Hash *checked) {
   Setattr(ch, ms, "1");
   mh = Getattr(r_mangled,ms);
   if (mh) {
-    String *key;
-    key = Firstkey(mh);
-    while (key) {
+    Iterator ki;
+    ki = First(mh);
+    while (ki.key) {
       Hash *rh;
-      Setattr(ch,key,"1");
-      clientdata = Getattr(r_clientdata,key);
+      Setattr(ch,ki.key,"1");
+      clientdata = Getattr(r_clientdata,ki.key);
       if (clientdata) goto check_exit;
-      rh = Getattr(r_resolved,key);
+      rh = Getattr(r_resolved,ki.key);
       if (rh) {
-	String *rkey;
-	rkey = Firstkey(rh);
-	while (rkey) {
-	  clientdata = SwigType_clientdata_collect(rkey,ch);
+	Iterator rk;
+	rk = First(rh);
+	while (rk.key) {
+	  clientdata = SwigType_clientdata_collect(rk.key,ch);
 	  if (clientdata) goto check_exit;
-	  rkey = Nextkey(rh);
+	  rk = Next(rk);
 	}
       }
-      key = Nextkey(mh);
+      ki = Next(ki);
     }
   }
  check_exit:
@@ -1438,48 +1538,49 @@ SwigType_issubtype(SwigType *t1, SwigType *t2) {
  * ----------------------------------------------------------------------------- */
 
 void SwigType_inherit_equiv(File *out) {
-  String *rkey, *bkey, *ckey;
+  String *ckey;
   String *prefix, *base;
   Hash   *sub;
   Hash   *rh;
   List   *rlist;
+  Iterator rk, bk, ck;
 
   if (!conversions) conversions = NewHash();
   if (!subclass) subclass = NewHash();
 
-  rkey = Firstkey(r_resolved);
-  while (rkey) {
+  rk = First(r_resolved);
+  while (rk.key) {
     /* rkey is a fully qualified type.  We strip all of the type constructors off of it just to get the base */
-    base = SwigType_base(rkey);
+    base = SwigType_base(rk.key);
     /* Check to see whether the base is recorded in the subclass table */
     sub = Getattr(subclass,base);
     Delete(base);
     if (!sub) {
-      rkey = Nextkey(r_resolved);
+      rk = Next(rk);
       continue;
     }
 
     /* This type has subclasses.  We now need to walk through these subtypes and generate pointer converion functions */
 
-    rh = Getattr(r_resolved, rkey);
+    rh = Getattr(r_resolved, rk.key);
     rlist = NewList();
-    for (ckey = Firstkey(rh); ckey; ckey = Nextkey(rh)) {
-      Append(rlist,ckey);
+    for (ck = First(rh); ck.key; ck = Next(ck)) {
+      Append(rlist,ck.key);
     }
-    /*    Printf(stdout,"rkey = '%s'\n", rkey);
+    /*    Printf(stdout,"rk.key = '%s'\n", rk.key);
 	  Printf(stdout,"rh = %x '%s'\n", rh,rh); */
 
-    bkey = Firstkey(sub);
-    while (bkey) {
-      prefix= SwigType_prefix(rkey);
-      Append(prefix,bkey);
+    bk = First(sub);
+    while (bk.key) {
+      prefix= SwigType_prefix(rk.key);
+      Append(prefix,bk.key);
       /*      Printf(stdout,"set %x = '%s' : '%s'\n", rh, SwigType_manglestr(prefix),prefix); */
       Setattr(rh,SwigType_manglestr(prefix),prefix);
-      ckey = NewStringf("%s+%s",SwigType_manglestr(prefix), SwigType_manglestr(rkey));
+      ckey = NewStringf("%s+%s",SwigType_manglestr(prefix), SwigType_manglestr(rk.key));
       if (!Getattr(conversions,ckey)) {
-	String *convname = NewStringf("%sTo%s", SwigType_manglestr(prefix), SwigType_manglestr(rkey));
+	String *convname = NewStringf("%sTo%s", SwigType_manglestr(prefix), SwigType_manglestr(rk.key));
 	Printf(out,"static void *%s(void *x) {\n", convname);
-	Printf(out,"    return (void *)((%s) %s ((%s) x));\n", SwigType_lstr(rkey,0), Getattr(sub,bkey), SwigType_lstr(prefix,0));
+	Printf(out,"    return (void *)((%s) %s ((%s) x));\n", SwigType_lstr(rk.key,0), Getattr(sub,bk.key), SwigType_lstr(prefix,0));
 	Printf(out,"}\n");
 	Setattr(conversions,ckey,convname);
 	Delete(ckey);	
@@ -1488,39 +1589,40 @@ void SwigType_inherit_equiv(File *out) {
 	{
 	  Hash *r = Getattr(r_resolved, prefix);
 	  if (r) {
-	    String *rrkey = Firstkey(r);
-	    while (rrkey) {
-	      String *rlkey;
+	    Iterator rrk;
+	    rrk=First(r);
+	    while (rrk.key) {
+	      Iterator rlk;
 	      String *rkeymangle;
 
 	      /* Make sure this name equivalence is not due to inheritance */
-	      if (Cmp(prefix, Getattr(r,rrkey)) == 0) {
-		rkeymangle = SwigType_manglestr(rkey);
-		ckey = NewStringf("%s+%s", rrkey, rkeymangle);
+	      if (Cmp(prefix, Getattr(r,rrk.key)) == 0) {
+		rkeymangle = SwigType_manglestr(rk.key);
+		ckey = NewStringf("%s+%s", rrk.key, rkeymangle);
 		if (!Getattr(conversions, ckey)) {
 		  Setattr(conversions, ckey, convname);
 		}
 		Delete(ckey);
-		for (rlkey = Firstitem(rlist); rlkey; rlkey = Nextitem(rlist)) {
-		  ckey = NewStringf("%s+%s", rrkey, rlkey);
+		for (rlk = First(rlist); rlk.item; rlk = Next(rlk)) {
+		  ckey = NewStringf("%s+%s", rrk.key, rlk.item);
 		  Setattr(conversions, ckey, convname);
 		  Delete(ckey);
 		}
 		Delete(rkeymangle);
 		/* This is needed to pick up other alternative names for the same type.
                    Needed to make templates work */
-	        Setattr(rh,rrkey,Getattr(r,rrkey));   
+	        Setattr(rh,rrk.key,rrk.item);   
 	      }
-	      rrkey = Nextkey(r);
+	      rrk = Next(rrk);
 	    }
 	  }
 	}
 	Delete(convname);
       }
       Delete(prefix);
-      bkey = Nextkey(sub);
+      bk = Next(bk);
     }
-    rkey = Nextkey(r_resolved);
+    rk = Next(rk);
   }
 }
 
@@ -1532,7 +1634,7 @@ void SwigType_inherit_equiv(File *out) {
 
 void
 SwigType_emit_type_table(File *f_forward, File *f_table) {
-  DOH *key;
+  Iterator ki;
   String *types, *table;
   int i = 0;
 
@@ -1566,36 +1668,54 @@ SwigType_emit_type_table(File *f_forward, File *f_table) {
   table = NewString("");
   types = NewString("");
   Printf(table,"static swig_type_info *swig_types_initial[] = {\n");
-  key = Firstkey(r_mangled);
-  Printf(f_forward,"\n/* -------- TYPES TABLE (BEGIN) -------- */\n\n");
-  while (key) {
-    List *el;
-    String *en;
-    String *cd;
 
-    Printf(f_forward,"#define  SWIGTYPE%s swig_types[%d] \n", key, i);
-    Printv(types,"static swig_type_info _swigt_", key, "[] = {", NIL);
+  ki = First(r_mangled);
+  Printf(f_forward,"\n/* -------- TYPES TABLE (BEGIN) -------- */\n\n");
+  while (ki.key) {
+    List *el;
+    Iterator ei;
+    SwigType *lt;
+    SwigType *rt;
+    String *nt;
+    String *ln;
+    String *rn;
+    const String *cd;
+
+    Printf(f_forward,"#define  SWIGTYPE%s swig_types[%d] \n", ki.key, i);
+    Printv(types,"static swig_type_info _swigt_", ki.key, "[] = {", NIL);
     
-    cd = SwigType_clientdata_collect(key,0);
+    cd = SwigType_clientdata_collect(ki.key,0);
     if (!cd) cd = "0";
-    Printv(types,"{\"", key, "\", 0, \"", SwigType_str(Getattr(r_ltype,key),0),"\", ", cd, ",0,0,0},", NIL);
-    el = SwigType_equivalent_mangle(key,0,0);
-    for (en = Firstitem(el); en; en = Nextitem(el)) {
+    lt = Getattr(r_ltype,ki.key);
+    rt = SwigType_typedef_resolve_all(lt);
+    /* we save the original type and the fully resolved version */
+    ln = SwigType_str(lt,0);
+    rn = SwigType_str(rt,0);
+    if (Strcmp(ln,rn) == 0) {
+      nt = NewStringf("%s", ln);
+    } else {
+      nt = NewStringf("%s|%s", rn, ln);
+    }
+    Printv(types,"{\"", ki.key, "\", 0, \"",nt,"\", ", cd, ", 0, 0, 0},", NIL);
+    el = SwigType_equivalent_mangle(ki.key,0,0);
+    for (ei = First(el); ei.item; ei = Next(ei)) {
       String *ckey;
       String *conv;
-      ckey = NewStringf("%s+%s", en, key);
+      ckey = NewStringf("%s+%s", ei.item, ki.key);
       conv = Getattr(conversions,ckey);
       if (conv) {
-	Printf(types,"{\"%s\", %s,0,0,0,0,0},", en, conv);
+	Printf(types,"{\"%s\", %s, 0, 0, 0, 0, 0},", ei.item, conv);
       } else {
-	Printf(types,"{\"%s\",0,0,0,0,0,0},", en);
+	Printf(types,"{\"%s\", 0, 0, 0, 0, 0, 0},", ei.item);
       }
       Delete(ckey);
     }
     Delete(el);
-    Printf(types,"{0,0,0,0,0,0,0}};\n");
-    Printv(table, "_swigt_", key, ", \n", NIL);
-    key = Nextkey(r_mangled);
+    Delete(nt);
+    Delete(rt);
+    Printf(types,"{0, 0, 0, 0, 0, 0, 0}};\n");
+    Printv(table, "_swigt_", ki.key, ", \n", NIL);
+    ki = Next(ki);
     i++;
   }
 

@@ -13,20 +13,22 @@
 /* Include headers */
 %insert(runtime) "ocamldec.swg"
 
+/* Type registration */
+%insert(init) "typeregister.swg"
+
 /*#ifndef SWIG_NOINCLUDE*/
 %insert(runtime) "ocaml.swg"
 /*#endif*/
 
+%insert(classtemplate) "class.swg"
+
 /* Definitions */
 #define SWIG_malloc(size) swig_malloc(size, FUNC_NAME)
 #define SWIG_free(mem) free(mem)
-
-/* Guile compatibility kludges */
-#define SCM_VALIDATE_VECTOR(argnum, value) (void)0
-#define SCM_VALIDATE_LIST(argnum, value) (void)0
 
 /* Read in standard typemaps. */
 %include "swig.swg"
 %include "typemaps.i"
 %include "typecheck.i"
 %include "exception.i"
+%include "preamble.swg"

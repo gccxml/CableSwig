@@ -2,7 +2,7 @@
    Copyright 2000, 2001 Matthias Koeppe <mkoeppe@mail.math.uni-magdeburg.de>
    Based on code written by Oleg Tolmatcev.
 
-   Id
+   typemaps.i,v 1.7 2003/06/10 21:53:39 mkoeppe Exp
 */
 
 /* The MzScheme module handles all types uniformly via typemaps. Here
@@ -11,32 +11,50 @@
 /* Pointers */
 
 %typemap(in) SWIGTYPE * {
-  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum);
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
 }
 
 %typemap(in) void * {
-  $1 = SWIG_MustGetPtr($input, NULL, $argnum);
+  $1 = SWIG_MustGetPtr($input, NULL, $argnum, 0);
 }
 
 %typemap(varin) SWIGTYPE * {
-  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, 1);
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, 1, 0);
 }
 
+%typemap(varin) SWIGTYPE & {
+  $1 = *(($1_ltype)SWIG_MustGetPtr($input, $descriptor, 1, 0));
+}
+
+%typemap(varin) SWIGTYPE [ANY] {
+  void *temp;
+  int ii;
+  $1_basetype *b = 0;
+  temp = SWIG_MustGetPtr($input, $1_descriptor, 1, 0);
+  b = ($1_basetype *) $1;
+  for (ii = 0; ii < $1_size; ii++) b[ii] = *(($1_basetype *) temp + ii);
+}
+  
+
 %typemap(varin) void * {
-  $1 = SWIG_MustGetPtr($input, NULL, 1);
+  $1 = SWIG_MustGetPtr($input, NULL, 1, 0);
 }
 
 %typemap(out) SWIGTYPE * {
-  $result = SWIG_MakePtr ($1, $descriptor);
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
 }
 
 %typemap(out) SWIGTYPE *DYNAMIC {
   swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor,(void **) &$1);
-  $result = SWIG_MakePtr ($1, ty);
+  $result = SWIG_NewPointerObj ($1, ty, $owner);
 }
     
-%typemap(varout) SWIGTYPE * {
-  $result = SWIG_MakePtr ($1, $descriptor);
+%typemap(varout) SWIGTYPE *, SWIGTYPE [] {
+  $result = SWIG_NewPointerObj ($1, $descriptor, 0);
+}
+
+%typemap(varout) SWIGTYPE & {
+  $result = SWIG_NewPointerObj((void *) &$1, $1_descriptor, 0);
 }
 
 /* C++ References */
@@ -44,45 +62,29 @@
 #ifdef __cplusplus
 
 %typemap(in) SWIGTYPE &, const SWIGTYPE & { 
-  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum);
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
   if ($1 == NULL) scheme_signal_error("swig-type-error (null reference)");
 }
 
 %typemap(out) SWIGTYPE &, const SWIGTYPE & {
-  $result = SWIG_MakePtr ($1, $descriptor);
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
 }
 
 %typemap(out) SWIGTYPE &DYNAMIC {
   swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor,(void **) &$1);
-  $result = SWIG_MakePtr ($1, ty);
+  $result = SWIG_NewPointerObj ($1, ty, $owner);
 }
 
-#endif
-
-%typemap(out) SWIGTYPE 
-#ifdef __cplusplus
-{
-  $&1_ltype resultptr;
-  resultptr = new $1_ltype(($1_ltype &) $1);
-  $result =  SWIG_MakePtr (resultptr, $&1_descriptor);
-} 
-#else
-{
-  $&1_ltype resultptr;
-  resultptr = ($&1_ltype) malloc(sizeof($1_type));
-  memmove(resultptr, &$1, sizeof($1_type));
-  $result = SWIG_MakePtr(resultptr, $&1_descriptor);
-}
 #endif
 
 /* Arrays */
 
 %typemap(in) SWIGTYPE[] {
-  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum);
+  $1 = ($ltype) SWIG_MustGetPtr($input, $descriptor, $argnum, 0);
 }
 
 %typemap(out) SWIGTYPE[] {
-  $result = SWIG_MakePtr ($1, $descriptor);
+  $result = SWIG_NewPointerObj ($1, $descriptor, $owner);
 }
 
 /* Enums */
@@ -105,13 +107,13 @@
 /* Pass-by-value */
 
 %typemap(in) SWIGTYPE($&1_ltype argp) {
-  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, $argnum);
+  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, $argnum, 0);
   $1 = *argp;
 }
 
 %typemap(varin) SWIGTYPE {
   $&1_ltype argp;
-  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, 1);
+  argp = ($&1_ltype) SWIG_MustGetPtr($input, $&1_descriptor, 1, 0);
   $1 = *argp;
 }
 
@@ -121,14 +123,14 @@
 {
   $&1_ltype resultptr;
   resultptr = new $1_ltype(($1_ltype &) $1);
-  $result =  SWIG_MakePtr (resultptr, $&1_descriptor);
+  $result =  SWIG_NewPointerObj (resultptr, $&1_descriptor, 1);
 } 
 #else
 {
   $&1_ltype resultptr;
   resultptr = ($&1_ltype) malloc(sizeof($1_type));
   memmove(resultptr, &$1, sizeof($1_type));
-  $result = SWIG_MakePtr(resultptr, $&1_descriptor);
+  $result = SWIG_NewPointerObj(resultptr, $&1_descriptor, 1);
 }
 #endif
 
@@ -137,14 +139,14 @@
 {
   $&1_ltype resultptr;
   resultptr = new $1_ltype(($1_ltype &) $1);
-  $result =  SWIG_MakePtr (resultptr, $&1_descriptor);
+  $result =  SWIG_NewPointerObj (resultptr, $&1_descriptor, 0);
 } 
 #else
 {
   $&1_ltype resultptr;
   resultptr = ($&1_ltype) malloc(sizeof($1_type));
   memmove(resultptr, &$1, sizeof($1_type));
-  $result = SWIG_MakePtr(resultptr, $&1_descriptor);
+  $result = SWIG_NewPointerObj(resultptr, $&1_descriptor, 0);
 }
 #endif
 
@@ -263,6 +265,8 @@ REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
 
 %typemap (in) Scheme_Object * "$1=$input;";
 %typemap (out) Scheme_Object * "$result=$1;";
+%typecheck(SWIG_TYPECHECK_POINTER) Scheme_Object * "$1=1;";
+
 
 /* ------------------------------------------------------------
  * String & length
@@ -292,7 +296,7 @@ REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
   $1 = (SCHEME_INTP($input)) ? 1 : 0;
 }
 
-%typecheck(SWIG_TYPECHECK_BOOL) bool &, const bool &
+%typecheck(SWIG_TYPECHECK_BOOL) bool, bool &, const bool &
 {
   $1 = (SCHEME_BOOLP($input)) ? 1 : 0;
 }
@@ -314,7 +318,7 @@ REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
 
 %typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] {
   void *ptr;
-  if (SWIG_GetPtr($input, (void **) &ptr, $1_descriptor)) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $1_descriptor, 0)) {
     $1 = 0;
   } else {
     $1 = 1;
@@ -323,7 +327,7 @@ REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
 
 %typecheck(SWIG_TYPECHECK_POINTER) SWIGTYPE {
   void *ptr;
-  if (SWIG_GetPtr($input, (void **) &ptr, $&1_descriptor)) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, $&1_descriptor, 0)) {
     $1 = 0;
   } else {
     $1 = 1;
@@ -332,12 +336,11 @@ REF_MAP(double, SCHEME_REALP, scheme_real_to_double,
 
 %typecheck(SWIG_TYPECHECK_VOIDPTR) void * {
   void *ptr;
-  if (SWIG_GetPtr($input, (void **) &ptr, 0)) {
+  if (SWIG_ConvertPtr($input, (void **) &ptr, 0, 0)) {
     $1 = 0;
   } else {
     $1 = 1;
   }
 }
-
 
 

@@ -9,7 +9,7 @@
  * See the file LICENSE for information on usage and redistribution.	
  * ----------------------------------------------------------------------------- */
 
-char cvsroot_templ_c[] = "Header";
+char cvsroot_templ_c[] = "/cvsroot/SWIG/Source/CParse/templ.c,v 1.10 2004/01/15 08:33:10 mmatus Exp";
 
 #include "swig.h"
 #include "cparse.h"
@@ -188,6 +188,25 @@ cparse_template_expand(Node *n, String *tname, String *rname, String *templatear
   return 0;
 }
 
+static
+String *partial_arg(String *s, String *p) {
+  char *c;
+  String *prefix;
+  String *newarg;
+
+  /* Find the prefix on the partial argument */
+  
+  c = Strstr(p,"$");
+  if (!c) {
+    return NewString(s);
+  }
+  prefix = NewStringWithSize(Char(p),c-Char(p));
+  newarg = NewString(s);
+  Replace(newarg,prefix,"",DOH_REPLACE_ANY | DOH_REPLACE_FIRST);
+  Delete(prefix);
+  return newarg;
+}
+
 int
 Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
   List *patchlist, *cpatchlist, *typelist;
@@ -211,14 +230,40 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
   tname = Copy(Getattr(n,"name"));
   tbase = Swig_scopename_last(tname);
 
+  /* Look for partial specialization matching */
+  if (Getattr(n,"partialargs")) {
+    Parm *p, *tp;
+    ParmList *ptargs = SwigType_function_parms(Getattr(n,"partialargs"));
+    p = ptargs;
+    tp = tparms;
+    while (p && tp) {
+      SwigType *ptype;
+      SwigType *tptype;
+      SwigType *partial_type;
+      ptype = Getattr(p,"type");
+      tptype = Getattr(tp,"type");
+      if (ptype && tptype) {
+	partial_type = partial_arg(tptype,ptype);
+	/*	Printf(stdout,"partial '%s' '%s'  ---> '%s'\n", tptype, ptype, partial_type); */
+	Setattr(tp,"type",partial_type); 
+      }
+      p = nextSibling(p);
+      tp = nextSibling(tp);
+    }
+    assert(ParmList_len(ptargs) == ParmList_len(tparms));
+  }
+
   if (0) {
     Parm *p = tparms;
     while (p) {
-      Printf(stdout,"tparm: '%s' '%s'\n", Getattr(p,"name"), Getattr(p,"value"));
+      Printf(stdout,"tparm: '%s' '%s' '%s'\n", Getattr(p,"name"), Getattr(p,"type"), Getattr(p,"value"));
       p = nextSibling(p);
     }
   }
 
+  /*  Printf(stdout,"targs = '%s'\n", templateargs);
+  Printf(stdout,"rname = '%s'\n", rname);
+  Printf(stdout,"tname = '%s'\n", tname);  */
   cparse_template_expand(n,tname, rname, templateargs, patchlist, typelist, cpatchlist);
 
   /* Set the name */
@@ -234,6 +279,7 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
   {
     Parm *tp = Getattr(n,"templateparms");
     Parm *p  = tparms;
+    /*    Printf(stdout,"%s\n", ParmList_str(tp)); */
 
     if (tp) {
       while (p && tp) {
@@ -243,6 +289,7 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
 	name = Getattr(tp,"name");
 	value = Getattr(p,"value");
 	tydef = Getattr(p,"typedef");
+
 	if (name) {
 	  if (!value) {
 	    value = Getattr(p,"type");
@@ -250,6 +297,7 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
 	  } else {
 	    valuestr = SwigType_namestr(value);
 	  }
+	  /*	  Printf(stdout,"valuestr = '%s'\n", valuestr); */
 	  assert(value);
 	  /* Need to patch default arguments */
 	  {
@@ -270,8 +318,11 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
 	  sz = Len(typelist);
 	  for (i = 0; i < sz; i++) {
 	    String *s = Getitem(typelist,i);
-	    Replace(s,name,value, DOH_REPLACE_ID);
+	    /*	    Replace(s,name,value, DOH_REPLACE_ID); */
+	    /*	    Printf(stdout,"name = '%s', value = '%s', tbase = '%s', iname='%s' s = '%s' --> ", name, value, tbase, iname, s); */
+	    SwigType_typename_replace(s,name,value);
 	    SwigType_typename_replace(s,tbase,iname);
+	    /*	    Printf(stdout,"'%s'\n", s);*/
 	  }
 	  
 	  if (!tydef) {
@@ -310,11 +361,11 @@ Swig_cparse_template_expand(Node *n, String *rname, ParmList *tparms) {
   {
     List *bases = Getattr(n,"baselist");
     if (bases) {
-      String *b;
-      for (b = Firstitem(bases); b; b = Nextitem(bases)) {
-	String *qn = Swig_symbol_type_qualify(b,0);
-	Clear(b);
-	Append(b,qn);
+      Iterator b;
+      for (b = First(bases); b.item; b = Next(b)) {
+	String *qn = Swig_symbol_type_qualify(b.item,0);
+	Clear(b.item);
+	Append(b.item,qn);
       }
     }
   }
@@ -422,12 +473,13 @@ Swig_cparse_template_locate(String *name, Parm *tparms) {
       char   tmp[32];
       int    i;
       List   *partials;
-      String *s, *ss;
+      String *ss;
+      Iterator pi;
 
       partials = Getattr(templ,"partials");
       if (partials) {
-	for (s = Firstitem(partials); s; s= Nextitem(partials)) {
-	  ss = Copy(s);
+	for (pi = First(partials); pi.item; pi = Next(pi)) {
+	  ss = Copy(pi.item);
 	  p = parms;
 	  i = 1;
 	  while (p) {
@@ -446,10 +498,10 @@ Swig_cparse_template_locate(String *name, Parm *tparms) {
 	    p = nextSibling(p);
 	  }
 	  if (template_debug) {
-	    Printf(stdout,"    searching: '%s' (partial specialization - %s)\n", ss, s);
+	    Printf(stdout,"    searching: '%s' (partial specialization - %s)\n", ss, pi.item);
 	  }
 	  if ((Strcmp(ss,tname) == 0) || (Strcmp(ss,rname) == 0)) {
-	    Append(mpartials,s);
+	    Append(mpartials,pi.item);
 	  }
 	  Delete(ss);
 	}
@@ -465,8 +517,12 @@ Swig_cparse_template_locate(String *name, Parm *tparms) {
     n = Swig_symbol_clookup_local(s,0);
     if (Len(mpartials) > 1) {
       if (n) {
-	Swig_warning(WARN_PARSE_TEMPLATE_AMBIG,cparse_file,cparse_line,"Instantiation of template %s is ambiguous. Using %s at %s:%d\n",
-		     SwigType_namestr(tname), SwigType_namestr(Getattr(n,"name")), Getfile(n),Getline(n));
+	Swig_warning(WARN_PARSE_TEMPLATE_AMBIG,cparse_file,cparse_line,
+		     "Instantiation of template '%s' is ambiguous,\n",
+		     SwigType_namestr(tname));
+	Swig_warning(WARN_PARSE_TEMPLATE_AMBIG,Getfile(n),Getline(n),
+		     "  instantiation '%s' is used.\n",
+		     SwigType_namestr(Getattr(n,"name")));
       }
     }
   }
@@ -491,5 +547,6 @@ Swig_cparse_template_locate(String *name, Parm *tparms) {
   Delete(parms);
   return n;
 }
+
 
 

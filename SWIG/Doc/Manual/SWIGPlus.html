@@ -15,39 +15,46 @@
 <li><a href="#n6">Simple C++ wrapping</a>
 <ul>
 <li><a href="#n7">Constructors and destructors</a>
-<li><a href="#n8">Copy constructors</a>
-<li><a href="#n9">Member functions</a>
-<li><a href="#n10">Static members</a>
-<li><a href="#n11">Member functions and default arguments</a>
-<li><a href="#n12">Member data</a>
+<li><a href="#n8">Default constructors</a>
+<li><a href="#n9">When constructor wrappers aren't created</a>
+<li><a href="#n10">Copy constructors</a>
+<li><a href="#n11">Member functions</a>
+<li><a href="#n12">Static members</a>
+<li><a href="#n13">Member functions and default arguments</a>
+<li><a href="#n14">Member data</a>
 </ul>
-<li><a href="#n13">Protection</a>
-<li><a href="#n14">Enums and constants</a>
-<li><a href="#n15">Friends</a>
-<li><a href="#n16">References and pointers</a>
-<li><a href="#n17">Pass and return by value</a>
-<li><a href="#n18">Inheritance</a>
-<li><a href="#n19">A brief discussion of multiple inheritance, pointers,  and type checking</a>
-<li><a href="#n20">Renaming</a>
-<li><a href="#n21">Wrapping Overloaded Functions and Methods</a>
+<li><a href="#n15">Protection</a>
+<li><a href="#n16">Enums and constants</a>
+<li><a href="#n17">Friends</a>
+<li><a href="#n18">References and pointers</a>
+<li><a href="#n19">Pass and return by value</a>
+<li><a href="#n20">Inheritance</a>
+<li><a href="#n21">A brief discussion of multiple inheritance, pointers,  and type checking</a>
+<li><a href="#n22">Renaming</a>
+<li><a href="#n23">Wrapping Overloaded Functions and Methods</a>
 <ul>
-<li><a href="#n22">Dispatch function generation</a>
-<li><a href="#n23">Ambiguity in Overloading</a>
-<li><a href="#n24">Ambiguity resolution and renaming</a>
-<li><a href="#n25">Comments on overloading</a>
+<li><a href="#n24">Dispatch function generation</a>
+<li><a href="#n25">Ambiguity in Overloading</a>
+<li><a href="#n26">Ambiguity resolution and renaming</a>
+<li><a href="#n27">Comments on overloading</a>
 </ul>
-<li><a href="#n26">Wrapping overloaded operators</a>
-<li><a href="#n27">Class extension</a>
-<li><a href="#n28">Templates</a>
-<li><a href="#n29">Namespaces</a>
-<li><a href="#n30">Exception specifiers</a>
-<li><a href="#n31">Pointers to Members</a>
-<li><a href="#n32">Smart pointers and operator-&gt;()</a>
-<li><a href="#n33">Using declarations and inheritance</a>
-<li><a href="#n34">Partial class definitions</a>
-<li><a href="#n35">A brief rant about const-correctness</a>
-<li><a href="#n36">Proxy classes</a>
-<li><a href="#n37">Where to go for more information</a>
+<li><a href="#n28">Wrapping overloaded operators</a>
+<li><a href="#n29">Class extension</a>
+<li><a href="#n30">Templates</a>
+<li><a href="#n31">Namespaces</a>
+<li><a href="#n32">Exception specifiers</a>
+<li><a href="#n33">Pointers to Members</a>
+<li><a href="#n34">Smart pointers and operator-&gt;()</a>
+<li><a href="#n35">Using declarations and inheritance</a>
+<li><a href="#n36">Partial class definitions</a>
+<li><a href="#n37">A brief rant about const-correctness</a>
+<li><a href="#n38">Proxy classes</a>
+<ul>
+<li><a href="#n39">Construction of proxy classes</a>
+<li><a href="#n40">Resource management in proxies</a>
+<li><a href="#n41">Language specific details</a>
+</ul>
+<li><a href="#n42">Where to go for more information</a>
 </ul>
 <!-- INDEX -->
 
@@ -222,6 +229,10 @@ static void print(List *l);
 };
 </pre></blockquote>
 
+To generate wrappers for this class, SWIG first reduces the class to a collection of low-level C-style
+accessor functions.   The next few sections describe this process.  Later parts of the chapter decribe a higher
+level interface based on proxy classes.
+
 <a name="n7"></a><H3>5.5.1 Constructors and destructors</H3>
 
 
@@ -237,6 +248,10 @@ void delete_List(List *l) {
 }
 
 </pre></blockquote>
+
+<a name="n8"></a><H3>5.5.2 Default constructors</H3>
+
+
 If a C++ class does not define any public constructors or
 destructors, SWIG will automatically create a default constructor or 
 destructor.   However, there are a few rules that define this behavior:
@@ -299,7 +314,73 @@ However, this removal may now cause SWIG to erroneously generate constructors
 for classes that define a constructor in those sections.  Consider restoring
 those sections in the interface or using <tt>%nodefault</tt> to fix the problem.
 
-<a name="n8"></a><H3>5.5.2 Copy constructors</H3>
+<a name="n9"></a><H3>5.5.3 When constructor wrappers aren't created</H3>
+
+
+If a class defines a constructor, SWIG normally tries to generate a wrapper for it.  However, SWIG will 
+not generate a constructor wrapper if it thinks that it will result in illegal wrapper code.  There are really
+two cases where this might show up.
+
+<p>
+First, SWIG won't generate wrappers for protected or private constructors.  For example:
+
+<blockquote>
+<pre>
+class Foo {
+protected:
+     Foo();         // Not wrapped.
+public:
+      ...
+};
+</pre>
+</blockquote>
+
+<p>Next, SWIG won't generate wrappers for a class if it appears to be abstract--that is, it has undefined
+pure virtual methods.  Here are some examples:
+
+<blockquote>
+<pre>
+class Bar {
+public:
+     Bar();               // Not wrappped.  Bar is abstract.
+     virtual void spam(void) = 0; 
+};
+
+class Grok : public Bar {
+public:
+      Grok();            // Not wrapped. No implementation of abstract spam().
+};
+</pre>
+</blockquote>
+
+Some users are surprised (or confused) to find missing constructor wrappers in their interfaces.  In almost 
+all cases, this is caused when classes are determined to be abstract.   To see if this is the case, run SWIG with
+all of its warnings turned on:
+
+<blockquote>
+<pre>
+% swig -Wall -python module.i
+</pre>
+</blockquote>
+
+In this mode, SWIG will issue a warning for all abstract classes.   It is possible to force a class to be
+non-abstract using this:
+
+<blockquote>
+<pre>
+%feature("notabstract") Foo;
+
+class Foo : public Bar {
+public:
+     Foo();    // Generated no matter what---not abstract. 
+     ...
+};
+</pre>
+</blockquote>
+
+More information about <tt>%feature</tt> can be found in the <a href="Customization.html">Customization features</a> chapter.
+
+<a name="n10"></a><H3>5.5.4 Copy constructors</H3>
 
 
 If a class defines more than one constructor, its behavior depends on the capabilities of the
@@ -373,7 +454,7 @@ renamed.  For instance, in the above example, the name of the
 constructor is set to <tt>new_CopyFoo()</tt>.   This is the same as in 
 older versions.
 
-<a name="n9"></a><H3>5.5.3 Member functions</H3>
+<a name="n11"></a><H3>5.5.5 Member functions</H3>
 
 
 All member functions are roughly translated into accessor functions like this :<p>
@@ -394,7 +475,7 @@ function in the code it generates.  Instead, member access such as
 wrapper functions.  However, the name and calling convention of the
 wrappers match the accessor function prototype described above.
 
-<a name="n10"></a><H3>5.5.4 Static members</H3>
+<a name="n12"></a><H3>5.5.6 Static members</H3>
 
 
 Static member functions are called directly without making any special
@@ -406,7 +487,7 @@ in the generated wrapper code.
 Usually, static members are accessed as functions with names in which the class name has been
 prepended with an underscore. For example, <tt>List_print</tt>.
 
-<a name="n11"></a><H3>5.5.5 Member functions and default arguments</H3>
+<a name="n13"></a><H3>5.5.7 Member functions and default arguments</H3>
 
 
 SWIG allows member functions to accept default arguments.  For example:
@@ -458,7 +539,7 @@ There are several somewhat clumsy ways to work around this problem
 reconsider your design--is it really <em>that</em> critical to make
 the default argument private?
 
-<a name="n12"></a><H3>5.5.6 Member data</H3>
+<a name="n14"></a><H3>5.5.8 Member data</H3>
 
 
 Member data is handled in exactly the same manner as for C
@@ -565,7 +646,7 @@ involving <tt>size_t</tt>.  This change is subtle, but it smooths over
 a few problems related to structure wrapping and some of SWIG's
 customization features.
 
-<a name="n13"></a><H2>5.6 Protection</H2>
+<a name="n15"></a><H2>5.6 Protection</H2>
 
 
 SWIG can only wrap class members that are declared public. Anything
@@ -582,7 +663,7 @@ the same convention used by C++).<p>
 A subtle access problem relates to default values of member functions.  Specifically,
 default values must be public.   Please go back to the section on default arguments for further details.
 
-<a name="n14"></a><H2>5.7 Enums and constants</H2>
+<a name="n16"></a><H2>5.7 Enums and constants</H2>
 
 
 Enumerations and constants placed in a class definition are mapped
@@ -605,7 +686,7 @@ Swig_STOUT = Swig::STOUT
 
 Members declared as <tt>const</tt> are wrapped as read-only members and do not create constants.
 
-<a name="n15"></a><H2>5.8 Friends</H2>
+<a name="n17"></a><H2>5.8 Friends</H2>
 
 
 Friend declarations are ignored by SWIG.   For example, if you have this code:
@@ -642,7 +723,7 @@ declaration does not define a method that operates on an instance of
 an object nor does it define a declaration in the scope of the class.  
 Therefore, it would make no sense for SWIG to create wrappers as such.
 
-<a name="n16"></a><H2>5.9 References and pointers</H2>
+<a name="n18"></a><H2>5.9 References and pointers</H2>
 
 
 C++ references are supported, but SWIG transforms them back into pointers. For example,
@@ -721,7 +802,7 @@ cause your program to crash.
 more seamless integration with more advanced C++ wrapping applications---especially related to 
 templates and the STL.  This was first added in SWIG-1.3.12.
 
-<a name="n17"></a><H2>5.10 Pass and return by value</H2>
+<a name="n19"></a><H2>5.10 Pass and return by value</H2>
 
 
 Occasionally, a C++ program will pass and return class objects by value.  For example, a function
@@ -792,7 +873,7 @@ It is not used for C++ pointers or references.
 <b>Note:</b> The performance of pass-by-value is especially bad for large objects and should be avoided
 if possible (consider using references instead).
 
-<a name="n18"></a><H2>5.11 Inheritance</H2>
+<a name="n20"></a><H2>5.11 Inheritance</H2>
 
 
 SWIG supports C++ public inheritance of classes and allows both
@@ -956,7 +1037,7 @@ when advanced features like proxy classes are used.  Future versions
 of SWIG may apply further optimizations such as not regenerating 
 wrapper functions for virtual members that are already defined in a base class.
 
-<a name="n19"></a><H2>5.12 A brief discussion of multiple inheritance, pointers,  and type checking</H2>
+<a name="n21"></a><H2>5.12 A brief discussion of multiple inheritance, pointers,  and type checking</H2>
 
 
 When a target scripting language refers to a C++ object, it normally
@@ -1063,7 +1144,7 @@ more virtual functions).
 <p>
 The bottom line: learn to live with type-tagged pointers.
 
-<a name="n20"></a><H2>5.13 Renaming</H2>
+<a name="n22"></a><H2>5.13 Renaming</H2>
 
 
 C++ member functions and data can be renamed with the <tt>%name</tt>
@@ -1106,7 +1187,7 @@ overloaded methods, it really doesn't work very well because it
 requires a lot of additional markup in your interface.  Keep reading
 for a better solution.
 
-<a name="n21"></a><H2>5.14 Wrapping Overloaded Functions and Methods</H2>
+<a name="n23"></a><H2>5.14 Wrapping Overloaded Functions and Methods</H2>
 
 
 In many language modules, SWIG provides partial support for overloaded functions, methods, and
@@ -1161,13 +1242,13 @@ it might be used like this
 </pre>
 </blockquote>
 
-<a name="n22"></a><H3>5.14.1 Dispatch function generation</H3>
+<a name="n24"></a><H3>5.14.1 Dispatch function generation</H3>
 
 
 The implementation of overloaded functions and methods is somewhat
 complicated due to the dynamic nature of scripting languages.  Unlike
 C++, which binds overloaded methods at compile time, SWIG must
-determine the proper function as a runtime check.    This check is
+determine the proper function as a runtime check for scripting language targets. This check is
 further complicated by the typeless nature of certain scripting languages. For instance,
 in Tcl, all types are simply strings.  Therefore, if you have two overloaded functions
 like this,
@@ -1182,7 +1263,8 @@ void foo(int x);
 the order in which the arguments are checked plays a rather critical role.
 
 <p>
-To implement overloading, SWIG generates a dispatch function that checks the
+For statically typed languages, SWIG uses the language's method overloading mechanism.
+To implement overloading for the scripting languages, SWIG generates a dispatch function that checks the
 number of passed arguments and their types.  To create this function, SWIG
 first examines all of the overloaded methods and ranks them according
 to the following rules:
@@ -1268,7 +1350,7 @@ checked in the same order as they appear in this ranking.
 <p>
 If you're still confused, don't worry about it---SWIG is probably doing the right thing.
 
-<a name="n23"></a><H3>5.14.2 Ambiguity in Overloading</H3>
+<a name="n25"></a><H3>5.14.2 Ambiguity in Overloading</H3>
 
 
 Regrettably, SWIG is not able to support every possible use of valid C++ overloading.  Consider
@@ -1284,7 +1366,7 @@ void foo(long x);
 In C++, this is perfectly legal.  However, in a scripting language, there is generally only one kind of integer
 object.  Therefore, which one of these functions do you pick?   Clearly, there is no way to truly make a distinction 
 just by looking at the value of the integer itself (<tt>int</tt> and <tt>long</tt> may even be the same precision).   
-Therefore, when SWIG encounters this situation, it may generate a warning message like this:
+Therefore, when SWIG encounters this situation, it may generate a warning message like this for scripting languages:
 
 <blockquote>
 <pre>
@@ -1292,18 +1374,26 @@ example.i:4: Warning(509): Overloaded foo(long) is shadowed by foo(int) at examp
 </pre>
 </blockquote>
 
+or for statically typed languages like Java:
+
+<blockquote>
+<pre>
+example.i:4: Warning(516): Overloaded method foo(long) ignored. Method foo(int) at example.i:3 used.
+</pre>
+</blockquote>
+
 This means that the second overloaded function will be inaccessible
-from the scripting interface---SWIG does not know how to disambiguate
-it from an earlier method.
+from a scripting interface or the method won't be wrapped at all. 
+This is done as SWIG does not know how to disambiguate it from an earlier method.
 
 <p>
 Ambiguity problems are known to arise in the following situations:
 
 <ul>
-<li>Integer conversions.   Datatypes such as <tt>int</tt>, <tt>long</tt>, and <tt>short</tt>. Shown above.
+<li>Integer conversions.   Datatypes such as <tt>int</tt>, <tt>long</tt>, and <tt>short</tt> cannot be disambiguated in some languages. Shown above.
 
 <p>
-<li>Floating point conversion.  <tt>float</tt> and <tt>double</tt> can not be disambiguated.
+<li>Floating point conversion.  <tt>float</tt> and <tt>double</tt> can not be disambiguated in some languages.
 
 <p>
 <li>Pointers and references. For example, <tt>Foo *</tt> and <tt>Foo &</tt>.
@@ -1355,7 +1445,7 @@ foo.i:5. Previous declaration is Spam::foo(int )
 it means that the target language module has not yet implemented support for overloaded
 functions and methods.  The only way to fix the problem is to read the next section.
 
-<a name="n24"></a><H3>5.14.3 Ambiguity resolution and renaming</H3>
+<a name="n26"></a><H3>5.14.3 Ambiguity resolution and renaming</H3>
 
 
 If an ambiguity in overload resolution occurs or if a module doesn't
@@ -1631,7 +1721,7 @@ above:
 </blockquote>
 </ul>
 
-<a name="n25"></a><H3>5.14.4 Comments on overloading</H3>
+<a name="n27"></a><H3>5.14.4 Comments on overloading</H3>
 
 
 Support for overloaded methods was first added in SWIG-1.3.14.   The implementation
@@ -1645,7 +1735,7 @@ module.  Therefore, the degree of overloading support may vary from language to 
 As a general rule, statically typed languages like Java are able to provide more support
 than dynamically typed languages like Perl, Python, Ruby, and Tcl.
 
-<a name="n26"></a><H2>5.15 Wrapping overloaded operators</H2>
+<a name="n28"></a><H2>5.15 Wrapping overloaded operators</H2>
 
 
 Starting in SWIG-1.3.10, C++ overloaded operator declarations can be wrapped. 
@@ -1807,7 +1897,7 @@ are ignored as well as conversion operators.
 <li>The semantics of certain C++ operators may not match those in the target language.
 </ul>
 
-<a name="n27"></a><H2>5.16 Class extension</H2>
+<a name="n29"></a><H2>5.16 Class extension</H2>
 
 
 New methods can be added to a class using the <tt>%extend</tt>
@@ -1864,7 +1954,7 @@ name for the <tt>%addmethods</tt> directive.  Since <tt>%addmethods</tt> could
 be used to extend a structure with more than just methods, a more suitable
 directive name has been chosen.
 
-<a name="n28"></a><H2>5.17 Templates</H2>
+<a name="n30"></a><H2>5.17 Templates</H2>
 
 
 In all versions of SWIG, template type names may appear anywhere a type
@@ -2511,7 +2601,7 @@ as the class name.  For example:
 
 Similar changes apply to typemaps and other customization features.
 
-<a name="n29"></a><H2>5.18 Namespaces</H2>
+<a name="n31"></a><H2>5.18 Namespaces</H2>
 
 
 Support for C++ namespaces is a relatively late addition to SWIG,
@@ -2890,7 +2980,7 @@ with any namespace awareness.   In the future, language modules may or may not p
 more advanced namespace support.
 
 
-<a name="n30"></a><H2>5.19 Exception specifiers</H2>
+<a name="n32"></a><H2>5.19 Exception specifiers</H2>
 
 
 When C++ programs utilize exceptions, exceptional behavior is sometimes specified as
@@ -2931,7 +3021,7 @@ Since exception specifiers are sometimes only used sparingly, this alone may not
 properly handle C++ exceptions. To do that, a different set of special SWIG directives are used.
 Consult the "<a href="Customization.html">Customization features</a>" chapter for details.
 
-<a name="n31"></a><H2>5.20 Pointers to Members</H2>
+<a name="n33"></a><H2>5.20 Pointers to Members</H2>
 
 
 Starting with SWIG1.3.7, there is limited parsing support for pointers to C++ class members.
@@ -2973,7 +3063,7 @@ member pointers.  Normally SWIG tries to keep track of inheritance
 when checking types.  However, no such support is currently provided
 for member pointers.
 
-<a name="n32"></a><H2>5.21 Smart pointers and operator-&gt;()</H2>
+<a name="n34"></a><H2>5.21 Smart pointers and operator-&gt;()</H2>
 
 
 In some C++ programs, objects are often encapsulated by smart-pointers
@@ -3161,7 +3251,7 @@ p = f.__deref__()       # Raw pointer from operator->
 <b>Note:</b> Smart pointer support was first added in SWIG-1.3.14.
 
 
-<a name="n33"></a><H2>5.22 Using declarations and inheritance</H2>
+<a name="n35"></a><H2>5.22 Using declarations and inheritance</H2>
 
 
 <tt>using</tt> declarations are sometimes used to adjust access to members of
@@ -3309,7 +3399,7 @@ public:
 </blockquote>
 </ul>
 
-<a name="n34"></a><H2>5.23 Partial class definitions</H2>
+<a name="n36"></a><H2>5.23 Partial class definitions</H2>
 
 
 Since SWIG is still limited in its support of C++, it may be necessary
@@ -3339,7 +3429,7 @@ public:
 Also, as a rule of thumb, SWIG should not be used on raw C++ source
 files. 
 
-<a name="n35"></a><H2>5.24 A brief rant about const-correctness</H2>
+<a name="n37"></a><H2>5.24 A brief rant about const-correctness</H2>
 
 
 A common issue when working with C++ programs is dealing with all
@@ -3389,12 +3479,240 @@ for most SWIG projects.    Of course, you might want to consider
 using another tool if maintaining constness is the most important part
 of your project.
 
-<a name="n36"></a><H2>5.25 Proxy classes</H2>
+<a name="n38"></a><H2>5.25 Proxy classes</H2>
 
 
-Write me.
+In order to provide a more natural API, many of SWIG's target
+languages also wrap C++ classes with special proxy classes.  These
+proxy classes are typically implemented in the target language itself.
+For example, if you're building a Python module, each C++ class is
+wrapped with Python class.  Or if you're building a Java module, each
+C++ class is wrapped by a Java class.  
 
-<a name="n37"></a><H2>5.26 Where to go for more information</H2>
+<a name="n39"></a><H3>5.25.1 Construction of proxy classes</H3>
+
+
+Proxy classes are always constructed as an extra layer of wrapping that uses the low-level
+accessor functions described in the previous section.  To illustrate, suppose you had a
+C++ class like this:
+
+<blockquote>
+<pre>
+class Foo {
+public:
+      Foo();
+     ~Foo();
+      int  bar(int x);
+      int  x;
+};
+</pre>
+</blockquote>
+
+Using C++ as pseudocode, a proxy class looks something like this:
+
+<blockquote>
+<pre>
+class FooProxy {
+private:
+      Foo    *self;
+public:
+      FooProxy() {
+            self = new_Foo();
+      }
+     ~FooProxy() {
+            delete_Foo(self);
+      }
+      int bar(int x) {
+            return Foo_bar(self,x);
+      }
+      int x_get() {
+            return Foo_x_get(self);
+      }
+      void x_set(int x) {
+            Foo_x_set(self,x);
+      }
+};
+</pre>
+</blockquote>
+
+Of course, always keep in mind that the real proxy class is written in the target language.
+For example, in Python, the proxy might look roughly like this:
+
+<blockquote>
+<pre>
+class Foo:
+    def __init__(self):
+         self.this = new_Foo()
+    def __del__(self):
+         delete_Foo(self.this)
+    def bar(self,x):
+         return Foo_bar(self.this,x)
+    def __getattr__(self,name):
+         if name == 'x':
+              return Foo_x_get(self.this)
+         ...
+    def __setattr__(self,name,value):
+         if name == 'x':
+              Foo_x_set(self.this,value)
+         ...
+</pre>
+</blockquote>
+
+Again, it's important to emphasize that the low-level accessor functions are always used to construct the
+proxy classes.
+
+<p>
+Whenever possible, proxies try to take advantage of language features that are similar to C++.  This
+might include operator overloading,  exception handling, and other features.
+
+<a name="n40"></a><H3>5.25.2 Resource management in proxies</H3>
+
+
+A major issue with proxies concerns the memory management of wrapped objects.   Consider the following
+C++ code:
+
+<blockquote>
+<pre>
+class Foo {
+public:
+      Foo();
+     ~Foo();
+      int bar(int x);
+      int x;
+};
+
+class Spam {
+public:
+      Foo *value;
+      ...
+};
+</pre>
+</blockquote>
+
+Now, consider some script code that uses these classes:
+
+<blockquote>
+<pre>
+f = Foo()               # Creates a new Foo
+s = Spam()              # Creates a new Spam
+s.value = f             # Stores a reference to f inside s
+g = s.value             # Returns stored reference
+g = 4                   # Reassign g to some other value
+del f                   # Destroy f 
+</pre>
+</blockquote>
+
+Now, ponder the resulting memory management issues.  When objects are
+created in the script, the objects are wrapped by newly created proxy
+classes.  That is, there is both a new proxy class instance and a new
+instance of the underlying C++ class.  In this example, both
+<tt>f</tt> and <tt>s</tt> are created in this way.  However, the
+statement <tt>s.value</tt> is rather curious---when executed, a
+pointer to <tt>f</tt> is stored inside another object.  This means
+that the scripting proxy class <em>AND</em> another C++ class share a
+reference to the same object.  To make matters even more interesting,
+consider the statement <tt>g = s.value</tt>.  When executed, this
+creates a new proxy class <tt>g</tt> that provides a wrapper around the
+C++ object stored in <tt>s.value</tt>.  In general, there is no way to
+know where this object came from---it could have been created by the
+script, but it could also have been generated internally.  In this
+particular example, the assignment of <tt>g</tt> results in a second
+proxy class for <tt>f</tt>.  In other words, a reference to <tt>f</tt>
+is now shared by two proxy classes <em>and</em> a C++ class.   
+
+<p>
+Finally, consider what happens when objects are destroyed.  In the
+statement, <tt>g=4</tt>, the variable <tt>g</tt> is reassigned.  In
+many languages, this makes the old value of <tt>g</tt> available for
+garbage collection.  Therefore, this causes one of the proxy classes
+to be destroyed.  Later on, the statement <tt>del f</tt> destroys the
+other proxy class.  Of course, there is still a reference to the
+original object stored inside another C++ object.  What happens to it?
+Is it the object still valid?
+
+<P>
+To deal with memory management problems, proxy classes always provide an API
+for controlling ownership.  In C++ pseudocode, ownership control might look
+roughly like this:
+
+<blockquote>
+<pre>
+class FooProxy {
+public:
+      Foo    *self;
+      int     thisown;
+
+      FooProxy() {
+            self = new_Foo();
+            thisown = 1;       // Newly created object
+      }
+     ~FooProxy() {
+            if (thisown) delete_Foo(self);
+      }
+      ...
+      // Ownership control API
+      void disown() {
+           thisown = 0;
+      }
+      void acquire() {
+           thisown = 1;
+      }
+};
+
+class FooPtrProxy: public FooProxy {
+public:
+      FooPtrProxy(Foo *s) {
+          self = s;
+          thisown = 0;
+      }
+};
+
+class SpamProxy {
+     ...
+     FooProxy *value_get() {
+          return FooPtrProxy(Spam_value_get(self));
+     }
+     void value_set(FooProxy *v) {
+          Spam_value_set(self,v->self);
+          v->disown();
+     }
+     ...
+};
+</pre>
+</blockquote>
+
+Looking at this code, there are a few central features:
+
+<ul>
+<li>Each proxy class keeps an extra flag to indicate ownership.  C++ objects are only destroyed
+if the ownership flag is set.
+
+<P>
+<li>When new objects are created in the target language, the ownership flag is set.
+
+<p>
+<li>When a reference to an internal C++ object is returned, it is wrapped by a proxy
+class, but the proxy class does not have ownership.  
+
+<p>
+<li>In certain cases, ownership is adjusted.  For instance, when a value is assigned to the member of
+a class, ownership is lost.
+
+<p>
+<li>Manual ownership control is provided by special <tt>disown()</tt> and <tt>acquire()</tt> methods.
+</ul>
+
+Given the tricky nature of C++ memory management, it is impossible for proxy classes to automatically handle
+every possible memory management problem.  However, proxies do provide a mechanism for manual control that
+can be used (if necessary) to address some of the more tricky memory management problems.
+
+<a name="n41"></a><H3>5.25.3 Language specific details</H3>
+
+
+Language specific details on proxy classes are contained the chapters describing each target language.  This
+chapter has merely introduced the topic in a very general way.
+
+<a name="n42"></a><H2>5.26 Where to go for more information</H2>
 
 
 If you're wrapping serious C++ code, you might want to pick up a copy
@@ -3403,6 +3721,6 @@ is the reference document we use to guide a lot of SWIG's C++ support.
 
 <p><hr>
 
-<address>SWIG 1.3 - Last Modified : May 12, 2002</address>
+<address>SWIG 1.3 - Last Modified : April 3, 2003</address>
 </body>
 </html>

@@ -5,6 +5,7 @@
  * ---------------------------------------------------------------------- */
 
 %runtime "rubyhead.swg"
+%runtime "precommon.swg"
 %runtime "common.swg"
 
 #ifdef SWIG_NOINCLUDE
@@ -36,8 +37,8 @@
 %typemap(in) char            "$1 = NUM2CHR($input);";
 %typemap(in) float, double   "$1 = ($1_ltype) NUM2DBL($input);";
 %typemap(in) bool            "$1 = RTEST($input);";
-%typemap(in) char *          "$1 = STR2CSTR($input);";
-%typemap(in) char [ANY]      "$1 = STR2CSTR($input);";
+%typemap(in) char *          "$1 = StringValuePtr($input);";
+%typemap(in) char [ANY]      "$1 = StringValuePtr($input);";
 %typemap(in) enum SWIGTYPE   "$1 = ($1_ltype) NUM2INT($input);";
 
 /* Long long */
@@ -50,11 +51,11 @@
 
 %typemap(in) SWIGTYPE *,
              SWIGTYPE []
-	"SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1);"
+        "SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1);"
 
 /* Additional check for null references */
 %typemap(in) SWIGTYPE &
-	"SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1); if ($1 == NULL) rb_raise(rb_eTypeError, \"null reference\");"
+        "SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1); if ($1 == NULL) rb_raise(rb_eTypeError, \"null reference\");"
 
 /* Void pointer.  Accepts any kind of pointer */
 %typemap(in) void *
@@ -75,48 +76,48 @@
 %typemap(in) const int & (int temp),
              const signed char & (signed char temp),
              const unsigned char & (unsigned char temp)
-	"temp = ($*1_ltype) NUM2INT($input);
+        "temp = ($*1_ltype) NUM2INT($input);
          $1 = &temp;";
 
 %typemap(in) const short & (short temp)
-	"temp = ($*1_ltype) NUM2SHRT($input);
+        "temp = ($*1_ltype) NUM2SHRT($input);
          $1 = &temp;";
 
 %typemap(in) const long & (long temp)
-	"temp = ($*1_ltype) NUM2LONG($input);
+        "temp = ($*1_ltype) NUM2LONG($input);
          $1 = &temp;";
 
 %typemap(in) const unsigned int & (unsigned int temp)
-	"temp = ($*1_ltype) NUM2UINT($input);
+        "temp = ($*1_ltype) NUM2UINT($input);
          $1 = &temp;";
 
 %typemap(in) const unsigned short & (unsigned short temp)
-	"temp = ($*1_ltype) NUM2USHRT($input);
+        "temp = ($*1_ltype) NUM2USHRT($input);
          $1 = &temp;";
 
 %typemap(in) const unsigned long & (unsigned long temp)
-	"temp = ($*1_ltype) NUM2ULONG($input);
+        "temp = ($*1_ltype) NUM2ULONG($input);
          $1 = &temp;";
 
 %typemap(in) const bool & (bool temp)
-	"temp = ($*1_ltype) RTEST($input);
+        "temp = ($*1_ltype) RTEST($input);
          $1 = &temp;";
 
 %typemap(in) const float & (float temp),
-	     const double & (double temp)
-	"temp = ($*1_ltype) NUM2DBL($input);
+             const double & (double temp)
+        "temp = ($*1_ltype) NUM2DBL($input);
          $1 = &temp;";
 
-%typemap(in) const long long & (long long temp) 
+%typemap(in) const long long & ($*1_ltype temp) 
         "temp = ($*1_ltype) NUM2LL($input);
          $1 = &temp;";
 
-%typemap(in) const unsigned long long & (unsigned long long temp) 
+%typemap(in) const unsigned long long & ($*1_ltype temp) 
         "temp = ($*1_ltype) NUM2ULL($input);
          $1 = &temp;";
 
 %typemap(in) const char &(char temp) {
-        char *stemp = STR2CSTR($input);
+        char *stemp = StringValuePtr($input);
         temp = *stemp;
         $1 = &temp;
 }
@@ -124,10 +125,10 @@
 /* --- Output typemaps --- */
 
 %typemap(out) int, short, long, signed char, enum SWIGTYPE 
-	"$result = INT2NUM($1);";
+        "$result = INT2NUM($1);";
 
 %typemap(out) unsigned int, unsigned short, unsigned long, unsigned char
-	"$result = UINT2NUM($1);";
+        "$result = UINT2NUM($1);";
 
 
 /* Long long */
@@ -137,26 +138,27 @@
 
 /* Floating point output values */
 %typemap(out) double, float
-	"$result = rb_float_new($1);";
+        "$result = rb_float_new($1);";
 
 /* Character */
 %typemap(out) char
-	"$result = rb_str_new(&$1,1);";
+        "$result = rb_str_new(&$1,1);";
 
 /* Boolean */
 %typemap(out) bool
-	"$result = $1 ? Qtrue : Qfalse;";
+        "$result = $1 ? Qtrue : Qfalse;";
 
 /* C string */
 %typemap(out) char *
-	"$result = rb_str_new2($1);";
+        "$result = rb_str_new2($1);";
 
 /* Pointers, references, and arrays */
 %typemap(out) SWIGTYPE*, SWIGTYPE &, SWIGTYPE []
         "$result = SWIG_NewPointerObj((void *) $1, $1_descriptor,$owner);";
 
 /* Dynamic casts */
-%typemap(out) SWIGTYPE*DYNAMIC, SWIGTYPE &DYNAMIC {
+
+%typemap(out) SWIGTYPE *DYNAMIC, SWIGTYPE &DYNAMIC {
         swig_type_info *ty = SWIG_TypeDynamicCast($1_descriptor, (void **) &$1);
         $result = SWIG_NewPointerObj((void *) $1, ty,$owner);
 }
@@ -166,6 +168,9 @@
 
 /* Void */
 %typemap(out) void "$result = Qnil;";
+
+/* Special typemap for character array return values */
+%typemap(out) char [ANY], const char [ANY] "$result = rb_str_new2($1);";
 
 /* Primitive types--return by value */
 %typemap(out) SWIGTYPE 
@@ -183,8 +188,6 @@
   $result = SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1);
 }
 #endif
-
-%typemap(out) char [ANY] "$result = rb_str_new2($1);";
 
 /* References to primitive types.  Return by value */
 
@@ -232,46 +235,61 @@
 %typemap(varin) long long       "$1 = NUM2LL($input);";
 %typemap(varin) unsigned long long "$1 = NUM2ULL($input);";
 
+%typemap(varin) enum SWIGTYPE   "$1 = ($1_type) NUM2INT($input);";
+
 /* A string */
 #ifdef __cplusplus
 %typemap(varin) char * {
-  char *temp = (char *) STR2CSTR($input);
+  char *temp = (char *) StringValuePtr($input);
   if ($1) delete [] $1;
   $1 = ($type) new char[strlen(temp)+1];
   strcpy((char*)$1,temp);
 }
 %typemap(varin,warning="451:Setting const char * variable may leak memory") const char * {
-  char *temp = (char *) STR2CSTR($input);
+  char *temp = (char *) StringValuePtr($input);
   $1 = ($type) new char[strlen(temp)+1];
   strcpy((char*)$1,temp);
 }
 #else
 %typemap(varin) char * {
-  char *temp = (char *) STR2CSTR($input);
+  char *temp = (char *) StringValuePtr($input);
   if ($1) free((char*) $1);
   $1 = ($type) malloc(strlen(temp)+1);
   strcpy((char*)$1,temp);
 }
 %typemap(varin,warning="451:Setting const char * variable may leak memory") const char * {
-  char *temp = (char *) STR2CSTR($input);
+  char *temp = (char *) StringValuePtr($input);
   $1 = ($type) malloc(strlen(temp)+1);
   strcpy((char*)$1,temp);
 }
 
 #endif
 
-%typemap(varin) char [ANY]      "strncpy($1,STR2CSTR($input),$1_dim0);";
-%typemap(varin) enum SWIGTYPE   "$1 = ($1_type) NUM2INT($input);";
+%typemap(varin) SWIGTYPE [ANY] {
+  void *temp;
+  int ii;
+  $1_basetype *b = 0;
+  if ((SWIG_ConvertPtr($input,(void **) &temp, $1_descriptor, 0)) == -1) {
+    rb_raise(rb_eTypeError, "C variable '$name ($1_ltype)'");
+  }
+  b = ($1_basetype *) $1;
+  for (ii = 0; ii < $1_size; ii++) b[ii] = *(($1_basetype *) temp + ii);
+}
+
+/* Special case for string array variables */
+%typemap(varin) char [ANY]      "strncpy($1,StringValuePtr($input),$1_dim0);";
+
 
 /* Typemaps for pointers.  Note: the SWIG run-time type checker works
    even if a pointer happens to be mapped to a Ruby class */
 
-%typemap(varin) SWIGTYPE *,
-                SWIGTYPE &
-	"SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1);"
+%typemap(varin) SWIGTYPE *
+        "SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor, 1);"
 
-%typemap(varin) SWIGTYPE [] {
-	rb_raise(rb_eRuntimeError, "Array $name is readonly");
+%typemap(varin) SWIGTYPE & {
+        void *temp;
+        SWIG_ConvertPtr($input, (void **) &temp, $1_descriptor, 1);
+        $1 = *($1_ltype) temp;
 }
 
 %typemap(varin) void *
@@ -292,29 +310,29 @@
 /* --- Output typemaps --- */
 
 %typemap(varout) int, short, long, signed char, enum SWIGTYPE 
-	"$result = INT2NUM($1);";
+        "$result = INT2NUM($1);";
 
 %typemap(varout) unsigned int, unsigned short, unsigned long, unsigned char
-	"$result = UINT2NUM($1);";
+        "$result = UINT2NUM($1);";
 
 %typemap(varout) long long "$result = LL2NUM($1);";
 %typemap(varout) unsigned long long "$result = ULL2NUM($1);";
 
 /* Floats and doubles */
 %typemap(varout) double, float
-	"$result = rb_float_new($1);";
+        "$result = rb_float_new($1);";
 
 /* Character */
 %typemap(varout) char
-	"$result = rb_str_new(&$1,1);";
+        "$result = rb_str_new(&$1,1);";
 
 /* Boolean */
 %typemap(varout) bool
-	"$result = $1 ? Qtrue : Qfalse;";
+        "$result = $1 ? Qtrue : Qfalse;";
 
 /* C string */
 %typemap(varout) char *
-	"$result = rb_str_new2($1);";
+        "$result = rb_str_new2($1);";
 
 /* Pointers, references, and arrays */
 %typemap(varout) SWIGTYPE*, SWIGTYPE []
@@ -329,7 +347,8 @@
 /* Copy by value */
 %typemap(varout) SWIGTYPE "$result = SWIG_NewPointerObj((void *) &$1, $&1_descriptor, 1);";
 
-%typemap(varout) char [ANY] "$result = rb_str_new2($1);";
+/* Special typemap for character array return values */
+%typemap(varout) char [ANY], const char [ANY] "$result = rb_str_new2($1);";
 
 /* Member pointer */
 %typemap(varout) SWIGTYPE (CLASS::*) "$result = SWIG_NewPackedObj((void *) &$1, sizeof($1_type), $1_descriptor);";
@@ -337,28 +356,28 @@
 /* --- Constants --- */
 
 %typemap(constant) int, short, long, signed char, enum SWIGTYPE 
-	"rb_define_const($module,\"$symname\", INT2NUM($1));";
+        "rb_define_const($module,\"$symname\", INT2NUM($1));";
 
 %typemap(constant) unsigned int, unsigned short, unsigned long, unsigned char
-	"rb_define_const($module,\"$symname\", UINT2NUM($1));";
+        "rb_define_const($module,\"$symname\", UINT2NUM($1));";
 
 %typemap(constant) long long
-	"rb_define_const($module,\"$symname\", LL2NUM($1));";        
+        "rb_define_const($module,\"$symname\", LL2NUM($1));";        
 
 %typemap(constant) unsigned long long
-	"rb_define_const($module,\"$symname\", ULL2NUM($1));";        
+        "rb_define_const($module,\"$symname\", ULL2NUM($1));";        
 
 %typemap(constant) double, float
-	"rb_define_const($module,\"$symname\", rb_float_new($1));";
+        "rb_define_const($module,\"$symname\", rb_float_new($1));";
 
 %typemap(constant) char
-	"rb_define_const($module,\"$symname\", rb_str_new(\"$1\",1));";
+        "rb_define_const($module,\"$symname\", rb_str_new(\"$1\",1));";
 
 %typemap(constant) bool
-	"rb_define_const($module,\"$symname\", ($1 ? Qtrue : Qfalse));";
+        "rb_define_const($module,\"$symname\", ($1 ? Qtrue : Qfalse));";
 
 %typemap(constant) char *
-	"rb_define_const($module,\"$symname\", rb_str_new2(\"$1\"));";
+        "rb_define_const($module,\"$symname\", rb_str_new2(\"$1\"));";
 
 %typemap(constant) SWIGTYPE*, SWIGTYPE &, SWIGTYPE []
         "rb_define_const($module,\"$symname\", SWIG_NewPointerObj((void *) $1, $1_descriptor,0));";
@@ -367,22 +386,116 @@
 
 %typemap(constant) SWIGTYPE (CLASS::*) "rb_define_const($module, \"$symname\", SWIG_NewPackedObj((void *) &$1, sizeof($type), $1_descriptor));";
 
-/* ------------------------------------------------------------
- * typedef & typemaps for VALUE (passed through unmodified)
- * ------------------------------------------------------------ */
+/*****************************************************************************
+ *
+ * Inverse argument typemaps are for marshaling C/C++ parameters to call Python
+ * methods from C++ proxy wrapper classes.
+ *
+ *****************************************************************************/
+
+/* directorin typemaps */
+
+/* Primitive datatypes */
+
+%typemap(directorin) int            "$input = INT2NUM($1);";
+%typemap(directorin) short          "$input = INT2NUM($1);";
+%typemap(directorin) long           "$input = LONG2NUM($1);";
+%typemap(directorin) signed char    "$input = INT2NUM($1);";
+%typemap(directorin) float          "$input = rb_float_new($1);";
+%typemap(directorin) double         "$input = rb_float_new($1);";
+%typemap(directorin) char*          "$input = rb_str_new2($1);";
+%typemap(directorin) bool           "$input = $1 ? Qtrue : Qfalse;";
+
+%typemap(directorin) unsigned int   "$input = UINT2NUM($1);";
+%typemap(directorin) unsigned short "$input = UINT2NUM($1);";
+%typemap(directorin) unsigned long  "$input = ULONG2NUM($1);";
+%typemap(directorin) unsigned char  "$input = UINT2NUM($1);";
+        
+%typemap(directorin) VALUE          "$input = $1;";
+
+/*
+%typemap(directorin, parse="s") SWIGTYPE  {
+{
+  $&1_ltype resultptr;
+  resultptr = new $1_ltype(($1_ltype &) $1);
+  $result = SWIG_NewPointerObj((void *) resultptr, $&1_descriptor, 1);
+}
+}
+*/
+
+/* no can do... see python.cxx
+%typemap(directorin) DIRECTORTYPE * {
+        {
+                SwigDirector::$1_ltype proxy = dynamic_cast<SwigDirector::$1_ltype>($1_name);
+                if (!proxy) {
+                        $input = SWIG_NewPointerObj((void *) $1_name, $1_descriptor, 0);
+                } else {
+                        $input = proxy->swig_get_self();
+                }
+        }
+}
+%typemap(directorin) SWIGTYPE * {
+                $input = SWIG_NewPointerObj((void *) $1_name, $1_descriptor, 0);
+}
+*/
+
+/*
+%typemap(directorin, parse="s") void "0";
+*/
+/*
+%typemap(directorin) SWIGTYPE *, SWIGTYPE &, SWIGTYPE [] {
+        $input = SWIG_NewPointerObj((void *) $1_name, $1_descriptor, $owner);
+}
+*/
+
+
+/* --- directorout typemaps --- */
+
+%define DIRECTOROUT_TYPEMAP(type, converter)
+%typemap(directorargout) type *DIRECTOROUT "*$result = (type) converter($input);";
+%typemap(directorout) type "$result = (type) converter($input);";
+%typemap(directorout) type &DIRECTOROUT = type
+%enddef
+
+DIRECTOROUT_TYPEMAP(char, NUM2INT);
+DIRECTOROUT_TYPEMAP(unsigned char, NUM2UINT);
+DIRECTOROUT_TYPEMAP(short, NUM2INT);
+DIRECTOROUT_TYPEMAP(unsigned short, NUM2INT);
+DIRECTOROUT_TYPEMAP(int, NUM2INT);
+DIRECTOROUT_TYPEMAP(unsigned int, NUM2INT);
+DIRECTOROUT_TYPEMAP(long, NUM2INT);
+DIRECTOROUT_TYPEMAP(unsigned long, NUM2INT);
+DIRECTOROUT_TYPEMAP(long long, NUM2INT);
+DIRECTOROUT_TYPEMAP(unsigned long long, NUM2INT);
+DIRECTOROUT_TYPEMAP(float, NUM2DBL);
+DIRECTOROUT_TYPEMAP(double, NUM2DBL);
+DIRECTOROUT_TYPEMAP(bool, RTEST);
+
+
+%typemap(directorout) SWIGTYPE *, 
+                      SWIGTYPE &, 
+                      SWIGTYPE [] 
+       "if ((SWIG_ConvertPtr($input,(void **) &$result, $descriptor,SWIG_POINTER_EXCEPTION | $disown )) == -1) throw Swig::DirectorTypeMismatchException(\"Pointer conversion failed.\");";
+
+%typemap(directorout) void * "if ((SWIG_ConvertPtr($input,(void **) &$result, 0, SWIG_POINTER_EXCEPTION | $disown )) == -1) throw Swig::DirectorTypeMismatchException(\"Pointer conversion failed.\");";
+
+/* ---------------------------------------------------------------------
+ * typedef & typemaps for VALUE (passed through unmodified and unchecked)
+ * --------------------------------------------------------------------- */
 
 typedef unsigned long VALUE;
 
 %typemap(ruby,in)  VALUE  "$1 = $input;";
 %typemap(ruby,out) VALUE  "$result = $1;";
+%typecheck(SWIG_TYPECHECK_POINTER) VALUE "$1 = 1;";
 
 /* ------------------------------------------------------------
  * String & length
  * ------------------------------------------------------------ */
 
 %typemap(in) (char *STRING, int LENGTH) {
-    $1 = ($1_ltype) STR2CSTR($input);
-    $2 = ($2_ltype) RSTRING($input)->len;
+    $1 = ($1_ltype) StringValuePtr($input);
+    $2 = ($2_ltype) StringValueLen($input);
 }
 
 /* Some ANSI C typemaps */
@@ -413,21 +526,21 @@ typedef unsigned long VALUE;
 }
 
 %typecheck(SWIG_TYPECHECK_INTEGER)
-	 int, short, long,
- 	 unsigned int, unsigned short, unsigned long,
-	 signed char, unsigned char,
-	 long long, unsigned long long,
-	 const int &, const short &, const long &,
-	const unsigned int &, const unsigned short &, const unsigned long &,
-	const long long &, const unsigned long long &,
-	enum SWIGTYPE 
+         int, short, long,
+         unsigned int, unsigned short, unsigned long,
+         signed char, unsigned char,
+         long long, unsigned long long,
+         const int &, const short &, const long &,
+        const unsigned int &, const unsigned short &, const unsigned long &,
+        const long long &, const unsigned long long &,
+        enum SWIGTYPE 
 {
   $1 = ((TYPE($input) == T_FIXNUM) || (TYPE($input) == T_BIGNUM)) ? 1 : 0;
 }
 
 %typecheck(SWIG_TYPECHECK_DOUBLE)
-	float, double,
-	const float &, const double &
+        float, double,
+        const float &, const double &
 {
   $1 = ((TYPE($input) == T_FLOAT) || (TYPE($input) == T_FIXNUM) || (TYPE($input) == T_BIGNUM)) ? 1 : 0;
 }
@@ -516,5 +629,9 @@ typedef unsigned long VALUE;
 // %ignorewarn("387:operator-> ignored")  operator->;
 %ignorewarn("386:operator->* ignored") operator->*;
 %ignorewarn("389:operator[] ignored (consider using %extend)") operator[];
+
+/* ruby keywords */
+/* please test and activate */
+// %include "rubykw.swg"
 
 #endif /* __cplusplus */

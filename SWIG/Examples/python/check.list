@@ -1,15 +1,19 @@
 # see top-level Makefile.in
+callback
 class
 constants
+contract
 enum
+exception
 exceptshadow
+extend
 funcattr
 funcptr
 funcptr2
 functor
 import
-import
-template
+import_template
+#libffi
 mpointer
 multimap
 operator
@@ -17,6 +21,9 @@ pointer
 reference
 shadow
 simple
+smartptr
+std_vector
 template
 value
+varargs
 variables

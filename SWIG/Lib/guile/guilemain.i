@@ -7,8 +7,8 @@
 *   Wrapper and Interface Generator (SWIG 1.1)
 *
 * - Automatic Version Information via RCS/CVS:
-*   Id
-*   Source
+*   guilemain.i,v 1.6 2002/11/30 22:10:07 beazley Exp
+*   /cvsroot/SWIG/Lib/guile/guilemain.i,v
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by

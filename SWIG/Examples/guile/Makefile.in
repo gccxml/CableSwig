@@ -9,10 +9,12 @@ CXX		= @CXX@
 CFLAGS		= @CFLAGS@
 GUILEINCLUDE	= @GUILEINCLUDE@
 GUILELINK	= @GUILELINK@
-SWIGOPT		= 
+SWIGOPT		=
 
 WRAP		= $(IFILE:.i=_wrap.c)
 CXXWRAP		= $(IFILE:.i=_wrap.cxx)
+
+SO		= @SO@
 
 all:
 	for d in $(subdirs) ; do (cd $$d ; $(MAKE)) ; done
@@ -20,6 +22,9 @@ all:
 clean::
 	for d in $(subdirs) ; do (cd $$d ; $(MAKE) clean) ; done
 	rm -f *~ .~*
+
+guile_clean:
+	rm -f *.@OBJEXT@ *$(SO) *_wrap* *~ .~* core my-guile $(TARGET)
 
 # This is meant to be used w/ "make -f ../Makefile" from subdirs.
 # Doesn't make sense to use it from here.

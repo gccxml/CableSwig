@@ -3,7 +3,6 @@ This test case tests that various types of arrays are working.
 */
 
 %module arrays
-%pragma make_default
 
 %inline %{
 #define ARRAY_LEN 2
@@ -49,4 +48,12 @@ int getintfrompointer(int* intptr) {
 }
 
 %}
+
+// This tests wrapping of function that involves pointer to array
+
+
+%inline %{
+void array_pointer_func(int (*x)[10]) {}
+%}
+
 
