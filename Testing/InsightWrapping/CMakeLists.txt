@@ -111,6 +111,31 @@ MACRO(CSWIG_CREATE_PYTHON_CXX_FILE Bin MasterIdx InputIdx InputXml OutputTclCxx 
      OUTPUTS ${Bin}/${OutputTclCxx}
      DEPENDS ${LibraryIndexFiles}
      )
+   GET_FILENAME_COMPONENT(OutputPythonFilePath ${Bin}/${OutputTclCxx} PATH)
+   GET_FILENAME_COMPONENT(OutputPythonFileName ${Bin}/${OutputTclCxx} NAME_WE)
+   STRING(REGEX REPLACE "_" "" LibName ${Library})
+   STRING(REGEX REPLACE "wrap_" "${LibName}_" OutputPythonFileName ${OutputPythonFileName})
+   STRING(REGEX REPLACE "Python" "" OutputPythonFileName ${OutputPythonFileName})
+   SET(OutputPythonFile ${OutputPythonFilePath}/${OutputPythonFileName}.py)
+   STRING(REGEX REPLACE ".*_" "" A ${OutputPythonFileName})
+   IF("${OutputPythonFileName}" MATCHES "${A}.*_${A}")
+     ADD_CUSTOM_COMMAND(
+       SOURCE ${Library}
+       COMMAND ${CMAKE_COMMAND} 
+       ARGS -E copy_if_different  ${OutputPythonFilePath}/${LibName}.py "${EXECUTABLE_OUTPUT_PATH}/${LibName}.py"
+       DEPENDS "${EXECUTABLE_OUTPUT_PATH}/${LibName}.py"
+       TARGET ${Library}
+       )
+   ELSE("${OutputPythonFileName}" MATCHES "${A}.*_${A}")
+     ADD_CUSTOM_COMMAND(
+       SOURCE ${Library}
+       COMMAND ${CMAKE_COMMAND} 
+       ARGS -E copy_if_different ${OutputPythonFile} "${EXECUTABLE_OUTPUT_PATH}/${OutputPythonFileName}.py"
+       DEPENDS "${EXECUTABLE_OUTPUT_PATH}/${OutputPythonFileName}.py"
+       TARGET ${Library}
+       )
+   ENDIF("${OutputPythonFileName}" MATCHES "${A}.*_${A}")
+
 ENDMACRO(CSWIG_CREATE_PYTHON_CXX_FILE)
 
 # make sure required stuff is set
