@@ -1,0 +1,15 @@
+#define TARGET_CPU_DEFAULT (3)
+#include "auto-host.h"
+#ifdef IN_GCC
+# include "gansidecl.h"
+# include "i386/xm-i386.h"
+# include "defaults.h"
+# include "hwint.h"
+#endif
+#ifndef POSIX
+# define POSIX
+#endif
+#ifndef GENERATOR_FILE
+#include "insn-codes.h"
+#include "insn-flags.h"
+#endif

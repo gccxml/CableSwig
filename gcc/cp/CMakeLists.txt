@@ -1,0 +1,43 @@
+INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/gcc/cp)
+
+ADD_EXECUTABLE(cc1plus
+  ${GCC_SOURCE_DIR}/gcc/c-common.c
+  ${GCC_SOURCE_DIR}/gcc/c-dump.c
+  ${GCC_SOURCE_DIR}/gcc/c-format.c
+  ${GCC_SOURCE_DIR}/gcc/c-lex.c
+  ${GCC_SOURCE_DIR}/gcc/c-pragma.c
+  ${GCC_SOURCE_DIR}/gcc/c-semantics.c
+  ${GCC_SOURCE_DIR}/gcc/toplev.c
+  ${GCC_SOURCE_DIR}/libiberty/obstack.c
+  call.c
+  class.c
+  cvt.c
+  decl.c
+  decl2.c
+  dump.c
+  errfn.c
+  error.c
+  except.c
+  expr.c
+  friend.c
+  init.c
+  lex.c
+  mangle.c
+  method.c
+  optimize.c
+  parse.c
+  pt.c
+  ptree.c
+  repo.c
+  rtti.c
+  search.c
+  semantics.c
+  spew.c
+  tree.c
+  typeck.c
+  typeck2.c
+  xml.c
+  xref.c
+)
+
+TARGET_LINK_LIBRARIES(cc1plus backend cpp iberty)

@@ -1,0 +1,7 @@
+.git*            export-ignore
+
+*.sh             crlf=input
+configure        crlf=input
+genmultilib      crlf=input
+mklibgcc.in      crlf=input
+regress-demangle  crlf=input
