@@ -285,7 +285,6 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
   m_CurrentLine = mth->GetLine();
   cable::Function::FunctionIdType fid = mth->GetFunctionId();
   cable::FunctionType* ft = mth->GetFunctionType();
-  const char* ftype = "cdecl";
   Node* m;
   if(fid == cable::Function::ConverterId)
     {
@@ -422,7 +421,6 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
     Setattr(m, "type", 
             this->ToSwigType(ft->GetReturns()->GetCxxType()).c_str());
     } 
-  const cable::ClassType* rt = cable::ClassType::SafeDownCast(ft->GetReturns());
   // add the method to the class
   appendChild(sc, m);
   // add the member name to the class
@@ -1072,7 +1070,6 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
   cable::Context::Iterator lower = gns->LowerBound("_cable_");
   cable::Context::Iterator upper = gns->UpperBound("_cable_");
   cable::Namespace* cns = 0;
-  cable::Namespace* wns = 0;
   if(lower != upper)
     {
     cns = cable::Namespace::SafeDownCast(*lower);
