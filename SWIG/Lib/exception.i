@@ -21,12 +21,12 @@
 
 #ifdef SWIGTCL8
 %{
-#define SWIG_exception(a,b)   { Tcl_SetResult(interp,b,TCL_VOLATILE); SWIG_fail; }
+#define SWIG_exception(a,b)   { Tcl_SetResult(interp,const_cast<char *>(b),TCL_VOLATILE); SWIG_fail; }
 %}
 #else
 #ifdef SWIGTCL
 %{
-#define SWIG_exception(a,b)   { Tcl_SetResult(interp,b,TCL_VOLATILE); return TCL_ERROR; }
+#define SWIG_exception(a,b)   { Tcl_SetResult(interp,const_cast<char *>(b),TCL_VOLATILE); return TCL_ERROR; }
 %}
 #endif
 #endif
