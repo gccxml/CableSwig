@@ -1026,6 +1026,7 @@ SwigType_isclass(SwigType *t) {
       isclass = 1;
     }
     /* Hmmm. Not a class.  If a template, it might be uninstantiated */
+    /* make sure isclass has not yet been set WAH*/
     if (!isclass && SwigType_istemplate(qtys)) {
       String *tp = SwigType_templateprefix(qtys);
       isclass = SwigType_isclass(tp);

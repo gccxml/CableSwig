@@ -267,6 +267,7 @@ SwigType *cplus_value_type(SwigType *t) {
 	return s;
         }
       }
+    // Now remove any qualifiers and check again, this takes care of const return by value WAH
     else
       {
       SwigType* ltd = SwigType_ltype(td);
