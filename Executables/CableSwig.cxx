@@ -533,7 +533,7 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skippe
             {
             if(this->FindClassGroup(allp[j]->GetQualifiedName().c_str(), &group))
               {
-              std::cerr << "Wrapped: ";
+              std::cerr << "    Wrapped: ";
               }
             else
               {
