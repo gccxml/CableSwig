@@ -46,14 +46,13 @@ SET(CABLE_BIN ${CableSwig_BINARY_DIR}/Cable)
 
 SET(BUILD_SHARED_LIBS OFF)
 INCLUDE_DIRECTORIES(
-        ${SWIG_TOP}/Source/Modules
+        ${SWIG_TOP}/Source/Modules1.1
 	${SWIG_TOP}/Source/CParse
 	${SWIG_TOP}/Source/Preprocessor
 	${SWIG_TOP}/Source/Swig
 	${SWIG_TOP}/Source/DOH
 	${SWIG_TOP}/Source/Include
         ${SWIG_TOP}/Source/DOH/Include
-        ${CableSwig_BINARY_DIR}/SWIG/Source/Include
         ${CableSwig_BINARY_DIR}/SWIG
         ${CABLE_BIN}
         ${CABLE_SOURCE}/CxxTypes
