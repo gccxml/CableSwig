@@ -1,0 +1,2 @@
+static const char configuration_arguments[] = "Built With CMake";
+static const char thread_model[] = "single";

@@ -1,0 +1,40 @@
+INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(${GCC_BINARY_DIR}/libiberty)
+ADD_DEFINITIONS(-DHAVE_CONFIG_H)
+
+ADD_LIBRARY(iberty
+  alloca.c
+  argv.c
+  choose-temp.c
+  concat.c
+  cplus-dem.c
+  cp-demangle.c     
+  dyn-string.c
+  fdmatch.c
+  fnmatch.c
+  getopt.c
+  getopt1.c
+  getpwd.c
+  getruntime.c
+  hashtab.c
+  hex.c
+  floatformat.c
+  lbasename.c
+  md5.c
+  objalloc.c
+  obstack.c
+  partition.c
+  pexecute.c
+  safe-ctype.c
+  sort.c
+  spaces.c
+  splay-tree.c
+  strerror.c
+  strsignal.c
+  xatexit.c
+  xexit.c
+  xmalloc.c
+  xmemdup.c
+  xstrdup.c
+  xstrerror.c
+)

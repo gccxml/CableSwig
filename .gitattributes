@@ -6,7 +6,10 @@
 capitalize       crlf=input
 config.*         crlf=input
 configure        crlf=input
+genmultilib      crlf=input
 install-sh       crlf=input
 ltconfig         crlf=input
 makedebugtop     crlf=input
 mkinstalldirs    crlf=input
+mklibgcc.in      crlf=input
+regress-demangle  crlf=input

@@ -1,0 +1,7 @@
+#ifdef IN_GCC
+# include "i386/i386-protos.h"
+#endif
+#ifndef GENERATOR_FILE
+#include "insn-codes.h"
+#include "insn-flags.h"
+#endif
