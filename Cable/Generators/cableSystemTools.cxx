@@ -66,7 +66,7 @@ namespace cable
 //----------------------------------------------------------------------------
 bool SystemTools::ReadRegistryValue(const char* key, String& result)
 {
-  // Adapted from CMake's cmSystemTools.h: ReadAValue
+  // Adapted from CMake's SystemTools.h: ReadAValue
   // Get the data of key value.
   // Example : 
   //      HKEY_LOCAL_MACHINE\SOFTWARE\Python\PythonCore\2.1\InstallPath
@@ -549,5 +549,180 @@ String SystemTools::FindProgram(const char* name)
   // Couldn't find the program.
   return "";
 }
+
+/**
+ * Copy a file named by "source" to the file named by "destination".
+ */
+void SystemTools::cmCopyFile(const char* source,
+                               const char* destination)
+{
+  const int bufferSize = 4096;
+  char buffer[bufferSize];
+
+  // Open files
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+  std::ifstream fin(source, 
+                    std::ios::binary | std::ios::in);
+#else
+  std::ifstream fin(source);
+#endif
+  if(!fin)
+    {
+    int e = errno;
+    std::string m = "CopyFile failed to open source file \"";
+    m += source;
+    m += "\"";
+    m += " System Error: ";
+    m += strerror(e);
+    std::cerr << m.c_str() << "\n";
+    return;
+    }
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+  std::ofstream fout(destination, 
+                     std::ios::binary | std::ios::out | std::ios::trunc);
+#else
+  std::ofstream fout(destination, 
+                     std::ios::out | std::ios::trunc);
+#endif
+  if(!fout)
+    {
+    int e = errno;
+    std::string m = "CopyFile failed to open destination file \"";
+    m += destination;
+    m += "\"";
+    m += " System Error: ";
+    m += strerror(e);
+    std::cerr << m.c_str() << "\n";
+    return;
+    }
+  
+  // This copy loop is very sensitive on certain platforms with
+  // slightly broken stream libraries (like HPUX).  Normally, it is
+  // incorrect to not check the error condition on the fin.read()
+  // before using the data, but the fin.gcount() will be zero if an
+  // error occurred.  Therefore, the loop should be safe everywhere.
+  while(fin)
+    {
+    fin.read(buffer, bufferSize);
+    if(fin.gcount())
+      {
+      fout.write(buffer, fin.gcount());
+      }
+    }
+  
+  // Make sure the operating system has finished writing the file
+  // before closing it.  This will ensure the file is finished before
+  // the check below.
+  fout.flush();
+  
+  fin.close();
+  fout.close();
+
+  // More checks.
+  struct stat statSource, statDestination;
+  statSource.st_size = 12345;
+  statDestination.st_size = 12345;
+  if(stat(source, &statSource) != 0)
+    {
+    int e = errno;
+    std::string m = "CopyFile failed to stat source file \"";
+    m += source;
+    m += "\"";
+    m += " System Error: ";
+    m += strerror(e);
+    std::cerr << m.c_str() << "\n";
+    }
+  else if(stat(destination, &statDestination) != 0)
+    {
+    int e = errno;
+    std::string m = "CopyFile failed to stat destination file \"";
+    m += source;
+    m += "\"";
+    m += " System Error: ";
+    m += strerror(e);
+    std::cerr << m.c_str() << "\n";
+    }
+  else if(statSource.st_size != statDestination.st_size)
+    {
+    std::cerr << "copy failed " << "\n";
+    }
+}
+
+bool SystemTools::FilesDiffer(const char* source,
+                              const char* destination)
+{
+  struct stat statSource;
+  if (stat(source, &statSource) != 0) 
+    {
+    return true;
+    }
+
+  struct stat statDestination;
+  if (stat(destination, &statDestination) != 0) 
+    {
+    return true;
+    }
+
+  if(statSource.st_size != statDestination.st_size)
+    {
+    return true;
+    }
+
+  if(statSource.st_size == 0)
+    {
+    return false;
+    }
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+  std::ifstream finSource(source, 
+                          std::ios::binary | std::ios::in);
+  std::ifstream finDestination(destination, 
+                               std::ios::binary | std::ios::in);
+#else
+  std::ifstream finSource(source);
+  std::ifstream finDestination(destination);
+#endif
+  if(!finSource || !finDestination)
+    {
+    return true;
+    }
+
+  char* source_buf = new char[statSource.st_size];
+  char* dest_buf = new char[statSource.st_size];
+
+  finSource.read(source_buf, statSource.st_size);
+  finDestination.read(dest_buf, statSource.st_size);
+
+  if(statSource.st_size != static_cast<long>(finSource.gcount()) ||
+     statSource.st_size != static_cast<long>(finDestination.gcount()))
+    {
+    std::cerr << "copy failed\n";
+    delete [] source_buf;
+    delete [] dest_buf;
+    return false;
+    }
+  int ret = memcmp((const void*)source_buf, 
+                   (const void*)dest_buf, 
+                   statSource.st_size);
+
+  delete [] dest_buf;
+  delete [] source_buf;
+
+  return ret != 0;
+}
+
+bool SystemTools::CopyFileIfDifferent(const char* source,
+                                        const char* destination)
+{
+  if(SystemTools::FilesDiffer(source, destination))
+    {
+    SystemTools::cmCopyFile(source, destination);
+    return true;
+    }
+  return false;
+}
+
 
 } // namespace cable

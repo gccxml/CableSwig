@@ -18,6 +18,7 @@
 #include "cableFunctionType.h"
 #include "cableEnumerationType.h"
 #include "cableReferenceType.h"
+#include "cableSystemTools.h"
 #include "cxxCvQualifiedType.h"
 #include "cxxPointerType.h"
 #include "cxxReferenceType.h"
@@ -1196,7 +1197,11 @@ int CableSwig::ParseFile(const char* input_file, Node* top,
     std::cerr << "Error getting SourceRepresentation from parser.\n";    
     return 1;
     }     
-
+  if(m_DependFile.size())
+    {
+    this->DumpCMakeDependInformation(parser, m_DependFile.c_str());
+    }
+  
   ProcessSource(sr, top);
   return 0;
 }
@@ -1319,4 +1324,32 @@ bool CableSwig::ReadMasterIndexFile()
   return true;
 }
 
+
+bool CableSwig::DumpCMakeDependInformation(cable::XMLSourceParser::Pointer sr,
+                                           const char* f)
+{
+  std::string temp = f;
+  temp += ".tmp";
+  std::ofstream fout(temp.c_str());
+  if(!fout)
+    {
+    std::cerr << "Could not open depend file for write " << f << "\n";
+    return false;
+    }
+  
+  std::vector<std::string> files;
+  sr->GetFileNames(files);
+  fout << "SET(CABLE_SWIG_DEPEND\n";
+  
+  for(std::vector<std::string>::iterator i = files.begin();
+      i != files.end(); ++i)
+    {
+    fout << '\"' << *i << "\"\n";
+    }
+  fout << ")\n";
+  fout.close();
+  cable::SystemTools::CopyFileIfDifferent(temp.c_str(), f);
+  cable::SystemTools::RemoveFile(temp.c_str());
+  return true;
+}
 

@@ -18,7 +18,8 @@
 #define _cableXMLSourceParser_h
 
 #include "cableXMLParser.h"
-
+#include <vector>
+#include <string>
 namespace _cxx_ { class CvQualifiedType; }
 
 namespace cable
@@ -52,6 +53,8 @@ public:
   /** Get the SourceRepresentation constructed from parsing.  */
   SourceRepresentation* GetSourceRepresentation();
   
+  /** Get a vector of file names used by this source */
+  void GetFileNames(std::vector<std::string>& );
 protected:
   XMLSourceParser();
   ~XMLSourceParser();

@@ -1414,4 +1414,14 @@ SourceObject* XMLSourceParser::AddConverter(XMLSourceElement* element)
   return m;
 }
 
+void XMLSourceParser::GetFileNames(std::vector<std::string>& names)
+{
+  for(XMLSourceParser::FileMap::iterator i = m_FileMap.begin();
+      i != m_FileMap.end(); ++i)
+    {
+    names.push_back(i->second);
+    }
+}
+
+
 } // namespace cable

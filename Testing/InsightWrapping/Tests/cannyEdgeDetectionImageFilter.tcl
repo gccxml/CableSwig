@@ -19,10 +19,10 @@ set outputFileName "$env(ITK_DATA_ROOT)/cthead1canny.png"
 
 # Setup pipeline.
 
-set reader   [ImageFileReaderF2_New]
-set canny    [CannyEdgeDetectionImageFilterF2F2_New]
-set rescaler [RescaleIntensityImageFilterF2US2_New]
-set writer   [ImageFileWriterUS2_New]
+set reader   [itkImageFileReaderF2_New]
+set canny    [itkCannyEdgeDetectionImageFilterF2F2_New]
+set rescaler [itkRescaleIntensityImageFilterF2US2_New]
+set writer   [itkImageFileWriterUS2_New]
 
 
 $canny     SetInput [$reader    GetOutput]
@@ -34,8 +34,6 @@ $rescaler SetOutputMaximum 65535
 
 $reader SetFileName $inputFileName  
 $writer SetFileName $outputFileName 
-
-$writer SetImageIO [PNGImageIO_New]
 
 $writer Update
 

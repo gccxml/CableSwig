@@ -1,11 +1,12 @@
 PROJECT(SWIG)
 
+# there is a bug with vs 7, if you optimize the
+# c file building cswig does not run correctly.
+# so add the -Od flag which will turn off
 IF(CMAKE_SYSTEM_AND_CXX_COMPILER_INFO_FILE MATCHES "Windows-cl")
   SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Od")
   SET(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -Od")
 ENDIF(CMAKE_SYSTEM_AND_CXX_COMPILER_INFO_FILE MATCHES "Windows-cl")
-
-
 
 
 SET(-swig_lib- ${SWIG_SOURCE_DIR}/Lib)

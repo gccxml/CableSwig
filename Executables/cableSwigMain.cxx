@@ -64,6 +64,7 @@ extern String  *ModuleName;
 static char *usage = (char*)"\
 \nGeneral Options\n\
      -Cindex file.mdx - Read a cable master index file\n\
+     -depend file.cmake - Specify a cmake depend file\n\
      -c              - Produce raw wrapper code (omit support code)\n\
      -c++            - Enable C++ processing\n\
      -co             - Check a file out of the SWIG library\n\
@@ -210,6 +211,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
   DOH    *cable_index_files;
   DOH    *libfiles = 0;
   DOH    *cpps = 0 ;
+  DOH    *depend_file = 0;
   extern  void Swig_contracts(Node *n);
   extern void Swig_browser(Node *n, int);
   extern void Swig_default_allocators(Node *n);
@@ -338,6 +340,15 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 	      Swig_mark_arg(i);
 	      if (argv[i+1]) {
                 Append(cable_index_files,argv[i+1]);
+		Swig_mark_arg(i+1);
+		i++;
+	      } else {
+		Swig_arg_error();
+	      }
+	  } else if (strcmp(argv[i],"-depend") == 0) {
+	      Swig_mark_arg(i);
+	      if (argv[i+1]) {
+                depend_file = Swig_copy_string(argv[i+1]);
 		Swig_mark_arg(i+1);
 		i++;
 	      } else {
@@ -587,6 +598,10 @@ int SWIG_main(int argc, char *argv[], Language *l) {
       for (i = 0; i < Len(cable_index_files); i++) 
         {
         cswig.AddMasterIndexFile(Char(Getitem(cable_index_files,i)));
+        }
+      if(depend_file)
+        {
+        cswig.SetDependOutput(Char(depend_file));
         }
       cswig.ParseFile(input_file, top, typemap_lang);
       }

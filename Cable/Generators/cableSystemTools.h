@@ -73,6 +73,19 @@ public:
   static String ConvertToWindowsOutputPath(const char* path);
   static String ConvertToUnixOutputPath(const char* path);
   
+
+  /**
+   * Copy the source file to the destination file only
+   * if the two files differ.  
+   */
+  static bool CopyFileIfDifferent(const char* source,
+                                  const char* destination);
+    ///! Compare the contents of two files.  Return true if different.
+  static bool FilesDiffer(const char* source,
+                          const char* destination);
+  ///! Copy a file.
+  static void cmCopyFile(const char* source,
+                         const char* destination);
   /** Get the file extension for an executable.  */
   static String GetExecutableExtension();
   

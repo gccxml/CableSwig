@@ -29,6 +29,7 @@ extern "C" {
 #include "cableMethod.h"
 #include "cableNamespace.h"
 #include "cableSourceRepresentation.h"
+#include "cableXMLSourceParser.h"
 #include <set>
 #include <map>
 
@@ -66,10 +67,14 @@ public:
       m_CurrentLine = 0;
       m_CurrentFile = 0;
     }
-
+  void SetDependOutput(const char* s)
+    {
+      m_DependFile = s;
+    }
   int ParseFile(const char* input_file, Node* top, const char* wrapLang);
   void AddMasterIndexFile(const char* m);
 private:
+  bool DumpCMakeDependInformation(cable::XMLSourceParser::Pointer sr, const char* f);
   void ParseIndexInformation(const char* s);
   void ReplaceString(std::string& source,
                      const char* replace,
@@ -101,7 +106,7 @@ private:
   void AddClassToBeImported(cable::Class*);
   void FindWrappedBases(List* bases, const cable::Class* c);
 private:
-  std::string m_IncludeFlags;
+  std::string m_DependFile;
   std::string m_WrapLanguage;
   const char* m_CurrentFile;
   int         m_CurrentLine;
