@@ -79,6 +79,7 @@ private:
   int ListClassesCommand(int, Tcl_Obj*CONST[]) const;
   int TypeOfCommand(int, Tcl_Obj*CONST[]) const;
   int InterpreterCommand(int, Tcl_Obj*CONST[]) const;
+  int BooleanCommand(int, Tcl_Obj*CONST[]) const;
   int DebugOnCommand(int, Tcl_Obj*CONST[]);
   int DebugOffCommand(int, Tcl_Obj*CONST[]);
   static int ListMethodsCommandFunction(ClientData, Tcl_Interp*,
@@ -89,6 +90,8 @@ private:
                                    int, Tcl_Obj*CONST[]);
   static int InterpreterCommandFunction(ClientData, Tcl_Interp*,
                                         int, Tcl_Obj*CONST[]);
+  static int BooleanCommandFunction(ClientData, Tcl_Interp*,
+                                    int, Tcl_Obj*CONST[]);
   static int DebugOnCommandFunction(ClientData, Tcl_Interp*,
                                     int, Tcl_Obj*CONST[]);
   static int DebugOffCommandFunction(ClientData, Tcl_Interp*,

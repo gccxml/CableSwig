@@ -265,6 +265,8 @@ void WrapperFacility::InitializeForInterpreter()
                        &TypeOfCommandFunction, 0, 0);
   Tcl_CreateObjCommand(m_Interpreter, "cable::Interpreter",
                        &InterpreterCommandFunction, 0, 0);
+  Tcl_CreateObjCommand(m_Interpreter, "cable::Boolean",
+                       &BooleanCommandFunction, 0, 0);
   Tcl_CreateObjCommand(m_Interpreter, "cable::DebugOn",
                        &DebugOnCommandFunction, 0, 0);
   Tcl_CreateObjCommand(m_Interpreter, "cable::DebugOff",
@@ -445,6 +447,79 @@ int WrapperFacility::InterpreterCommand(int, Tcl_Obj* CONST[]) const
 
 
 /**
+ * This implements the wrapper facility command "cable::Boolean".  It
+ * converts a wrapped C++ expression into its boolean result as an
+ * implicit conversion to bool might do in C++.  For example, a
+ * pointer type will be converted to 0 if it is a NULL pointer, and 1
+ * otherwise.
+ */
+int WrapperFacility::BooleanCommand(int objc, Tcl_Obj* CONST objv[]) const
+{
+  static const char usage[] =
+    "Usage: Boolean <expr>\n"
+    "  Where <expr> is any Tcl expression.";
+  
+  CvQualifiedType cvType;
+  
+  if(objc > 1)
+    {
+    cvType = this->GetObjectType(objv[1]);
+    }
+  
+  Tcl_ResetResult(m_Interpreter);
+  if(!cvType.GetType())
+    {
+    Tcl_AppendResult(m_Interpreter, usage, NULL);
+    return TCL_ERROR;
+    }
+  
+  // Check for pointer type.
+  if(cvType.IsPointerType())
+    {
+    Argument arg = this->GetObjectArgument(objv[1]);
+    Tcl_ResetResult(m_Interpreter);
+    if(arg.GetValue().object)
+      {
+      Tcl_AppendResult(m_Interpreter, "1", NULL);
+      }
+    else
+      {
+      Tcl_AppendResult(m_Interpreter, "0", NULL);
+      }
+    return TCL_OK;
+    }
+  
+  // Try to find a conversion to bool.
+  const Type* boolType = CvPredefinedType<bool>::type.GetType();
+  ConversionFunction converter = this->GetConversion(cvType, boolType);
+  if(converter)
+    {
+    Argument arg = this->GetObjectArgument(objv[1]);
+    Tcl_ResetResult(m_Interpreter);
+    if(reinterpret_cast<bool (*)(Anything)>(converter)(arg.GetValue()))
+      {
+      Tcl_AppendResult(m_Interpreter, "1", NULL);
+      }
+    else
+      {
+      Tcl_AppendResult(m_Interpreter, "0", NULL);
+      }
+    }
+  else
+    {
+    String typeName = cvType.GetName();
+    Tcl_ResetResult(m_Interpreter);    
+    Tcl_AppendResult(m_Interpreter, "Conversion of type \"",
+                     const_cast<char*>(typeName.c_str()),
+                     "\" to boolean is not supported.\n", NULL);
+    return TCL_ERROR;
+    }
+  
+  return TCL_OK;
+}
+
+
+/**
  * Command to turn on debug output.  This is defined whether or not
  * debug support is compiled in.  It will report that debug support is
  * not available if it is called.
@@ -489,6 +564,7 @@ _cable_tcl_DEFINE_COMMAND_FUNCTION(ListMethods)
 _cable_tcl_DEFINE_COMMAND_FUNCTION(ListClasses)
 _cable_tcl_DEFINE_COMMAND_FUNCTION(TypeOf)
 _cable_tcl_DEFINE_COMMAND_FUNCTION(Interpreter)
+_cable_tcl_DEFINE_COMMAND_FUNCTION(Boolean)
 
 /**
  * Try to figure out the name of the type of the given Tcl object.
