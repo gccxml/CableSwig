@@ -66,13 +66,13 @@ public:
   
   Constructor(const WrapperFacility* wrapperFacility,
               ConstructorWrapper constructorWrapper,
-              const String& wrappedTypeName,
+              const ClassType* wrappedTypeRepresentation,
               const String& name,
               const ParameterTypes& parameterTypes = ParameterTypes());
   virtual String GetPrototype() const;
   void Call(const Arguments&) const;
 private:
-  String m_WrappedTypeName;
+  const ClassType* m_WrappedTypeRepresentation;
   const WrapperFacility* m_WrapperFacility;
   ConstructorWrapper m_ConstructorWrapper;
 };

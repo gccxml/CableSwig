@@ -53,11 +53,11 @@ namespace _wrap_
  */
 Constructor::Constructor(const WrapperFacility* wrapperFacility,
                          ConstructorWrapper constructorWrapper,
-                         const String& wrappedTypeName,
+                         const ClassType* wrappedTypeRepresentation,
                          const String& name,
                          const ParameterTypes& parameterTypes):
   FunctionBase(name, parameterTypes),
-  m_WrappedTypeName(wrappedTypeName),
+  m_WrappedTypeRepresentation(wrappedTypeRepresentation),
   m_WrapperFacility(wrapperFacility),
   m_ConstructorWrapper(constructorWrapper)
 {
@@ -69,7 +69,7 @@ Constructor::Constructor(const WrapperFacility* wrapperFacility,
  */
 String Constructor::GetPrototype() const
 {
-  String prototype = m_WrappedTypeName + "::" + m_Name + "(";
+  String prototype = m_WrappedTypeRepresentation->Name() + "::" + m_Name + "(";
   ParameterTypes::const_iterator arg = m_ParameterTypes.begin();
   while(arg != m_ParameterTypes.end())
     {
