@@ -1429,7 +1429,7 @@ int Language::classforwardDeclaration(Node *n) {
 int Language::constructorDeclaration(Node *n) {
   String *name = Getattr(n,"name");
   String *symname = Getattr(n,"sym:name");
-
+  
   if (!CurrentClass) return SWIG_NOWRAP;
   if (cplus_mode != CPLUS_PUBLIC) return SWIG_NOWRAP;
   if (ImportMode) return SWIG_NOWRAP;
@@ -1439,6 +1439,13 @@ int Language::constructorDeclaration(Node *n) {
 
   {
     String *base = Swig_scopename_last(name);
+    if(!symname)
+     {
+     Printf(stderr,"SWIG: Fatal internal error. Constructor with no symname, perhaps the only public constructor is compiler generated, for ITK make sure all constructors are declared protected including the copy constructor. !\n");
+     Printf(stderr,"Error for %s\n", Char(name));
+     return SWIG_ERROR;
+     }
+
     if ((Strcmp(base,symname) == 0) && (Strcmp(symname, ClassPrefix) != 0)) {
       Setattr(n,"sym:name", ClassPrefix);
     }
