@@ -28,11 +28,18 @@ ENDFOREACH(Source)
 # set the generated sources as generated
 SET_SOURCE_FILES_PROPERTIES(${WRAP_TCL_SOURCES} ${WRAP_PYTHON_SOURCES} GENERATED )
 # add the tcl and python libraries
-ADD_LIBRARY(VXLNumericsTcl SHARED ${WRAP_TCL_SOURCES})
-ADD_LIBRARY(_VXLNumericsTcl MODULE ${WRAP_PYTHON_SOURCES})
-SET_TARGET_PROPERTIES( _VXLNumericsTcl PROPERTIES PREFIX "")
-TARGET_LINK_LIBRARIES(VXLNumericsTcl itkvnl itkvnl_algo SwigRuntimeTcl ${TCL_LIBRARY})
-TARGET_LINK_LIBRARIES(_VXLNumericsTcl itkvnl itkvnl_algo  SwigRuntimePython ${PYTHON_LIBRARY})
+
+IF(ITK_SWRAP_TCL)
+  ADD_LIBRARY(VXLNumericsTcl SHARED ${WRAP_TCL_SOURCES})
+  TARGET_LINK_LIBRARIES(VXLNumericsTcl itkvnl itkvnl_algo SwigRuntimeTcl ${TCL_LIBRARY})
+ENDIF(ITK_SWRAP_TCL)
+
+IF(ITK_WRAP_PYTHON)
+  ADD_LIBRARY(_VXLNumericsTcl MODULE ${WRAP_PYTHON_SOURCES})
+  SET_TARGET_PROPERTIES( _VXLNumericsTcl PROPERTIES PREFIX "")
+  TARGET_LINK_LIBRARIES(_VXLNumericsTcl itkvnl itkvnl_algo  SwigRuntimePython ${PYTHON_LIBRARY})
+ENDIF(ITK_WRAP_PYTHON)
+
 
 CONFIGURE_FILE( 
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
@@ -42,20 +49,24 @@ ${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx IMMEDIATE
 SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx")
 FOREACH(Source ${WRAP_SOURCES})
 # tcl
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Numerics 
+  IF(ITK_SWRAP_TCL)
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Numerics 
                          ${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.cxx ${Source}.xml VXLNumericsTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.xml ${Source}.idx VXLNumericsTcl)
-  CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.xml ${Source}.idx VXLNumericsTcl)
+    CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx VXLNumericsTcl
                             "${ALL_IDX_FILES}")
+  ENDIF(ITK_SWRAP_TCL)
 # python 
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Numerics 
+  IF(ITK_WRAP_PYTHON)
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Numerics 
                          ${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.cxx ${Source}.xml _VXLNumericsTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.xml ${Source}.idx _VXLNumericsTcl)
-  CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics 
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics ${Source}.xml ${Source}.idx _VXLNumericsTcl)
+    CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/VXLNumerics 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _VXLNumericsTcl
                             "${ALL_IDX_FILES}")
+  ENDIF(ITK_WRAP_PYTHON)
 ENDFOREACH(Source)
 

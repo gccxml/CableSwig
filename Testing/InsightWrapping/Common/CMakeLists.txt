@@ -39,34 +39,45 @@ ${WrapITK_BINARY_DIR}/Common/ITKCommonTcl.mdx
 # set the generated sources as generated
 SET_SOURCE_FILES_PROPERTIES(${WRAP_TCL_SOURCES} ${WRAP_PYTHON_SOURCES} GENERATED )
 
-# add the library
-ADD_LIBRARY(ITKCommonTcl SHARED ${WRAP_TCL_SOURCES})
-ADD_LIBRARY(_ITKCommonTcl MODULE ${WRAP_PYTHON_SOURCES})
-SET_TARGET_PROPERTIES( _ITKCommonTcl PROPERTIES PREFIX "")
+IF(ITK_SWRAP_TCL)
+  # add the library
+  ADD_LIBRARY(ITKCommonTcl SHARED ${WRAP_TCL_SOURCES})
+  TARGET_LINK_LIBRARIES(ITKCommonTcl ${TCL_LIBRARY} ITKCommon VXLNumericsTcl SwigRuntimeTcl )
+ENDIF(ITK_SWRAP_TCL)
+
+IF(ITK_WRAP_PYTHON)
+  ADD_LIBRARY(_ITKCommonTcl MODULE ${WRAP_PYTHON_SOURCES})
+  SET_TARGET_PROPERTIES( _ITKCommonTcl PROPERTIES PREFIX "")
+  # link to ITKCommon
+  TARGET_LINK_LIBRARIES(_ITKCommonTcl ${PYTHON_LIBRARY} ITKCommon SwigRuntimePython)
+ENDIF(ITK_WRAP_PYTHON)
 
 SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
                        "${WrapITK_BINARY_DIR}/Common/ITKCommonTcl.mdx"
 )
+
 # wrap each of the files
 FOREACH(Source ${WRAP_SOURCES})
-# tcl
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
+  IF(ITK_SWRAP_TCL)
+  # tcl
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
                          ${WrapITK_BINARY_DIR}/Common ${Source}.cxx ${Source}.xml ITKCommonTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx ITKCommonTcl)
-  CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx ITKCommonTcl)
+    CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKCommonTcl
                             "${ALL_IDX_FILES}")
-# python
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
+  ENDIF(ITK_SWRAP_TCL)
+   
+  IF(ITK_WRAP_PYTHON)
+  # python
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
                          ${WrapITK_BINARY_DIR}/Common ${Source}.cxx ${Source}.xml _ITKCommonTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx _ITKCommonTcl)
-  CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx _ITKCommonTcl)
+    CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKCommonTcl
                             "${ALL_IDX_FILES}")
+  ENDIF(ITK_WRAP_PYTHON)
 ENDFOREACH(Source)
 
-# link to ITKCommon
-TARGET_LINK_LIBRARIES(ITKCommonTcl ${TCL_LIBRARY} ITKCommon VXLNumericsTcl SwigRuntimeTcl )
-TARGET_LINK_LIBRARIES(_ITKCommonTcl ${PYTHON_LIBRARY} ITKCommon SwigRuntimePython)

@@ -4,7 +4,6 @@ SET(WRAP_SOURCES
     wrap_IOBase
     wrap_itkImageFileReader
     wrap_itkImageFileWriter
-#    wrap_itkTkImageViewer2D
 )
 
 # loop over cable config files creating two lists:
@@ -19,12 +18,16 @@ ENDFOREACH(Source)
 # set the generated sources as generated
 SET_SOURCE_FILES_PROPERTIES(${WRAP_TCL_SOURCES} ${WRAP_PYTHON_SOURCES} GENERATED )
 
-ADD_LIBRARY(ITKIOTcl SHARED ${WRAP_TCL_SOURCES})
-ADD_LIBRARY(_ITKIOTcl MODULE ${WRAP_PYTHON_SOURCES})
-SET_TARGET_PROPERTIES( _ITKIOTcl PROPERTIES PREFIX "")
+IF(ITK_SWRAP_TCL)
+  ADD_LIBRARY(ITKIOTcl SHARED ${WRAP_TCL_SOURCES})
+  TARGET_LINK_LIBRARIES(ITKIOTcl ITKIO VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimeTcl ${TCL_LIBRARY})
+ENDIF(ITK_SWRAP_TCL)
 
-TARGET_LINK_LIBRARIES(ITKIOTcl ITKIO VXLNumericsTcl ITKNumericsTcl ITKCommonTcl SwigRuntimeTcl ${TCL_LIBRARY})
-TARGET_LINK_LIBRARIES(_ITKIOTcl ITKIO SwigRuntimePython ${PYTHON_LIBRARY})
+IF(ITK_WRAP_PYTHON)
+  ADD_LIBRARY(_ITKIOTcl MODULE ${WRAP_PYTHON_SOURCES})
+  SET_TARGET_PROPERTIES( _ITKIOTcl PROPERTIES PREFIX "")
+  TARGET_LINK_LIBRARIES(_ITKIOTcl ITKIO SwigRuntimePython ${PYTHON_LIBRARY})
+ENDIF(ITK_WRAP_PYTHON)
 
 CONFIGURE_FILE(
 ${WrapITK_SOURCE_DIR}/Master.mdx.in
@@ -39,20 +42,25 @@ SET(MASTER_INDEX_FILES "${WrapITK_BINARY_DIR}/VXLNumerics/VXLNumericsTcl.mdx"
 )
 
 FOREACH(Source ${WRAP_SOURCES})
-# tcl
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
+  IF(ITK_SWRAP_TCL)
+  # tcl
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
                          ${WrapITK_BINARY_DIR}/IO ${Source}.cxx ${Source}.xml ITKIOTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx ITKIOTcl)
-  CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/IO
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx ITKIOTcl)
+    CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/IO
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Tcl.cxx ITKIOTcl
                             "${ALL_IDX_FILES}")
-# python
-  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
+   ENDIF(ITK_SWRAP_TCL)
+
+  IF(ITK_WRAP_PYTHON)
+  # python
+    GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/IO 
                          ${WrapITK_BINARY_DIR}/IO ${Source}.cxx ${Source}.xml _ITKIOTcl)
-  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx _ITKIOTcl)
-  CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/IO 
+    CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/IO ${Source}.xml ${Source}.idx _ITKIOTcl)
+    CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/IO 
                             "${MASTER_INDEX_FILES}" ${Source}.idx
                             ${Source}.xml ${Source}Python.cxx _ITKIOTcl
                             "${ALL_IDX_FILES}")
+   ENDIF(ITK_WRAP_PYTHON)
 ENDFOREACH(Source)

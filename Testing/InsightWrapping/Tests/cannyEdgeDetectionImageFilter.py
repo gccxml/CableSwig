@@ -17,7 +17,7 @@ writer.SetInput(rescaler.GetOutput())
 rescaler.SetOutputMinimum(0)
 rescaler.SetOutputMaximum(65535)
 
-reader.SetFileName("/home3/hoffman/Insight/Testing/Data/Input/cthead1.png")
+reader.SetFileName("/home/hoffman/Insight/Testing/Data/Input/cthead1.png")
 writer.SetFileName("./testout.png")
 writer.SetImageIO(PNGImageIO_New())
 writer.Update()
