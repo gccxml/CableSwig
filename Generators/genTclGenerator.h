@@ -52,6 +52,10 @@ namespace gen
 
 /**
  * Generation class for Tcl wrappers.
+ *
+ * This is a proof-of-concept implementation, and is poorly designed
+ * and documented, but it works.  It is intended to be replaced with a
+ * clean design later.
  */
 class GENERATORS_EXPORT TclGenerator: public GeneratorBase
 {
@@ -65,6 +69,19 @@ public:
   
   virtual void Generate();  
 private:
+  class FunctionEntry
+  {
+  public:
+    FunctionEntry(source::Function* method, unsigned int argc):
+      m_Function(method), m_ArgumentCount(argc) {}
+    unsigned int GetArgumentCount() const { return m_ArgumentCount; }
+    source::Function* operator->() const { return m_Function; }
+    operator source::Function*() const { return m_Function; }
+  private:
+    source::Function* m_Function;
+    unsigned int m_ArgumentCount;
+  };
+  
   class MethodEntry
   {
   public:
@@ -79,15 +96,19 @@ private:
   };
   
   typedef std::vector<String> WrapperList;
+  typedef std::vector<FunctionEntry> Functions;
   typedef std::vector<MethodEntry> Methods;
   
   void GenerateWrappers();
   void GeneratePackageInitializer();
   void GenerateNamespace(const configuration::Namespace*);
+  void GenerateFunctionWrapper(const source::Namespace::FunctionSet&,
+                               const configuration::Function*);
   void GenerateClassWrapper(const source::Class*, const configuration::Class*);
   bool ReturnsVoid(const source::Function*) const;
   void WriteConverterRegistration(const String&, const MethodEntry&) const;
   void WriteEnumValueRegistration() const;
+  void WriteFunctionRegistration(const FunctionEntry& function, unsigned int f) const;
   void WriteMethodRegistration(const String&, const MethodEntry&,
                                unsigned int) const;
   void WriteWrapperClassDefinition(const source::Class*, const Methods&) const;
@@ -100,12 +121,13 @@ private:
   void WriteReturnEnumClasses() const;
   void FindCvTypes(const configuration::Namespace*);
   void FindCvTypes(const source::Class*);
-  void FindCvTypes(const source::Method*);
+  void FindCvTypes(const source::Function*);
   void AddSuperclassCvTypes(const cxx::ClassType*);
   cxx::CvQualifiedType GetCxxType(const source::Type*) const;
 
   /**
-   * Generator to write out CxxType representation construction code.
+   * Generator to write out CxxType representation construction
+   * code.
    */
   CvTypeGenerator  m_CvTypeGenerator;
   
@@ -122,6 +144,8 @@ private:
 
   typedef std::set<const source::Enumeration*> EnumTypesThatNeedValues;
   EnumTypesThatNeedValues m_EnumTypesThatNeedValues;
+  
+  int m_FunctionNameIndex;
 };
 
 } // namespace gen

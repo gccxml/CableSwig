@@ -43,6 +43,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 #include <fstream>
+#include <strstream>
 
 namespace gen
 {
@@ -67,7 +68,8 @@ TclGenerator::TclGenerator(
   const configuration::CableConfiguration* in_cableConfiguration,
   const source::Namespace* in_globalNamespace,
   std::ostream& output):
-  GeneratorBase(in_cableConfiguration, in_globalNamespace, output)
+  GeneratorBase(in_cableConfiguration, in_globalNamespace, output),
+  m_FunctionNameIndex(0)
 {
 }
 
@@ -89,6 +91,8 @@ void TclGenerator::Generate()
     "#include \"WrapTclFacility/wrapMethod.h\"\n"
     "#include \"WrapTclFacility/wrapStaticMethod.h\"\n"
     "#include \"WrapTclFacility/wrapConstructor.h\"\n"
+    "#include \"WrapTclFacility/wrapFunctionWrapper.h\"\n"
+    "#include \"WrapTclFacility/wrapFunction.h\"\n"
     "\n";
   
   if(m_GlobalNamespace)
@@ -267,7 +271,7 @@ void TclGenerator::GeneratePackageInitializer()
  */
 void TclGenerator::GenerateNamespace(const configuration::Namespace* ns)
 {
-  // Look through all the wrapper entries in this namespace.
+  // Look through all the class wrapper entries in this namespace.
   for(configuration::Namespace::ClassWrappers::const_iterator w =
         ns->ClassWrappersBegin(); w != ns->ClassWrappersEnd(); ++w)
     {
@@ -283,6 +287,23 @@ void TclGenerator::GenerateNamespace(const configuration::Namespace* ns)
       }
     }
   
+  // Look through all the function wrapper entries in this namespace.
+  for(configuration::Namespace::FunctionWrappers::const_iterator w =
+        ns->FunctionWrappersBegin(); w != ns->FunctionWrappersEnd(); ++w)
+    {
+    String qualifedName = ns->GetQualifiedName()+"::"+(*w)->GetName();
+    source::Namespace::FunctionSet functionSet =
+      m_GlobalNamespace->LookupFunction(qualifedName);
+    if(!functionSet.empty())
+      {
+      this->GenerateFunctionWrapper(functionSet, *w);
+      }
+    else
+      {
+      m_Output << "// Couldn't find function " << qualifedName.c_str() << std::endl;
+      }
+    }
+  
   // Loop through all the nested namespaces.
   for(configuration::Namespace::Fields::const_iterator f =
         ns->FieldsBegin(); f != ns->FieldsEnd(); ++f)
@@ -295,6 +316,154 @@ void TclGenerator::GenerateNamespace(const configuration::Namespace* ns)
       this->GenerateNamespace(nns);
       }
     }
+}
+
+
+void
+TclGenerator
+::GenerateFunctionWrapper(const source::Namespace::FunctionSet& functionSet,
+                          const configuration::Function* functionConfig)
+{
+  typedef source::Namespace::FunctionSet FunctionSet;
+  
+  String fName = functionConfig->GetName();
+  String dummyNamePostfix = fName.substr(0, fName.find_first_of("<"));
+  for(String::iterator c = dummyNamePostfix.begin();
+      c != dummyNamePostfix.end(); ++c)
+    {
+    if(*c == ':') { *c = '_'; }
+    }
+    
+  // Todo: Add numbers after prefix to guarantee uniqueness.
+  String dummyName = "Function_"
+    +this->GetStringFromInteger(m_FunctionNameIndex++)
+    +"_"+dummyNamePostfix;
+  m_WrapperList.push_back(dummyName);
+
+  // Make a list of the functions to be wrapped.
+  Functions functions;
+  for(FunctionSet::const_iterator functionIter = functionSet.begin();
+      functionIter != functionSet.end(); ++functionIter)
+    {
+    source::Function* function = *functionIter;
+    if(function->IsFunction())
+      {
+      unsigned int argumentCount = function->GetArgumentCount();
+      unsigned int defaultArgumentCount = function->GetDefaultArgumentCount();
+      for(unsigned int i=0; i <= defaultArgumentCount; ++i)
+        {
+        functions.push_back(FunctionEntry(function, argumentCount-i));
+        }
+      
+      if(!this->ReturnsVoid(function))
+        {
+        // If the return type is a class type (not a pointer or
+        // reference to it), then it will be a temporary and must
+        // have a public destructor.
+        cxx::CvQualifiedType cxxType = this->GetCxxType(function->GetReturns()->GetType());
+        if(cxxType.IsClassType())
+          {
+          m_ClassesThatNeedDestructor.insert(cxx::ClassType::SafeDownCast(cxxType.GetType()));
+          }
+        }
+      }
+    }  
+  
+  // Write comment and beginning of class definition.
+  m_Output <<
+    "///! Dummy type to represent function.\n"
+    "struct " << dummyName.c_str() << " {};\n"
+    "\n"
+    "/**\n"
+    " * Function wrapper definition for\n"
+    " *   " << fName.c_str() << "\n"
+    " */\n"
+    "template <>\n"
+    "struct Wrapper< " << dummyName.c_str() << " >\n"
+    "{\n"
+    "  // Prototypes for function wrappers.\n";
+  
+  // Write the prototype for each function wrapper.
+  for(unsigned int f=0;f < functions.size();++f)
+    {
+    m_Output <<
+      "  static void Function_" << f << "(const WrapperFacility*, const Arguments&);\n";
+    }
+  
+  // Write end of class definition.
+  m_Output <<
+    "\n"
+    "  // Function to register these wrappers with a WrapperFacility.\n"
+    "  static void RegisterWithWrapperFacility(WrapperFacility*);\n"
+    "};\n"
+    "\n";
+
+  for(unsigned int f=0;f < functions.size();++f)
+    {
+    m_Output <<
+      "void\n"
+      "Wrapper< " << dummyName.c_str() << " >\n"
+      "::Function_" << f << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
+      "{\n";
+    
+    this->WriteReturnBegin(functions[f]);
+    
+    m_Output <<
+      "  " << fName.c_str() << "(";
+    
+    this->WriteArgumentList(functions[f]->GetArguments(), 0,
+                            functions[f].GetArgumentCount());
+    
+    this->WriteReturnEnd(functions[f]);
+    
+    m_Output << ");\n"
+      "}\n"
+      "\n";
+    }
+
+  // Write the wrapper registration function.
+  m_Output <<
+    "\n"
+    "void\n"
+    "Wrapper< " << dummyName.c_str() << " >\n"
+    "::RegisterWithWrapperFacility(WrapperFacility* wrapperFacility)\n"
+    "{\n"
+    "  // Ask the WrapperFacility to create a FunctionWrapper for this function.\n"
+    "  FunctionWrapper* wrapper =\n"
+    "    wrapperFacility->CreateFunctionWrapper(\"" << fName.c_str() << "\");\n"
+    "\n"
+    "  // If no FunctionWrapper is given, then a wrapper for this function has\n"
+    "  // already been registered.\n"
+    "  if(!wrapper) { return; }\n"
+    "\n";
+  
+  // If there are any alternate names, write them now.
+  if(functionConfig->AlternateNamesBegin() != functionConfig->AlternateNamesEnd())
+    {
+    m_Output <<
+      "  // Register additional commands for the class.\n";
+    for(configuration::Function::AlternateNames::const_iterator
+          a = functionConfig->AlternateNamesBegin();
+        a != functionConfig->AlternateNamesEnd(); ++a)
+      {
+      m_Output <<
+        "  wrapper->AddInterpreterClassCommand(\"" << a->c_str() << "\");\n";
+      }
+    m_Output <<
+      "\n";
+    }
+  
+  // Write code to register all the function wrappers.
+  m_Output <<
+    "  // Register function wrappers.\n";
+  for(unsigned int f=0;f < functions.size();++f)
+    {
+    this->WriteFunctionRegistration(functions[f], f);
+    }
+  
+  m_Output <<
+    "}\n"
+    "\n";
 }
 
 
@@ -417,7 +586,9 @@ TclGenerator
       }
     else if(methods[m]->IsOperatorMethod())
       {
-      if(methods[m]->IsStatic())
+      source::Method* method = dynamic_cast<source::Method*>(
+        static_cast<source::Function*>(methods[m]));
+      if(method->IsStatic())
         {
         m_Output <<
           "void\n"
@@ -448,7 +619,7 @@ TclGenerator
                  << "(const WrapperFacility* wrapperFacility, const Arguments& arguments)\n"
           "{\n";
       
-        this->WriteImplicitArgument(c, methods[m]);
+        this->WriteImplicitArgument(c, method);
         this->WriteReturnBegin(methods[m]);
       
         m_Output <<
@@ -531,9 +702,6 @@ TclGenerator
     this->WriteConverterRegistration(cName, converters[m]);
     }
   
-  // Write code to register all the enumeration types.
-  this->WriteEnumValueRegistration();  
-  
   m_Output <<
     "}\n"
     "\n";
@@ -566,7 +734,9 @@ TclGenerator
     {
     returnTypeName = this->GetCxxType(method->GetReturns()->GetType()).GetName();
     }
-  if(method->IsConst())
+  source::Method* methodPtr = dynamic_cast<source::Method*>(
+    static_cast<source::Function*>(method));
+  if(methodPtr->IsConst())
     {
     sourceType = "const "+sourceType;
     }
@@ -604,6 +774,55 @@ TclGenerator
         "    \"" << value.c_str() << "\", new " << typeName.c_str() << "(" << value.c_str() << "),\n"
         "    CvType< " << typeName.c_str() << " >::type.GetType());\n";
       }
+    }
+}
+
+
+void
+TclGenerator
+::WriteFunctionRegistration(const FunctionEntry& function, unsigned int f) const
+{
+  if(!function->GetArguments().empty())
+    {
+    m_Output <<
+      "  {\n"
+      "  Function::ParameterTypes parameterTypes;\n";
+    unsigned int count=0;
+    for(source::ArgumentsIterator a = function->GetArguments().begin();
+        ((count++ < function.GetArgumentCount())
+         && (a != function->GetArguments().end())); ++a)
+      {
+      const source::Type* t = (*a)->GetType();
+      m_Output <<
+        "  parameterTypes.push_back(CvType< " << this->GetCxxType(t).GetName() << " >::type.GetType());\n";
+      }
+    }
+  
+  m_Output <<
+    "  wrapper->AddFunction(\n";
+  
+  if(function->IsFunction())
+    {
+    String returnTypeName = "void";
+    if(function->GetReturns() && function->GetReturns()->GetType())
+      {
+      returnTypeName = this->GetCxxType(function->GetReturns()->GetType()).GetName();
+      }
+    m_Output <<
+      "    new Function(wrapperFacility, &Wrapper::Function_" << f << ",\n"
+      "                 \"" << function->GetName().c_str() << "\", false,\n"
+      "                 CvType< " << returnTypeName.c_str() << " >::type";
+    }
+  
+  if(function->GetArguments().empty())
+    {
+    m_Output << "));\n";
+    }
+  else
+    {
+    m_Output << ",\n"
+      "      parameterTypes));\n"
+      "  }\n";
     }
 }
 
@@ -759,6 +978,7 @@ TclGenerator
 
   // Write end of class definition.
   m_Output <<
+    "\n"
     "  // Function to register these wrappers with a WrapperFacility.\n"
     "  static void RegisterWithWrapperFacility(WrapperFacility*);\n"
     "};\n";
@@ -978,6 +1198,8 @@ void TclGenerator::WriteConversionInititialization() const
       "  wrapperFacility->SetDeleteFunction(CvType< " << typeName.c_str() <<
       " >::type.GetType(), &OldObjectOf< " << typeName.c_str() << " >::Delete);\n";
     }
+  // Write code to register all the enumeration values.
+  this->WriteEnumValueRegistration();  
 }
 
 
@@ -1032,7 +1254,20 @@ void TclGenerator::FindCvTypes(const configuration::Namespace* ns)
     source::Class* c = m_GlobalNamespace->LookupClass(qualifedName);
     if(c)
       {
-      this->FindCvTypes(c);      }
+      this->FindCvTypes(c);
+      }
+    }
+  for(configuration::Namespace::FunctionWrappers::const_iterator w =
+        ns->FunctionWrappersBegin(); w != ns->FunctionWrappersEnd(); ++w)
+    {
+    String qualifedName = ns->GetQualifiedName()+"::"+(*w)->GetName();
+    source::Namespace::FunctionSet functionSet =
+      m_GlobalNamespace->LookupFunction(qualifedName);
+    for(source::Namespace::FunctionSet::const_iterator f =
+          functionSet.begin(); f != functionSet.end(); ++f)
+      {
+      this->FindCvTypes(*f);
+      }
     }
   for(configuration::Namespace::Fields::const_iterator f =
         ns->FieldsBegin(); f != ns->FieldsEnd(); ++f)
@@ -1077,12 +1312,13 @@ void TclGenerator::FindCvTypes(const source::Class* c)
     }
 }
   
-void TclGenerator::FindCvTypes(const source::Method* method)
+
+void TclGenerator::FindCvTypes(const source::Function* function)
 {
-  if(method->GetReturns() && method->GetReturns()->GetType())
+  if(function->GetReturns() && function->GetReturns()->GetType())
     {
-    // Add the return type of the method.
-    cxx::CvQualifiedType returnType = this->GetCxxType(method->GetReturns()->GetType());
+    // Add the return type of the function.
+    cxx::CvQualifiedType returnType = this->GetCxxType(function->GetReturns()->GetType());
     m_CvTypeGenerator.Add(returnType);
     
     if(returnType.IsEnumerationType())
@@ -1128,9 +1364,9 @@ void TclGenerator::FindCvTypes(const source::Method* method)
         }
       }
     }
-  // Add the argument types of the method.
-  for(source::ArgumentsIterator a = method->GetArguments().begin();
-      a != method->GetArguments().end(); ++a)
+  // Add the argument types of the function.
+  for(source::ArgumentsIterator a = function->GetArguments().begin();
+      a != function->GetArguments().end(); ++a)
     {
     cxx::CvQualifiedType argType = this->GetCxxType((*a)->GetType());
     m_CvTypeGenerator.Add(argType);
