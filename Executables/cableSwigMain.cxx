@@ -438,9 +438,6 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 
   // Parse language dependent options
   lang->main(argc,argv);
-  printf("lang %s\n", typemap_lang);
-
-  
 
   if (help) SWIG_exit (EXIT_SUCCESS);    // Exit if we're in help mode
 
