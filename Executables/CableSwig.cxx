@@ -502,6 +502,8 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c)
   // back into this function
   if(!foundBase)
     {
+    std::cerr << "WARNING: Could not find wrapper for base class of " 
+              << c->GetQualifiedName().c_str() << "\n";    
     for( std::vector<cable::Class*>::iterator i = parents.begin();
          i != parents.end(); ++i)
       {
@@ -1529,6 +1531,12 @@ void CableSwig::ParseIndexInformation(const char* s)
   p2 = packageInfo.find("}", p1);
   std::string package = packageInfo.substr(p1+1, p2 - p1-1);
   m_ClassGroupLookup[qualifiedName] = package;
+  if(m_ImportTypedefLookup.find(qualifiedName) != m_ImportTypedefLookup.end())
+    {
+    std::cerr << "WARNING: CableSwig has detected a class that is possibly wrapped twice.\n";
+    std::cerr << "         Duplicate class name is: " << qualifiedName.c_str() << "\n";
+    return;
+    }
   m_ImportTypedefLookup[qualifiedName] = typeDef;
 }
 
