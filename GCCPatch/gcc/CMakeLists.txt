@@ -15,6 +15,8 @@ ADD_LIBRARY(cpp
 ADD_EXECUTABLE(cpp0 cppmain.c intl.c ${GCC_SOURCE_DIR}/libiberty/obstack.c)
 TARGET_LINK_LIBRARIES(cpp0 cpp iberty)
 
+ADD_CUSTOM_TARGET(generate echo "")
+
 SET(GCC_backend_GENSRCS
   ${GCC_BINARY_DIR}/gcc/genrtl.c
   ${GCC_BINARY_DIR}/gcc/insn-attrtab.c
@@ -125,15 +127,14 @@ SET_SOURCE_FILES_PROPERTIES(${GCC_backend_SRCS}
                             OBJECT_DEPENDS "${GCC_backend_GENHEADERS}")
 
 ADD_LIBRARY(backend ${GCC_backend_SRCS})
-ADD_DEPENDENCIES(cpp backend)
-
-
+ADD_DEPENDENCIES(cpp generate)
+ADD_DEPENDENCIES(backend generate)
 
 SET(OUTPUT_FILE  ${GCC_BINARY_DIR}/gcc/tree-check.h)
 IF(WIN32)
   STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
 ENDIF(WIN32)
-ADD_CUSTOM_COMMAND(TARGET backend
+ADD_CUSTOM_COMMAND(TARGET generate
                    SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
                    COMMAND ${GCC_gencheck_EXE}
                    ARGS > ${OUTPUT_FILE}
@@ -146,7 +147,7 @@ FOREACH(gen attr codes flags  )
   IF(WIN32)
     STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
   ENDIF(WIN32)
-  ADD_CUSTOM_COMMAND(TARGET backend
+  ADD_CUSTOM_COMMAND(TARGET generate
     SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
     COMMAND ${GCC_gen${gen}_EXE}
     ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md > ${OUTPUT_FILE}
@@ -159,7 +160,7 @@ FOREACH(gen peep opinit recog extract output emit attrtab )
   IF(WIN32)
     STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
   ENDIF(WIN32)
-  ADD_CUSTOM_COMMAND(TARGET backend
+  ADD_CUSTOM_COMMAND(TARGET generate
     SOURCE ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md
     COMMAND ${GCC_gen${gen}_EXE}
     ARGS ${GCC_SOURCE_DIR}/gcc/config/i386/i386.md > ${OUTPUT_FILE}
@@ -172,7 +173,7 @@ IF(WIN32)
   STRING(REGEX REPLACE "/" "\\\\" OUTPUT_FILE ${OUTPUT_FILE}) 
 ENDIF(WIN32)
 
-ADD_CUSTOM_COMMAND(TARGET backend
+ADD_CUSTOM_COMMAND(TARGET generate
                    SOURCE ${GCC_SOURCE_DIR}/gcc/rtl.def
                    COMMAND ${GCC_gengenrtl_EXE}
                    DEPENDS ${GCC_BINARY_DIR}/gcc/genrtl.h
