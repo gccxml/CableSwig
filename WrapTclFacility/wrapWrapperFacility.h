@@ -100,11 +100,14 @@ private:
   void InitializeForInterpreter();
   static void InterpreterFreeCallback(ClientData, Tcl_Interp*);
   int ListMethodsCommand(int, Tcl_Obj*CONST[]) const;
+  int ListClassesCommand(int, Tcl_Obj*CONST[]) const;
   int TypeOfCommand(int, Tcl_Obj*CONST[]) const;
   int InterpreterCommand(int, Tcl_Obj*CONST[]) const;
   int DebugOnCommand(int, Tcl_Obj*CONST[]);
   int DebugOffCommand(int, Tcl_Obj*CONST[]);
   static int ListMethodsCommandFunction(ClientData, Tcl_Interp*,
+                                        int, Tcl_Obj*CONST[]);
+  static int ListClassesCommandFunction(ClientData, Tcl_Interp*,
                                         int, Tcl_Obj*CONST[]);
   static int TypeOfCommandFunction(ClientData, Tcl_Interp*,
                                    int, Tcl_Obj*CONST[]);

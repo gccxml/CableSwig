@@ -281,6 +281,8 @@ WrapperFacility::~WrapperFacility()
  */
 void WrapperFacility::InitializeForInterpreter()
 {
+  Tcl_CreateObjCommand(m_Interpreter, "wrap::ListClasses",
+                       &ListClassesCommandFunction, 0, 0);
   Tcl_CreateObjCommand(m_Interpreter, "wrap::ListMethods",
                        &ListMethodsCommandFunction, 0, 0);
   Tcl_CreateObjCommand(m_Interpreter, "wrap::TypeOf",
@@ -406,6 +408,23 @@ int WrapperFacility::ListMethodsCommand(int objc, Tcl_Obj* CONST objv[]) const
   return TCL_OK;
 }
 
+int WrapperFacility::ListClassesCommand(int objc, Tcl_Obj* CONST objv[]) const
+{
+  Tcl_ResetResult(m_Interpreter);
+  Tcl_AppendResult(m_Interpreter, "Wrapped classes:\n", 0);
+  
+  for(ClassWrapperMap::const_iterator w = m_ClassWrapperMap->begin();
+      w != m_ClassWrapperMap->end(); ++w)
+    {
+    const ClassType* classType = w->second->GetWrappedTypeRepresentation();
+    Tcl_AppendResult(m_Interpreter,
+                     "  ", const_cast<char*>(classType->Name().c_str()),
+                     "\n", 0);
+    }
+  
+  return TCL_OK;
+}
+
 int WrapperFacility::TypeOfCommand(int objc, Tcl_Obj* CONST objv[]) const
 {
   static const char usage[] =
@@ -491,6 +510,7 @@ int WrapperFacility::DebugOffCommand(int, Tcl_Obj* CONST[])
 _wrap_DEFINE_COMMAND_FUNCTION(DebugOn)
 _wrap_DEFINE_COMMAND_FUNCTION(DebugOff)
 _wrap_DEFINE_COMMAND_FUNCTION(ListMethods)
+_wrap_DEFINE_COMMAND_FUNCTION(ListClasses)
 _wrap_DEFINE_COMMAND_FUNCTION(TypeOf)
 _wrap_DEFINE_COMMAND_FUNCTION(Interpreter)
 
@@ -1130,8 +1150,6 @@ void WrapperFacility::ClassInitialize()
 #ifdef _wrap_DEBUG_SUPPORT
 #  ifdef _WIN32
 #   include "wrapWin32OutputWindow.h"
-#  else
-#    include <iostream>
 #  endif
 #endif
 
@@ -1148,7 +1166,10 @@ void WrapperFacility::OutputDebugText(const char* text) const
 #ifdef _WIN32
   Win32OutputWindow::GetInstance()->DisplayText(text);
 #else
-  std::cout << text;
+  Tcl_Channel channel = Tcl_GetStdChannel(TCL_STDOUT);
+  Tcl_Write(channel,
+            const_cast<char*>(text),
+            std::strlen(text));
 #endif
 }
 #else
