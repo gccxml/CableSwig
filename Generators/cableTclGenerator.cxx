@@ -229,6 +229,20 @@ bool TclGenerator::FindConfiguration()
       }
     }
   
+  // Find the package version, if any.
+  const Variable* package_version = 0;
+  lower = cns->LowerBound("package_version");
+  upper = cns->UpperBound("package_version");
+  if(lower != upper)
+    {
+    package_version = Variable::SafeDownCast(*lower);
+    if(!package_version)
+      {
+      cableErrorMacro("Identifier _cable_::package_version is not a variable.");
+      return false;
+      }
+    }
+  
   if(group)
     {
     if(!this->ParseName(group->GetInitializer(), m_Group))
@@ -244,6 +258,13 @@ bool TclGenerator::FindConfiguration()
   if(package && !this->ParseName(package->GetInitializer(), m_Package))
     {
     cableErrorMacro("Error parsing package name.");
+    return false;
+    }
+  
+  if(package_version &&
+     !this->ParseName(package_version->GetInitializer(), m_PackageVersion))
+    {
+    cableErrorMacro("Error parsing package version string.");
     return false;
     }
   
@@ -275,6 +296,12 @@ bool TclGenerator::FindConfiguration()
   if(package && !groups)
     {
     cableErrorMacro("Package requested with no groups listed.");
+    return false;
+    }
+  
+  if(package_version && !package)
+    {
+    cableErrorMacro("Package version specified with no package.");
     return false;
     }
   
@@ -656,6 +683,15 @@ void TclGenerator::WritePackageInitialization() const
     {
     os <<
       "  _cable_tcl_::Wrapper_" << i->c_str() << "_Initialize(interp);\n";
+    }
+  
+  // If there is a version number, write the Tcl_PkgProvide call.
+  if(m_PackageVersion.length() > 0)
+    {
+    os <<
+      "\n"
+      "  Tcl_PkgProvide(interp, \"" << m_Package.c_str() <<
+      "\", \"" << m_PackageVersion.c_str() << "\");\n";
     }
   
   os <<

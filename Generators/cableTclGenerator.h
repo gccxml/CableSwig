@@ -119,6 +119,9 @@ protected:
   // The name of the package to be generated.
   String m_Package;
   
+  // The version string of the package to be generated.
+  String m_PackageVersion;
+  
   // Whether a group of wrappers will be generated.
   bool m_WriteGroup;
   
