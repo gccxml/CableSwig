@@ -74,7 +74,7 @@
 # define XML_PRE_3_4_TREE_VIA_PUBLIC
 #endif
 
-#define GCC_XML_C_VERSION "$Revision: 1.82 $"
+#define GCC_XML_C_VERSION "$Revision: 1.85 $"
 
 /* A "dump node" corresponding to a particular tree node.  */
 typedef struct xml_dump_node
@@ -1339,7 +1339,10 @@ xml_output_record_type (xml_dump_info_p xdi, tree rt, xml_dump_node_p dn)
 
   fprintf (xdi->file, "  <%s", tag);
   xml_print_id_attribute (xdi, dn);
-  xml_print_name_attribute (xdi, DECL_NAME (TYPE_NAME (rt)));
+  if(!TYPE_ANONYMOUS_P (rt))
+    {
+    xml_print_name_attribute (xdi, DECL_NAME (TYPE_NAME (rt)));
+    }
   xml_print_context_attribute (xdi, TYPE_NAME (rt));
   xml_print_access_attribute (xdi, TYPE_NAME (rt));
   xml_print_abstract_attribute (xdi, rt);
@@ -1493,7 +1496,6 @@ xml_output_record_type (xml_dump_info_p xdi, tree rt, xml_dump_node_p dn)
                  access, is_virtual);
         }
       }
-    fprintf (xdi->file, "\"");
     }
 
   fprintf (xdi->file, "  </%s>\n", tag);
@@ -1995,6 +1997,9 @@ xml_find_template_parm (tree t)
     case LANG_TYPE: return 0;
     case REAL_TYPE: return 0;
     case VOID_TYPE: return 0;
+
+    /* Other types that have not nested types.  */
+    case INTEGER_CST: return 0;
     default:
       fprintf(stderr, "xml_find_template_parm encountered unsupported type %s\n",
               tree_code_name[TREE_CODE (t)]);
