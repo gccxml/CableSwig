@@ -224,7 +224,7 @@ CvTypeWriter::WriteInitialization(std::ostream& os,
            << classType->GetName().c_str()
            << "\", " << (cvType.IsConst()? "true":"false")
            << ", " << (cvType.IsVolatile()? "true":"false")
-           << ", " << (classType->IsAbstract()? "true":"false")
+           << ", " << (classType->IsCopyable()? "true":"false")
            << ", parents);\n";
         os << "  }\n";
         }
@@ -235,7 +235,7 @@ CvTypeWriter::WriteInitialization(std::ostream& os,
            << classType->GetName().c_str()
            << "\", " << (cvType.IsConst()? "true":"false")
            << ", " << (cvType.IsVolatile()? "true":"false")
-           << ", " << (classType->IsAbstract()? "true":"false") << ");\n";
+           << ", " << (classType->IsCopyable()? "true":"false") << ");\n";
         }
       }; break;
     case cxx::EnumerationType_id:
@@ -400,8 +400,8 @@ void CvTypeWriter::WriteArgumentAs(std::ostream& os,
       cxx::CvQualifiedType target =
         cxx::ReferenceType::SafeDownCast(type)->GetReferencedType();
       if(target.IsConst() && !target.IsVolatile()
-         && !(target.IsClassType()
-              && cxx::ClassType::SafeDownCast(target.GetType())->IsAbstract()))
+         && (!target.IsClassType()
+             || cxx::ClassType::SafeDownCast(target.GetType())->IsCopyable()))
         {
         os << "typedef ArgumentAsReferenceTo_const< "
            << target.GetType()->Name().c_str()

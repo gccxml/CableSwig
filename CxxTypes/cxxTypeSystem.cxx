@@ -90,7 +90,7 @@ TypeSystem
  */
 ClassType*
 TypeSystem
-::GetClassType(const String& name, bool isAbstract, const ClassTypes& parents)
+::GetClassType(const String& name, bool isCopyable, const ClassTypes& parents)
 {
   // Look for an existing copy of this type.
   ClassTypeMap::const_iterator i = m_ClassTypeMap->find(name);
@@ -99,13 +99,13 @@ TypeSystem
     {
     // An existing copy was found.  Merge in the new information we have
     // and return it.
-    i->second->MergeClassInformation(isAbstract, parents);
+    i->second->MergeClassInformation(isCopyable, parents);
     return i->second;
     }
   else
     {
     // This is a new type.  Generate an entry and return it.
-    ClassType* newClassType = new ClassType(name, isAbstract, parents);
+    ClassType* newClassType = new ClassType(name, isCopyable, parents);
     m_ClassTypeMap->insert(ClassTypeMap::value_type(name, newClassType));
     return newClassType;
     }

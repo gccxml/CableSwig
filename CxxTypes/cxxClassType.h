@@ -44,7 +44,7 @@ public:
   static ClassType* SafeDownCast(Type*);
   static const ClassType* SafeDownCast(const Type*);
 
-  bool IsAbstract() const;
+  bool IsCopyable() const;
 
   void MergeClassInformation(bool, const ClassTypes&);
   
@@ -56,7 +56,7 @@ public:
   
   virtual String GenerateName(const String&, bool, bool) const;
 protected:
-  ClassType(const String&, bool isAbstract, const ClassTypes&);
+  ClassType(const String&, bool isCopyable, const ClassTypes&);
   ClassType(const Self&) {}
   void operator=(const Self&) {}
   virtual ~ClassType() {}
@@ -68,9 +68,9 @@ private:
   String m_Name;
   
   /**
-   * Flag for whether the class is abstract.
+   * Flag for whether the class is copyable.
    */
-  bool m_Abstract;
+  bool m_Copyable;
   
   /**
    * The immediate public superclasses of this class.

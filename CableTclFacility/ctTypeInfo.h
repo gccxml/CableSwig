@@ -34,7 +34,7 @@ public:
                                       unsigned long size);
   static CvQualifiedType GetClassType(const String& name,
                                       bool isConst, bool isVolatile,
-                                      bool isAbstract = false,
+                                      bool isCopyable = false,
                                       const ClassTypes& parents = ClassTypes());
   static CvQualifiedType GetEnumerationType(const String& name,
                                             bool isConst, bool isVolatile);

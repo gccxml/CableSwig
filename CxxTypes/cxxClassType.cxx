@@ -59,22 +59,22 @@ const ClassType* ClassType::SafeDownCast(const Type* t)
 
 
 /**
- * Return whether the class is abstract.
+ * Return whether the class is copyable.
  */
-bool ClassType::IsAbstract() const
+bool ClassType::IsCopyable() const
 {
-  return m_Abstract;
+  return m_Copyable;
 }
 
 
 /**
  * Merge the class information given with that already known.  This
- * includes the abstract flag and parent classes.
+ * includes the copyable flag, and parent classes.
  */
-void ClassType::MergeClassInformation(bool isAbstract,
+void ClassType::MergeClassInformation(bool isCopyable,
                                       const ClassTypes& parents)
 {
-  m_Abstract = isAbstract | m_Abstract;
+  m_Copyable = isCopyable | m_Copyable;
   if(parents.size() > m_Parents.size())
     {
     m_Parents = parents;
@@ -193,10 +193,10 @@ String ClassType::GenerateName(const String& outerType,
  * Constructor for ClassType just takes the name of the class.  This name
  * may include template parameters of an instantiation.
  */
-ClassType::ClassType(const String& name, bool isAbstract,
+ClassType::ClassType(const String& name, bool isCopyable,
                      const ClassTypes& parents):
   m_Name(name),
-  m_Abstract(isAbstract),
+  m_Copyable(isCopyable),
   m_Parents(parents)
 {
 }

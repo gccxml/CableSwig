@@ -34,7 +34,7 @@ public:
   const ArrayType*           GetArrayType(const CvQualifiedType&,
                                           unsigned long);
   ClassType*                 GetClassType(const String&,
-                                          bool isAbstract = false,
+                                          bool isCopyable = false,
                                           const ClassTypes& = ClassTypes());
   const EnumerationType*     GetEnumerationType(const String&);
   const FunctionType*        GetFunctionType(const CvQualifiedType&,
