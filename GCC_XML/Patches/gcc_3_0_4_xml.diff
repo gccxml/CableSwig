@@ -1,10 +1,10 @@
-Index: Make-lang.in
+Index: gcc/cp/Make-lang.in
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/Make-lang.in,v
 retrieving revision 1.77.2.7
 diff -c -3 -p -r1.77.2.7 Make-lang.in
-*** Make-lang.in	14 Nov 2001 22:33:42 -0000	1.77.2.7
---- Make-lang.in	11 Apr 2002 19:28:35 -0000
+*** gcc/cp/Make-lang.in	14 Nov 2001 22:33:42 -0000	1.77.2.7
+--- gcc/cp/Make-lang.in	27 Aug 2003 14:38:55 -0000
 *************** CXX_C_OBJS = c-common.o c-format.o c-pra
 *** 98,103 ****
 --- 98,104 ----
@@ -25,13 +25,13 @@ diff -c -3 -p -r1.77.2.7 Make-lang.in
   
   cp/parse.o: cp/parse.c $(CXX_TREE_H) flags.h cp/lex.h except.h output.h \
   	system.h toplev.h $(GGC_H)
-Index: cp-tree.h
+Index: gcc/cp/cp-tree.h
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/cp-tree.h,v
 retrieving revision 1.572.2.36
 diff -c -3 -p -r1.572.2.36 cp-tree.h
-*** cp-tree.h	8 Dec 2001 16:12:51 -0000	1.572.2.36
---- cp-tree.h	11 Apr 2002 19:28:47 -0000
+*** gcc/cp/cp-tree.h	8 Dec 2001 16:12:51 -0000	1.572.2.36
+--- gcc/cp/cp-tree.h	27 Aug 2003 14:39:00 -0000
 *************** extern tree mangle_guard_variable       
 *** 4586,4591 ****
 --- 4586,4602 ----
@@ -52,13 +52,13 @@ diff -c -3 -p -r1.572.2.36 cp-tree.h
   /* -- end of C++ */
   
   #endif /* not _CP_TREE_H */
-Index: decl2.c
+Index: gcc/cp/decl2.c
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/decl2.c,v
 retrieving revision 1.437.2.29
 diff -c -3 -p -r1.437.2.29 decl2.c
-*** decl2.c	30 Nov 2001 03:12:42 -0000	1.437.2.29
---- decl2.c	11 Apr 2002 19:28:57 -0000
+*** gcc/cp/decl2.c	30 Nov 2001 03:12:42 -0000	1.437.2.29
+--- gcc/cp/decl2.c	27 Aug 2003 14:39:05 -0000
 *************** int flag_enforce_eh_specs = 1;
 *** 440,445 ****
 --- 440,453 ----
@@ -111,13 +111,13 @@ diff -c -3 -p -r1.437.2.29 decl2.c
         else if (dump_switch_p (p))
   	;
         else 
-Index: lang-options.h
+Index: gcc/cp/lang-options.h
 ===================================================================
-RCS file: /cvsroot/gcc/gcc/gcc/cp/lang-options.h,v
+RCS file: /cvsroot/gcc/gcc/gcc/cp/Attic/lang-options.h,v
 retrieving revision 1.37.4.4
 diff -c -3 -p -r1.37.4.4 lang-options.h
-*** lang-options.h	2 Aug 2001 14:23:12 -0000	1.37.4.4
---- lang-options.h	11 Apr 2002 19:28:58 -0000
+*** gcc/cp/lang-options.h	2 Aug 2001 14:23:12 -0000	1.37.4.4
+--- gcc/cp/lang-options.h	27 Aug 2003 14:39:05 -0000
 *************** DEFINE_LANG_NAME ("C++")
 *** 114,119 ****
 --- 114,125 ----
@@ -133,13 +133,13 @@ diff -c -3 -p -r1.37.4.4 lang-options.h
     { "-fxref", 
       N_("Emit cross referencing information") },
     { "-fno-xref", "" },
-Index: semantics.c
+Index: gcc/cp/semantics.c
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/semantics.c,v
 retrieving revision 1.189.2.19
 diff -c -3 -p -r1.189.2.19 semantics.c
-*** semantics.c	31 Jan 2002 22:46:46 -0000	1.189.2.19
---- semantics.c	11 Apr 2002 19:29:02 -0000
+*** gcc/cp/semantics.c	31 Jan 2002 22:46:46 -0000	1.189.2.19
+--- gcc/cp/semantics.c	27 Aug 2003 14:39:11 -0000
 *************** finish_translation_unit ()
 *** 1703,1708 ****
 --- 1703,1712 ----

@@ -1,10 +1,10 @@
-Index: Make-lang.in
+Index: gcc/cp/Make-lang.in
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/Make-lang.in,v
 retrieving revision 1.108.2.2
 diff -c -3 -p -r1.108.2.2 Make-lang.in
-*** Make-lang.in	23 May 2002 17:57:42 -0000	1.108.2.2
---- Make-lang.in	20 Sep 2002 15:51:45 -0000
+*** gcc/cp/Make-lang.in	23 May 2002 17:57:42 -0000	1.108.2.2
+--- gcc/cp/Make-lang.in	27 Aug 2003 14:40:28 -0000
 *************** CXX_OBJS = cp/call.o cp/decl.o cp/expr.o
 *** 103,109 ****
    cp/class.o cp/decl2.o cp/error.o cp/lex.o cp/parse.o cp/ptree.o cp/rtti.o \
@@ -32,16 +32,16 @@ diff -c -3 -p -r1.108.2.2 Make-lang.in
   
   cp/parse.o: cp/parse.c $(CXX_TREE_H) flags.h cp/lex.h except.h output.h \
   	$(SYSTEM_H) toplev.h $(GGC_H)
-Index: cp-tree.h
+Index: gcc/cp/cp-tree.h
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/cp-tree.h,v
-retrieving revision 1.681.2.12.2.1
-diff -c -3 -p -r1.681.2.12.2.1 cp-tree.h
-*** cp-tree.h	26 Jul 2002 23:23:00 -0000	1.681.2.12.2.1
---- cp-tree.h	20 Sep 2002 15:51:47 -0000
+retrieving revision 1.681.2.12
+diff -c -3 -p -r1.681.2.12 cp-tree.h
+*** gcc/cp/cp-tree.h	23 May 2002 17:57:42 -0000	1.681.2.12
+--- gcc/cp/cp-tree.h	27 Aug 2003 14:40:44 -0000
 *************** extern tree mangle_ref_init_variable    
-*** 4395,4400 ****
---- 4395,4416 ----
+*** 4394,4399 ****
+--- 4394,4415 ----
   /* in dump.c */
   extern int cp_dump_tree                         PARAMS ((void *, tree));
   
@@ -56,7 +56,7 @@ diff -c -3 -p -r1.681.2.12.2.1 cp-tree.h
 +    number, and pp is the patch level.  
 +    Examples:  gcc 3.0.4 = 0x030004
 +               gcc 3.2.0 = 0x030200 */
-+ #define GCC_XML_GCC_VERSION 0x030200
++ #define GCC_XML_GCC_VERSION 0x030101
 + 
 + /* in xml.c */
 + extern void do_xml_output                       PARAMS ((const char *));
@@ -64,13 +64,13 @@ diff -c -3 -p -r1.681.2.12.2.1 cp-tree.h
   /* -- end of C++ */
   
   #endif /* ! GCC_CP_TREE_H */
-Index: decl2.c
+Index: gcc/cp/decl2.c
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/decl2.c,v
-retrieving revision 1.520.2.7.2.1
-diff -c -3 -p -r1.520.2.7.2.1 decl2.c
-*** decl2.c	26 Jul 2002 23:22:59 -0000	1.520.2.7.2.1
---- decl2.c	20 Sep 2002 15:51:48 -0000
+retrieving revision 1.520.2.7
+diff -c -3 -p -r1.520.2.7 decl2.c
+*** gcc/cp/decl2.c	4 Jul 2002 10:57:18 -0000	1.520.2.7
+--- gcc/cp/decl2.c	27 Aug 2003 14:40:54 -0000
 *************** int flag_permissive;
 *** 400,405 ****
 --- 400,414 ----
@@ -114,13 +114,13 @@ diff -c -3 -p -r1.520.2.7.2.1 decl2.c
         else if (dump_switch_p (p))
   	;
         else 
-Index: lang-options.h
+Index: gcc/cp/lang-options.h
 ===================================================================
-RCS file: /cvsroot/gcc/gcc/gcc/cp/lang-options.h,v
+RCS file: /cvsroot/gcc/gcc/gcc/cp/Attic/lang-options.h,v
 retrieving revision 1.43
 diff -c -3 -p -r1.43 lang-options.h
-*** lang-options.h	15 Dec 2001 20:06:12 -0000	1.43
---- lang-options.h	20 Sep 2002 15:51:48 -0000
+*** gcc/cp/lang-options.h	15 Dec 2001 20:06:12 -0000	1.43
+--- gcc/cp/lang-options.h	27 Aug 2003 14:40:54 -0000
 *************** DEFINE_LANG_NAME ("C++")
 *** 117,122 ****
 --- 117,126 ----
@@ -134,13 +134,13 @@ diff -c -3 -p -r1.43 lang-options.h
   
     { "-Wreturn-type", 
       N_("Warn about inconsistent return types") },
-Index: semantics.c
+Index: gcc/cp/semantics.c
 ===================================================================
 RCS file: /cvsroot/gcc/gcc/gcc/cp/semantics.c,v
 retrieving revision 1.252.2.6
 diff -c -3 -p -r1.252.2.6 semantics.c
-*** semantics.c	17 Apr 2002 01:44:01 -0000	1.252.2.6
---- semantics.c	20 Sep 2002 15:51:49 -0000
+*** gcc/cp/semantics.c	17 Apr 2002 01:44:01 -0000	1.252.2.6
+--- gcc/cp/semantics.c	27 Aug 2003 14:40:57 -0000
 *************** finish_translation_unit ()
 *** 1593,1598 ****
 --- 1593,1602 ----
