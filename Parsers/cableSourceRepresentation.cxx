@@ -745,7 +745,7 @@ cxx::CvQualifiedType NamedType::GetCxxType(const Namespace* gns) const
     else if(resultType == Typedef_id)
       {
       Typedef* td = dynamic_cast<Typedef*>(result);
-      return td->GetOriginalType()->GetCxxType(gns);
+      return td->GetOriginalType()->GetCxxType(gns).GetMoreQualifiedType(isConst, isVolatile);
       }
     }
   // Couldn't identify the type.
