@@ -184,7 +184,7 @@ SWIG_Tcl_SetResultFromConstString(Tcl_Interp * interp, char const * const str, T
   const size_t NullTerminatedStringLength=strlen(str)+1;
   char * Msg= (char *) malloc(NullTerminatedStringLength);
   strncpy(Msg,str,NullTerminatedStringLength);
-  Tcl_SetResult(interp, Msg, TCL_STATIC);
+  Tcl_SetResult(interp, Msg, TCL_VOLATILE);
   free(Msg);
   return;
 }
