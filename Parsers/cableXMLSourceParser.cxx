@@ -535,7 +535,7 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
       String lineStr = loc.substr(pos+1);
       unsigned long line;
       named->SetFile(this->GetSourceFile(fid.c_str()));
-      if(sscanf(lineStr.c_str(), "%ul", &line) == 1) { named->SetLine(line); }
+      if(sscanf(lineStr.c_str(), "%lu", &line) == 1) { named->SetLine(line); }
       else { ok = false; }
       }
     else { ok = false; }
@@ -1003,7 +1003,7 @@ SourceObject* XMLSourceParser::AddArrayType(XMLSourceElement* element)
   if(String(maxStr).length() > 0)
     {
     unsigned long max = 0;
-    if(sscanf(maxStr, "%ul", &max) != 1)
+    if(sscanf(maxStr, "%lu", &max) != 1)
       {
       cableErrorMacro("Cannot convert max=\"" << maxStr << "\" to integer "
                       "on ArrayType " << element->GetId());
