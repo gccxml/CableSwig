@@ -524,8 +524,7 @@ int ClassWrapper::CallWrappedFunction(int objc, Tcl_Obj* CONST objv[],
  * that made the call-back.
  */
 int ClassWrapper::ClassWrapperDispatchFunction(ClientData clientData,
-                                               Tcl_Interp* interp,
-                                               int objc,
+                                               Tcl_Interp*, int objc,
                                                Tcl_Obj* CONST objv[])
 {  
   // The client data is the pointer to the instance of the ClassWrapper
@@ -543,8 +542,7 @@ int ClassWrapper::ClassWrapperDispatchFunction(ClientData clientData,
  * interpreter that made the call-back.
  */
 int ClassWrapper::ObjectWrapperDispatchFunction(ClientData clientData,
-                                                Tcl_Interp* interp,
-                                                int objc,
+                                                Tcl_Interp*, int objc,
                                                 Tcl_Obj* CONST objv[])
 {
   // The client data is the pointer to the instance of the
