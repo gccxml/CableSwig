@@ -15,6 +15,10 @@
 
 =========================================================================*/
 #include "cableClass.h"
+#include "cableConstructor.h"
+#include "cableFunctionType.h"
+#include "cableReferenceType.h"
+#include "cableClassType.h"
 #include "cxxTypeSystem.h"
 
 #include <vector>
@@ -98,5 +102,47 @@ const cxx::ClassType* Class::GetCxxClassType(cxx::TypeSystem* ts) const
   return ts->GetClassType(this->GetQualifiedName(), m_Abstract, bases);
 }
 
+//----------------------------------------------------------------------------
+bool Class::HasPublicCopyConstructor() const
+{
+  // Look for our own copy constructor.
+  bool found = false;
+  for(Context::Iterator i = this->Begin(); i != this->End(); ++i)
+    {
+    Constructor* c = Constructor::SafeDownCast(*i);
+    if(c && (i.GetAccess() == Context::Public))
+      {
+      if(this->IsCopyConstructor(c))
+        {
+        found = true;
+        break;
+        }
+      }
+    }
+  if(!found) { return false; }
+  
+  // Now make sure all superclasses' copy constructors are valid.
+  for(BaseClassVector::const_iterator i = m_BaseClassVector.begin();
+      i != m_BaseClassVector.end(); ++i)
+    {
+    if(!(*i)->HasPublicCopyConstructor()) { return false; }
+    }
+  return true;
+}
+
+//----------------------------------------------------------------------------
+bool Class::IsCopyConstructor(const Method* m) const
+{
+  // Must be a constructor accepting a reference to this class.
+  if(m->GetFunctionId() != Function::ConstructorId) { return false; }
+  FunctionType* ft = m->GetFunctionType();
+  if(ft->GetNumberOfArguments() != 1) { return false; }
+  ReferenceType* rt = ReferenceType::SafeDownCast(ft->GetArgument(0));
+  if(!rt) { return false; }
+  if(m->GetContext() != static_cast<const Context*>(this)) { return false; }
+  ClassType* ct = ClassType::SafeDownCast(rt->GetTarget());
+  if(ct->GetClass() != this) { return false; }  
+  return true;
+}
 
 } // namespace cable

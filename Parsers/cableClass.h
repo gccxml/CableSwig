@@ -25,6 +25,7 @@ namespace cable
 {
 
 class ClassType;
+class Method;
 
 /** Represent a class.  */
 class CABLE_PARSERS_EXPORT Class: public Context
@@ -49,6 +50,14 @@ public:
   
   /** Print the Class's representation.  */
   void Print(std::ostream& os, Indent indent) const;
+  
+  /** Test whether the class and all superclasses have a public copy
+      constructor.  */
+  bool HasPublicCopyConstructor() const;
+  
+  /** Test whether the given method is a copy constructor for this
+      class.  */
+  bool IsCopyConstructor(const Method* m) const;
   
 protected:
   Class();
