@@ -1,0 +1,7 @@
+SET(CableSwig_VERSION_MAJOR "@CableSwig_VERSION_MAJOR@")
+SET(CableSwig_VERSION_MINOR "@CableSwig_VERSION_MINOR@")
+SET(CableSwig_VERSION_PATCH "@CableSwig_VERSION_PATCH@")
+
+SET(CableSwig_cableidx_EXE "@CableSwig_cableidx_EXE_CONFIG@")
+SET(CableSwig_cswig_EXE "@CableSwig_cswig_EXE_CONFIG@")
+SET(CableSwig_gccxml_EXE "@CableSwig_gccxml_EXE_CONFIG@")

@@ -52,5 +52,5 @@ Source/Swig
 Source/DOH
 )
 
-
-
+# Install support library.
+SUBDIRS(Lib)

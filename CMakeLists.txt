@@ -1,5 +1,9 @@
 PROJECT(CableSwig)
 
+SET(CableSwig_VERSION_MAJOR 0)
+SET(CableSwig_VERSION_MINOR 1)
+SET(CableSwig_VERSION_PATCH 0)
+
 IF(NOT LIBRARY_OUTPUT_PATH)
   SET(LIBRARY_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE INTERNAL 
     "Single output directory for building all libraries.  Can not be changed.")
@@ -46,3 +50,30 @@ SET(CABLE_NO_INSTALL_FACILITIES 1)
 SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
 
 SUBDIRS(SWIG Cable GCCPatch GCC_XML Executables)
+
+#-----------------------------------------------------------------------------
+# Create the CableSwigConfig.cmake files for external projects to use.
+
+# Settings for the build tree.
+UTILITY_SOURCE(CableSwig_cableidx_EXE cableidx Executables cableidx.cxx)
+UTILITY_SOURCE(CableSwig_cswig_EXE cswig Executables CableSwig.cxx)
+UTILITY_SOURCE(CableSwig_gccxml_EXE gccxml GCC_XML/GXFront gxFront.cxx)
+MARK_AS_ADVANCED(CableSwig_cableidx_EXE CableSwig_cswig_EXE CableSwig_gccxml_EXE)
+SET(CableSwig_cableidx_EXE_CONFIG ${CableSwig_cableidx_EXE})
+SET(CableSwig_cswig_EXE_CONFIG ${CableSwig_cswig_EXE})
+SET(CableSwig_gccxml_EXE_CONFIG ${CableSwig_gccxml_EXE})
+
+CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
+               ${CableSwig_BINARY_DIR}/CableSwigConfig.cmake @ONLY IMMEDIATE)
+
+# Settings for the install tree.
+SET(CableSwig_cableidx_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cableidx)
+SET(CableSwig_cswig_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cswig)
+SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${GCCXML_INSTALL_ROOT}/bin/gccxml)
+
+CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
+               ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
+               @ONLY IMMEDIATE)
+
+INSTALL_FILES(${CableSwig_INSTALL_ROOT}/lib/CableSwig FILES
+              ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake)
