@@ -254,17 +254,33 @@ static Parm *nonvoid_parms(Parm *p) {
 
 /* This is a hack */
 SwigType *cplus_value_type(SwigType *t) {
-  Node *n;
-  if (!CPlusPlus) return 0;
+  Node *n = 0;
+  if (!CPlusPlus) { return 0;}
   if (SwigType_isclass(t)) {
-    SwigType *td = SwigType_typedef_resolve_all(t);
-    if ((n = Swig_symbol_clookup(td,0))) {
-      if ((Strcmp(nodeType(n),"class") == 0) && (!Getattr(n,"allocate:default_constructor") || (Getattr(n,"allocate:noassign")))) {
+    SwigType *td = SwigType_typedef_resolve_all(t); 
+    if ((n = Swig_symbol_clookup(td,0)))
+      {
+      if ((Strcmp(nodeType(n),"class") == 0) && (!Getattr(n,"allocate:default_constructor") || (Getattr(n,"allocate:noassign")))) 
+        {
 	String *s = NewStringf("SwigValueWrapper< %s >",t);
 	Delete(td);
 	return s;
+        }
       }
-    }
+    else
+      {
+      SwigType* ltd = SwigType_ltype(td);
+      if ((n = Swig_symbol_clookup(ltd,0))) 
+        {
+        if ((Strcmp(nodeType(n),"class") == 0) && (!Getattr(n,"allocate:default_constructor") || (Getattr(n,"allocate:noassign"))))
+          {
+          SwigType* lt = SwigType_ltype(t);
+          String *s = NewStringf("SwigValueWrapper< %s >",lt);
+          Delete(td);
+          return s;
+          }
+        }
+      }
     if (SwigType_issimple(td) && SwigType_istemplate(td)) {
       String *s = NewStringf("SwigValueWrapper< %s >",t);
       Delete(td);
@@ -1301,7 +1317,6 @@ int Language::classDeclaration(Node *n) {
   char *classname = tdname ? Char(tdname) : Char(name);
   char *iname = Char(symname);
   int   strip = (tdname || CPlusPlus) ? 1 : 0;
-
 
   if (!classname) {
     Swig_warning(WARN_LANG_CLASS_UNNAMED, input_file, line_number, "Can't generate wrappers for unnamed struct/class.\n");
