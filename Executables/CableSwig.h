@@ -106,9 +106,8 @@ private:
   bool FindClassGroup(const char* className, std::string* group);
   bool FindImportTypedef(const char* className, std::string* typeName);
   bool ReadMasterIndexFile();
-  void AddClassToBeImported(cable::Class const*);
-  void AddImportReturnTypesAndArguments(cable::Class const* );
-  void FindWrappedBases(List* bases, const cable::Class* );
+  void AddClassToBeImported(cable::Class*);
+  void FindWrappedBases(List* bases, const cable::Class* c);
   void AddImportClass( const cable::Type* rt);
 private:
   std::string m_DependFile;

@@ -18,7 +18,6 @@
 #include "cableFunctionType.h"
 #include "cableEnumerationType.h"
 #include "cableReferenceType.h"
-#include "cablePointerType.h"
 #include "cableSystemTools.h"
 #include "cxxCvQualifiedType.h"
 #include "cxxPointerType.h"
@@ -43,11 +42,11 @@ const char* SwigInitMacrosString =
 "#define SWIG_INIT_CALL_ARGS cv\n"
 "#else\n"
 "#define SWIG_INIT_ARGS pTHXo_ CV* cv\n"
-"#define SWIG_INIT_CALL_ARGS aTHXx_ cv\n"
+"#define SWIG_INIT_CALL_ARGS cv\n"
 "#endif\n"
 "#else\n"
 "#define SWIG_INIT_ARGS CV *cv, CPerlObj *\n"
-"#define SWIG_INIT_CALL_ARGS aTHXx_ cv, 0\n"
+"#define SWIG_INIT_CALL_ARGS cv, 0\n"
 "#endif\n"
 "#define DECLARE_MODULE_INIT(name, Capitalname) \\\n"
 "extern \"C\" int boot_##name( SWIG_INIT_ARGS );\n"
@@ -843,73 +842,11 @@ std::string CableSwig::GetTclName(const char* s)
 }
 
 
-void CableSwig::AddImportClass( const cable::Type* ct)
-{
-  if(const cable::ReferenceType* ref = cable::ReferenceType::SafeDownCast(ct))
-    {
-    ct = ref->GetTarget();
-    }
-  if(const cable::PointerType* ptr = cable::PointerType::SafeDownCast(ct))
-    {
-    ct = ptr->GetTarget();
-    }
-  const cable::ClassType* rt = cable::ClassType::SafeDownCast(ct);
-  if(rt)
-    {
-    // add the class into the list
-    this->AddClassToBeImported(rt->GetClass());
-    }
-}
 
-
-void CableSwig::AddImportReturnTypesAndArguments(cable::Class const* c)
+// add a class to the imported set
+void CableSwig::AddClassToBeImported(cable::Class* c)
 {
-  for(cable::Class::Iterator i = c->Begin(); i != c->End(); ++i)
-    {
-    cable::Method* mth = cable::Method::SafeDownCast(*i);
-    if(mth)
-      {
-      cable::FunctionType* ft = mth->GetFunctionType();
-      this->AddImportClass(ft->GetReturns());
-      for(unsigned int arg = 0; arg < ft->GetNumberOfArguments(); ++arg)
-        {
-        this->AddImportClass(ft->GetArgument(arg));
-        }
-      }
-    }
-}
-
-// add a class to the m_ClassesIncludedOrImported map
-void CableSwig::AddClassToBeImported(cable::Class const* c)
-{
-  // if the class is already in the import map, then return
-  if(m_ClassesToBeImported.find(c) != m_ClassesToBeImported.end())
-    {
-    return;
-    }
-  // 1. add the class first to stop recursion
   m_ClassesToBeImported.insert(c);
-
-  // 2. add all the parent classes of c to map of imported classes
-  std::vector<cable::Class*> parents;
-  c->GetAllBaseClasses(parents);
-  for( std::vector<cable::Class*>::iterator i = parents.begin();
-       i != parents.end(); ++i)
-    {
-    // check to see if the parent has already been added
-    if(m_ClassesToBeImported.find(*i) == m_ClassesToBeImported.end())
-      {
-      m_ClassesToBeImported.insert(*i);
-      this->AddImportReturnTypesAndArguments(*i);
-      }
-    else
-      {
-      // stop processing parents if a parent is already imported
-      break;
-      }
-    }
-  // 3. add all return types and function arguments
-  this->AddImportReturnTypesAndArguments(c);
 }
 
 
@@ -954,10 +891,29 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
         // list of classes that will be included
         m_TypedefLookup.insert(std::pair<const cable::Class*, cable::Typedef*>(c, td));
         m_ClassesToBeIncluded.insert(c);
-        // add this class to the import list so that the parent
-        // and all the return types are added as well
-        // it will be removed below
-        this->AddClassToBeImported(c);
+
+        std::vector<cable::Class*> parents;
+        c->GetAllBaseClasses(parents);
+        // add all the parent classes of c to map of imported classes
+        for( std::vector<cable::Class*>::iterator i = parents.begin();
+             i != parents.end(); ++i)
+          {
+          this->AddClassToBeImported(*i);
+          }
+        // now look for return types and function arguments
+        for(cable::Class::Iterator i = c->Begin(); i != c->End(); ++i)
+          {
+          cable::Method* mth = cable::Method::SafeDownCast(*i);
+          if(mth)
+            {
+            cable::FunctionType* ft = mth->GetFunctionType();
+            this->AddImportClass(ft->GetReturns());
+            for(unsigned int arg = 0; arg < ft->GetNumberOfArguments(); ++arg)
+              {
+              this->AddImportClass(ft->GetArgument(arg));
+              }
+            }
+          }
         }
       }
     }
@@ -970,6 +926,28 @@ void CableSwig::DetermineClassesToWrap(const cable::Namespace* cns)
     }
 }
 
+void CableSwig::AddImportClass( const cable::Type* ct)
+{
+  if(const cable::ReferenceType* ref = cable::ReferenceType::SafeDownCast(ct))
+    {
+    ct = ref->GetTarget();
+    }
+  const cable::ClassType* rt = cable::ClassType::SafeDownCast(ct);
+  if(rt)
+    {
+    // add the parents of any return type into the list as well
+    const cable::Class* c = rt->GetClass();
+    std::vector<cable::Class*> parents;
+    c->GetAllBaseClasses(parents);
+    for( std::vector<cable::Class*>::iterator pi = parents.begin();
+         pi != parents.end(); ++pi)
+      {
+      this->AddClassToBeImported(*pi);
+      }
+    // add the class into the list
+    this->AddClassToBeImported(rt->GetClass());
+    }
+}
 
 // handle all the imported classes
 void CableSwig::ProcessImportedClasses(Node* top, Node* module)
