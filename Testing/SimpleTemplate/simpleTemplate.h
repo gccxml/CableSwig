@@ -14,6 +14,19 @@ public:
     {
       return barval;
     }
+protected:
+  void ThisShouldNotBeCalledBar()
+    {
+    }
+};
+
+class A
+{
+public:
+  A(int) {};
+  ~A(){};
+private:
+  A(A const& ){};
 };
 
 
@@ -21,7 +34,21 @@ template <class T>
 class foo : public bar<T>
 {
   T val;
+private:
+  void PrivateFun()
+    {
+    }
+protected:
+  void ThisShouldNotBeCalledFoo()
+    {
+    }
 public:
+  A GetA() 
+    {
+      A a(10);
+      return a;
+    }
+  
   foo(T t) 
     {
       val = t;
