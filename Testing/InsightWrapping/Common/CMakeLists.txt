@@ -1,0 +1,65 @@
+# create a list of cable config files for wrapping
+SET(WRAP_SOURCES
+  wrap_ITKBase
+  wrap_ITKCommon
+  wrap_ITKFilterBase
+  wrap_ITKInterpolators
+  wrap_ITKRegions
+  wrap_ITKTransforms
+  wrap_itkArray
+  wrap_itkContinuousIndex
+  wrap_itkDenseFiniteDifferenceImageFilter
+  wrap_itkDifferenceImageFilter
+  wrap_itkEventObject
+  wrap_itkFiniteDifferenceImageFilter
+  wrap_itkFixedArray
+  wrap_itkImage
+  wrap_itkIndex
+  wrap_itkPoint
+  wrap_itkSize
+  wrap_itkVector
+)
+
+SET(INDEX_FILE_CONTENT "")
+
+# loop over cable config files creating two lists:
+# WRAP_TCL_SOURCES: list of generated files
+FOREACH(Source ${WRAP_SOURCES})
+   SET(WRAP_TCL_SOURCES ${WRAP_TCL_SOURCES} ${Source}Tcl.cxx)
+   SET(WRAP_PYTHON_SOURCES ${WRAP_PYTHON_SOURCES} ${Source}Python.cxx)
+   SET(ALL_IDX_FILES ${ALL_IDX_FILES} ${WrapITK_BINARY_DIR}/Common/${Source}.idx )
+   SET(INDEX_FILE_CONTENT "${INDEX_FILE_CONTENT}${WrapITK_BINARY_DIR}/Common/${Source}.idx\n")
+ENDFOREACH(Source)
+
+CONFIGURE_FILE(
+${WrapITK_SOURCE_DIR}/Master.mdx.in
+${WrapITK_BINARY_DIR}/Common/ITKCommonTCL.mdx
+)
+
+# set the generated sources as generated
+SET_SOURCE_FILES_PROPERTIES(${WRAP_TCL_SOURCES} ${WRAP_PYTHON_SOURCES} GENERATED )
+
+# add the library
+ADD_LIBRARY(ITKCommonTcl SHARED ${WRAP_TCL_SOURCES})
+ADD_LIBRARY(_ITKCommonTcl MODULE ${WRAP_PYTHON_SOURCES})
+SET_TARGET_PROPERTIES( _ITKCommonTcl PROPERTIES PREFIX "")
+SET(IGNORE_WARNINGS -w362 -w389 -w503 -w508 -w509)
+
+# wrap each of the files
+FOREACH(Source ${WRAP_SOURCES})
+  GCCXML_CREATE_XML_FILE(${ITK_TOP}/Wrapping/Tcl/Common 
+                         ${WrapITK_BINARY_DIR}/Common ${Source}.cxx ${Source}.xml ITKCommonTcl)
+  CINDEX_CREATE_IDX_FILE(${WrapITK_BINARY_DIR}/Common ${Source}.xml ${Source}.idx ITKCommonTcl)
+  CSWIG_CREATE_TCL_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
+                            ITKCommonTCL.mdx ${Source}.idx
+                            ${Source}.xml ${Source}Tcl.cxx ITKCommonTcl
+                            "${ALL_IDX_FILES}")
+  CSWIG_CREATE_PYTHON_CXX_FILE(${WrapITK_BINARY_DIR}/Common 
+                            ITKCommonTCL.mdx ${Source}.idx
+                            ${Source}.xml ${Source}Python.cxx _ITKCommonTcl
+                            "${ALL_IDX_FILES}")
+ENDFOREACH(Source)
+
+# link to ITKCommon
+TARGET_LINK_LIBRARIES(ITKCommonTcl ${TCL_LIBRARY} ITKCommon SwigRuntimeTcl )
+TARGET_LINK_LIBRARIES(_ITKCommonTcl ${PYTHON_LIBRARY} ITKCommon SwigRuntimePython)
