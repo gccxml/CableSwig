@@ -190,6 +190,31 @@ IF(HAVE_DECL_ENVIRON MATCHES "^HAVE_DECL_ENVIRON$")
   ENDIF(HAVE_DECL_ENVIRON)
 ENDIF(HAVE_DECL_ENVIRON MATCHES "^HAVE_DECL_ENVIRON$")
 
+
+
+IF(HAVE_ALLOCA_H)
+  IF(NOT HAVE_ALLOCA)
+    MESSAGE(STATUS "Checking for alloca from alloca.h")
+    TRY_COMPILE(HAVE_ALLOCA 
+	  ${GCC_BINARY_DIR}
+	  ${GCC_SOURCE_DIR}/CheckAlloca.c
+	  OUTPUT_VARIABLE OUTPUT)
+    IF(HAVE_ALLOCA)
+      MESSAGE(STATUS "Checking for alloca - yes")
+      SET(HAVE_ALLOCA 1 CACHE INTERNAL "alloca is found")
+    ELSE(HAVE_ALLOCA)
+      MESSAGE(STATUS "Checking for alloca - no")
+      SET(HAVE_ALLOCA "" CACHE INTERNAL "alloca is found")
+      WRITE_FILE(${GCC_BINARY_DIR}/CMakeError.log 
+        "Checking for alloca "
+        "failed with the following output:\n"
+        "${OUTPUT}\n" APPEND)  
+    ENDIF(HAVE_ALLOCA)
+  ENDIF(NOT HAVE_ALLOCA)
+ENDIF(HAVE_ALLOCA_H)
+
+     
+
 CONFIGURE_FILE(${GCC_SOURCE_DIR}/gcc/auto-host.h.in
                ${GCC_BINARY_DIR}/gcc/auto-host.h)
 CONFIGURE_FILE(${GCC_SOURCE_DIR}/gcc/configargs.h.in
