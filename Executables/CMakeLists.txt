@@ -18,6 +18,6 @@ INSTALL_TARGETS(/bin cable)
 IF(UNIX)
   IF(NOT CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
     # Hack for installation with CMake 1.4.
-    INSTALL_FILES(/lib/Cable ".cmake" "UseCABLE")
+    INSTALL_FILES(/lib/Cable ".cmake" "CABLEConfig")
   ENDIF(NOT CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
 ENDIF(UNIX)

@@ -42,7 +42,7 @@ SET (CABLE_LIBRARY_PATH "${LIBRARY_OUTPUT_PATH}"
      CACHE INTERNAL "Single output directory for building all libraries.")
 
 #-----------------------------------------------------------------------------
-# Configure the UseCABLE.cmake file for the build tree:
+# Configure the CABLEConfig.cmake file for the build tree:
 
 SET(CABLE_INCLUDE_DIRS "${CABLE_SOURCE_DIR}")
 
@@ -74,11 +74,11 @@ ELSE(CMAKE_BUILD_TOOL MATCHES "^(msdev|devenv)$")
   ENDIF(WIN32)
 ENDIF(CMAKE_BUILD_TOOL MATCHES "^(msdev|devenv)$")
 
-CONFIGURE_FILE("${CABLE_SOURCE_DIR}/UseCABLE.cmake.in"
-               "${CABLE_BINARY_DIR}/UseCABLE.cmake" IMMEDIATE @ONLY)
+CONFIGURE_FILE("${CABLE_SOURCE_DIR}/CABLEConfig.cmake.in"
+               "${CABLE_BINARY_DIR}/CABLEConfig.cmake" IMMEDIATE @ONLY)
 
 #-----------------------------------------------------------------------------
-# Configure the UseCABLE.cmake file for the install tree:
+# Configure the CABLEConfig.cmake file for the install tree:
 
 IF(UNIX)
   SET(CABLE_EXECUTABLE_FILE "${CMAKE_INSTALL_PREFIX}/bin/cable")
@@ -90,13 +90,13 @@ IF(UNIX)
   ENDIF (CABLE_TCL_FACILITY)
 
   IF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
-    SET(CABLE_USECABLE_FOR_INSTALL "${CABLE_BINARY_DIR}/Install/UseCABLE.cmake")
+    SET(CABLE_USECABLE_FOR_INSTALL "${CABLE_BINARY_DIR}/Install/CABLEConfig.cmake")
     INSTALL_FILES(/lib/Cable FILES "${CABLE_USECABLE_FOR_INSTALL}")
   ELSE(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
     # Hack for installation with CMake 1.4.
-    SET(CABLE_USECABLE_FOR_INSTALL "${CABLE_BINARY_DIR}/Executables/UseCABLE.cmake")
+    SET(CABLE_USECABLE_FOR_INSTALL "${CABLE_BINARY_DIR}/Executables/CABLEConfig.cmake")
   ENDIF(CABLE_CMAKE_HAS_EXPLICIT_INSTALL_FILES)
 
-  CONFIGURE_FILE("${CABLE_SOURCE_DIR}/UseCABLE.cmake.in"
+  CONFIGURE_FILE("${CABLE_SOURCE_DIR}/CABLEConfig.cmake.in"
                  "${CABLE_USECABLE_FOR_INSTALL}" IMMEDIATE @ONLY)
 ENDIF(UNIX)
