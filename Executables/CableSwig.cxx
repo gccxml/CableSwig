@@ -315,41 +315,42 @@ void CableSwig::CreateSwigMethod(cable::Method* mth, Node* sc, std::string& cnam
     Setattr(m, "access", access);
     }
 
-  // The following clause will instruct SWIG to let ITK C++ exceptions
-  // propagate through as Python exceptions.  Suggestions and improvements
-  // are welcome. -- Charl P. Botha <cpbotha [AT] ieee.org>
+  // The following clause will instruct SWIG to let standard C++
+  // exceptions propagate through as Python exceptions.  Original
+  // version contributed by Charl P. Botha <cpbotha [AT] ieee.org>
+  
+  // attaching this node as "throws" attribute to the method object
+  // will cause the swig emit code to add an exception handler the
+  // node only has to have a type-attribute with the type of the
+  // object that will be thrown
+  Node *catchNode = NewHash();
+  Setattr(catchNode, "type", "std::exception");
+  Setattr(m, "throws", catchNode);
+  
+  // this has to be added to the swig typemap... when hitting a method
+  // with a "throws" attribute, it will look up the "type" attribute
+  // of that "throws" attribute, once again look up the "throws" of
+  // that result, and use the "code" attribute of the final result as
+  // handler (catch) code - we should only have to do this
+  // registration once, but for now it's much clearer here and it does
+  // no real harm being called multiple times
   if (m_WrapLanguage == "python")
-  {
-     if (strncmp(mth->GetQualifiedName().c_str(), "itk::", 5) == 0)
-     {
-        // attaching this node as "throws" attribute to the method object
-        // will cause the swig emit code to add an exception handler
-        // the node only has to have a type-attribute with the type of the
-        // object that will be thrown
-        Node *catchNode = NewHash();
-        Setattr(catchNode, "type", "itk::ExceptionObject");
-        Setattr(m, "throws", catchNode);
+    {
+    char code[] = 
+      "PyErr_SetString(PyExc_RuntimeError, _e.what());\n"
+      "SWIG_fail;";
+    Swig_typemap_register("throws", catchNode, code, NULL, NULL);
 
-        // this has to be added to the swig typemap... when hitting a
-        // method with a "throws" attribute, it will look up the "type"
-        // attribute of that "throws" attribute, once again look up the
-        // "throws" of that result, and use the "code" attribute of the
-        // final result as
-        // handler (catch) code - we should only have to do this registration
-        // once, but for now it's much clearer here and it does no real harm
-        // being called multiple times
-        char *code = 
-           "char emsg[512];\n" 
-           "snprintf(emsg, 511, \"ITK Exception at %s:%d: %s\", "
-           "_e.GetFile(), _e.GetLine(), _e.GetDescription());\n"
-           "PyErr_SetString(PyExc_RuntimeError, emsg); SWIG_fail;\n";
-        Swig_typemap_register("throws", catchNode, code,
-                              NULL, NULL);
-
-        // take care of the memory
-        Delete(catchNode);
-     }
-  }
+    }
+  else if(m_WrapLanguage == "tcl8")
+    {
+    char code[] = 
+      "Tcl_SetObjResult(interp, Tcl_NewStringObj(_e.what(), -1));\n"
+      "SWIG_fail;";
+    Swig_typemap_register("throws", catchNode, code, NULL, NULL);
+    }
+  // take care of the memory
+  Delete(catchNode);
   
   ParmList* parms = 0;
   Parm* pp = 0;
@@ -1087,6 +1088,7 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
     std::string headerCode = "\n#include <";
     headerCode += configFile;
     headerCode += ">\n";
+    headerCode += "#include <exception>\n";
     Setattr(n, "code", headerCode.c_str());
     Setattr(n, "section", "header");
     appendChild(top, n);
