@@ -543,6 +543,7 @@
 }
 
 %typemap(throws) SWIGTYPE {
+  (void)($1);
   Tcl_SetObjResult(interp, Tcl_NewStringObj("$1_type", -1));
   SWIG_fail;
 }
