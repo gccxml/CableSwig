@@ -93,7 +93,7 @@ void Enumeration::SetEnumerationType(EnumerationType* type)
 const cxx::EnumerationType*
 Enumeration::GetCxxEnumerationType(cxx::TypeSystem* ts) const
 {
-  return ts->GetEnumerationType(m_Name);
+  return ts->GetEnumerationType(this->GetQualifiedName());
 }
 
 //----------------------------------------------------------------------------
