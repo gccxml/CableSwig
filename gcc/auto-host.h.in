@@ -389,7 +389,7 @@
 #cmakedefine HAVE_DECL_ENVIRON 1
 #ifndef HAVE_DECL_ENVIRON
 #define HAVE_DECL_ENVIRON 0
-#endif HAVE_DECL_ENVIRON
+#endif
 
 /* Define to 1 if we found this declaration otherwise define to 0. */
 #define HAVE_DECL_MALLOC 1
@@ -481,10 +481,11 @@
 #ifndef __cplusplus
 #undef const
 #define const
+#endif
+#endif
+
 #undef inline
 #define inline
-#endif
-#endif
 
 #define PREFIX "@CMAKE_INSTALL_PREFIX@"
 #define TARGET_NAME "i686-pc-linux-gnu"

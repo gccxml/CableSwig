@@ -567,5 +567,8 @@ typedef char _Bool;
 
 #define TRUE true
 #define FALSE false
+#if defined(HAVE_ALLOCA_H) && !defined(C_ALLOCA)
+#   include <alloca.h>
+#endif
 
 #endif /* __GCC_SYSTEM_H__ */

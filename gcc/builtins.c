@@ -37,7 +37,9 @@ Boston, MA 02111-1307, USA.  */
 #include "typeclass.h"
 #include "toplev.h"
 #include "tm_p.h"
-
+#ifdef HAVE_ALLOCA_H
+#include "alloca.h"
+#endif
 #define CALLED_AS_BUILT_IN(NODE) \
    (!strncmp (IDENTIFIER_POINTER (DECL_NAME (NODE)), "__builtin_", 10))
 

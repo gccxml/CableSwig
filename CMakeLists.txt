@@ -5,6 +5,7 @@ IF(APPLE)
     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -no-cpp-precomp")
   ENDIF(CMAKE_COMPILER_IS_GNUCC)
 ENDIF(APPLE)
+INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR})
 SUBDIRS(libiberty gen gcc)
 
 INCLUDE(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)

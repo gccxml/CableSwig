@@ -3,7 +3,7 @@ FOREACH(g
     genextract
   )
   ADD_EXECUTABLE(${g} ${GCC_SOURCE_DIR}/gcc/${g}.c ${GEN_SRCS})
-
+  TARGET_LINK_LIBRARIES(${g} iberty)
   SET_SOURCE_FILES_PROPERTIES(${GCC_SOURCE_DIR}/gcc/${g}.c OBJECT_DEPENDS
                               ${GCC_BINARY_DIR}/gcc/insn-config.h)
 

@@ -3,7 +3,7 @@ INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/gcc)
 INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/gcc/config)
 INCLUDE_DIRECTORIES(${GCC_SOURCE_DIR}/include)
 
-INCLUDE_REGULAR_EXPRESSION("^[^i].*|^i[^n].*|^in[^s]|^ins[^n].*|^insn[^-].*")
+INCLUDE_REGULAR_EXPRESSION("^[^i].*|^i[^n].*|^in[^s].*|^ins[^n].*|^insn[^-].*")
 
 ADD_DEFINITIONS(-DIN_GCC -DHAVE_CONFIG_H -DGENERATOR_FILE)
 

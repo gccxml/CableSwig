@@ -28,6 +28,9 @@ Boston, MA 02111-1307, USA.  */
    and are responsible for combining constants with the same value.  */
 
 #include "config.h"
+#if defined(HAVE_ALLOCA_H) && !defined(C_ALLOCA)
+#   include <alloca.h>
+#endif
 #include "system.h"
 #include <setjmp.h>
 #include "rtl.h"

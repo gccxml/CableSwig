@@ -3,6 +3,7 @@ INCLUDE_DIRECTORIES(${GCC_BINARY_DIR}/libiberty)
 ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
 ADD_LIBRARY(iberty
+  alloca.c
   argv.c
   choose-temp.c
   concat.c

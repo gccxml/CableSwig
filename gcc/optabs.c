@@ -24,6 +24,9 @@ Boston, MA 02111-1307, USA.  */
 #include "system.h"
 #include "toplev.h"
 
+#if defined(HAVE_ALLOCA_H) && !defined(C_ALLOCA)
+#   include <alloca.h>
+#endif
 /* Include insn-config.h before expr.h so that HAVE_conditional_move
    is properly defined. */
 #include "insn-config.h"

@@ -21,6 +21,9 @@ Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #include "config.h"
 #include "system.h"
+#if defined(HAVE_ALLOCA_H) && !defined(C_ALLOCA)
+#   include <alloca.h>
+#endif
 
 #include "cpplib.h"
 #include "cpphash.h"
