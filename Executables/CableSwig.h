@@ -103,8 +103,8 @@ private:
   void DetermineClassesToWrap(const cable::Namespace* cns);
   void ProcessImportedClasses(Node* top, Node* module);
   void ProcessIncludedClasses(Node* top, Node* module);
-  bool FindClassGroup(const char* className, std::string* group = 0);
-  bool FindImportTypedef(const char* className, std::string* typeName = 0);
+  bool FindClassGroup(const char* className, std::string* group);
+  bool FindImportTypedef(const char* className, std::string* typeName);
   bool ReadMasterIndexFile();
   void AddClassToBeImported(cable::Class*);
   void FindWrappedBases(List* bases, const cable::Class* c);

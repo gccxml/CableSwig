@@ -486,7 +486,8 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c)
   for( std::vector<cable::Class*>::iterator i = parents.begin();
        i != parents.end(); ++i)
     {
-    if(this->FindClassGroup((*i)->GetQualifiedName().c_str()))
+    std::string group;
+    if(this->FindClassGroup((*i)->GetQualifiedName().c_str(), &group))
       {
       ::String* s=  NewStringf("%s", this->TemplateName((*i)->GetQualifiedName().c_str()).c_str());
       Append(bases,s);
