@@ -9,8 +9,8 @@
 
 #else
 
-#cmakedefine CMAKE_WORDS_BIGENDIAN
-#ifdef CMAKE_WORDS_BIGENDIAN
+#cmakedefine EXPAT_WORDS_BIGENDIAN
+#ifdef EXPAT_WORDS_BIGENDIAN
 #  define XML_BYTE_ORDER 21
 #else
 #  define XML_BYTE_ORDER 12
