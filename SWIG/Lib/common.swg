@@ -20,8 +20,6 @@
 #                       define SWIGEXPORT(a) a
 #                       define SWIGIMPORT(a) extern a
 #               else
-#pragma comment(linker, "/ignore:4049")
-#pragma comment(linker, "/ignore:4089")
 #                       define SWIGEXPORT(a) __declspec(dllexport) a
 #                       define SWIGIMPORT(a) __declspec(dllimport) a
 #               endif
