@@ -1,0 +1,20 @@
+package ifneeded WrapTclFacility ${CABLE_VERSION_STRING} {
+  set root {}
+  catch {
+    package require registry
+    set root [registry get "HKEY_CURRENT_USER\\SOFTWARE\\Kitware\\Cable" "loc"]
+  }
+  if {$root != {}} {
+    set libPath "$root/lib"
+  } else {
+    puts "Warning: Couldn't find registry entry \"HKEY_CURRENT_USER\\SOFTWARE\\Kitware\\Cable;loc\""
+    puts "         Guessing C:/PROGRA~1/Cable for location of CABLE"
+    set libPath "C:/PROGRA~1/Cable/lib"
+  }
+
+  set libName "WrapTclFacility"
+  set libExt [info sharedlibextension]
+  set libFile [file join $libPath "$libName$libExt"]
+
+  if {[catch { load $libFile } errorMessage ]} { puts $errorMessage }
+}

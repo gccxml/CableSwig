@@ -47,8 +47,13 @@ IF (NOT CABLE_NO_INSTALL)
   INSTALL_FILES(/share/Cable/include/WrapTclFacility ^wrap.*\\.h$)
   INSTALL_FILES(/share/Cable/include/WrapTclFacility ^wrap.*\\.txx$)
   INSTALL_TARGETS(/share/Cable/lib WrapTclFacility)
-  SET (CABLE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
-  CONFIGURE_FILE(${CABLE_SOURCE_DIR}/WrapTclFacility/pkgIndex.tcl.install
-                 ${CABLE_BINARY_DIR}/WrapTclFacility/Install/Hide/pkgIndex.tcl)
+  IF(UNIX)
+    SET (CABLE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX})
+    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/WrapTclFacility/pkgIndex.tcl.unix
+                   ${CABLE_BINARY_DIR}/WrapTclFacility/Install/Hide/pkgIndex.tcl)
+  ELSE(UNIX)
+    CONFIGURE_FILE(${CABLE_SOURCE_DIR}/WrapTclFacility/pkgIndex.tcl.win32
+                   ${CABLE_BINARY_DIR}/WrapTclFacility/Install/Hide/pkgIndex.tcl)
+  ENDIF(UNIX)
   INSTALL_FILES(/share/Cable/lib "" Install/Hide/pkgIndex.tcl)
 ENDIF (NOT CABLE_NO_INSTALL)
