@@ -1438,8 +1438,12 @@ String *SwigType_clientdata_collect(String *ms, Hash *checked) {
       if (rh) {
 	Iterator rk;
 	rk = First(rh);
-	while (rk.key) {
-	  clientdata = SwigType_clientdata_collect(rk.key,ch);
+	while (rk.key) { 
+         /* make sure the key is the same as the string we are looking for */
+          /* otherwise, we do not want the clientdata from the wrong type */
+          if(Strcmp(rk.key, ms) == 0) {
+            clientdata = SwigType_clientdata_collect(rk.key,ch);
+          }
 	  if (clientdata) goto check_exit;
 	  rk = Next(rk);
 	}

@@ -787,7 +787,7 @@ public:
 	/* Put code to register base classes in init function */
 	
 	Printf(f_init,"/* Register base : %s */\n", bmangle);
-	Printf(f_init,"swig_%s_bases[%d] = (swig_class *) SWIG_TypeQuery(\"%s *\")->clientdata;\n",  mangled_classname, index, SwigType_namestr(bname));
+        Printf(f_init,"swig_%s_bases[%d] = \"%s *\";\n",  mangled_classname, index, SwigType_namestr(bname));
 	b = Next(b);
 	index++;
 	Putc(',',base_class);
@@ -896,7 +896,7 @@ public:
       Printv( f_shadow, "}\n\n", NIL );
     };
 
-    Printv(f_wrappers,"static swig_class *swig_",mangled_classname,"_bases[] = {", base_class,"0};\n", NIL);
+    Printv(f_wrappers,"static const char *swig_",mangled_classname,"_bases[] = {", base_class,"0};\n", NIL);
     Delete(base_class);
 
     Printv(f_wrappers, "swig_class _wrap_class_", mangled_classname, " = { \"", class_name,

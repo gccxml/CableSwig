@@ -74,7 +74,7 @@ typedef struct swig_class {
   void              (*destructor)(void *);
   swig_method        *methods;
   swig_attribute     *attributes;
-  struct swig_class **bases;
+  const char         **bases;
 } swig_class;
 
 typedef struct swig_instance {
@@ -503,7 +503,8 @@ SWIG_Tcl_MethodCommand(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_
   int              cls_stack_bi[64];
   int              cls_stack_top = 0;
   int              numconf = 2;
-  int              bi;
+  int              bi; 
+  const char*      base_name;
   Tcl_Obj         **objv = (Tcl_Obj **) _objv;
   if (objc < 2) {
     SWIG_Tcl_SetResultFromConstString(interp, "wrong # args.", TCL_STATIC);
@@ -533,7 +534,14 @@ SWIG_Tcl_MethodCommand(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_
     bi = cls_stack_bi[cls_stack_top];
     cls = cls_stack[cls_stack_top];
     if (bi != -1) {
-      cls = cls->bases[bi];
+      if(cls->bases)
+        base_name = cls->bases[bi];
+      else
+        base_name = 0;
+      if(base_name)
+        cls = (swig_class *) SWIG_TypeQuery(base_name);
+      else
+        cls = 0;
       if (cls) {
         cls_stack_bi[cls_stack_top]++;
         cls_stack_top++;
@@ -646,7 +654,17 @@ SWIG_Tcl_MethodCommand(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_
         Tcl_AppendElement(interp, meth->name);
       meth++;
     }
-    cls = inst->classptr->bases[bi++];
+    if(inst->classptr->bases) {
+      base_name = inst->classptr->bases[bi++];
+    }
+    else {
+      base_name = 0;
+      bi++;
+    }
+    if(base_name)
+      cls = (swig_class *) SWIG_TypeQuery(base_name);
+    else
+      cls = 0;
   }
   return TCL_ERROR;
 }
