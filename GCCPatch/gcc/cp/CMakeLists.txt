@@ -41,3 +41,4 @@ ADD_EXECUTABLE(gccxml_cc1plus
 )
 
 TARGET_LINK_LIBRARIES(gccxml_cc1plus backend cpp iberty)
+ADD_DEPENDENCIES(gccxml_cc1plus cpp0)

@@ -15,7 +15,7 @@ ADD_LIBRARY(cpp
 ADD_EXECUTABLE(cpp0 cppmain.c intl.c ${GCC_SOURCE_DIR}/libiberty/obstack.c)
 TARGET_LINK_LIBRARIES(cpp0 cpp iberty)
 
-ADD_CUSTOM_TARGET(generate echo "")
+ADD_CUSTOM_TARGET(generate ALL echo "")
 
 SET(GCC_backend_GENSRCS
   ${GCC_BINARY_DIR}/gcc/genrtl.c
