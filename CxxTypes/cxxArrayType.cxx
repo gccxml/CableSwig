@@ -16,7 +16,7 @@
 =========================================================================*/
 #include "cxxArrayType.h"
 
-#include <strstream>
+#include <stdio.h>
 
 namespace _cxx_
 {
@@ -87,9 +87,9 @@ String ArrayType::GenerateDeclaration(const String& name,
  */
 String ArrayType::GenerateLengthString() const
 {
-  std::strstream length;
-  length << m_Length << std::ends;
-  return length.str();
+  char buf[128];
+  sprintf(buf, "%ul", m_Length);
+  return buf;
 }
 
 
