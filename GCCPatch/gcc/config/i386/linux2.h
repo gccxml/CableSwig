@@ -81,8 +81,13 @@ Boston, MA 02111-1307, USA.  */
 #undef TARGET_ALLOWS_PROFILING_WITHOUT_FRAME_POINTER
 #define TARGET_ALLOWS_PROFILING_WITHOUT_FRAME_POINTER false
 
+/*------------------------- Begin CableSwig Patch --------------------------*/
+/* Temporary work-around for apple since we assumed i386. */
+#ifndef __APPLE__
 #undef SIZE_TYPE
 #define SIZE_TYPE "unsigned int"
+#endif
+/*-------------------------- End CableSwig Patch ---------------------------*/
  
 #undef PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"

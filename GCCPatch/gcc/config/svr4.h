@@ -220,8 +220,13 @@ Boston, MA 02111-1307, USA.
 /* Define the actual types of some ANSI-mandated types.  (These
    definitions should work for most SVR4 systems).  */
 
+/*------------------------- Begin CableSwig Patch --------------------------*/
+/* Temporary work-around for apple since we assumed i386. */
+#ifndef __APPLE__
 #undef  SIZE_TYPE
 #define SIZE_TYPE "unsigned int"
+#endif
+/*-------------------------- End CableSwig Patch ---------------------------*/
 
 #undef  PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"
