@@ -152,8 +152,6 @@ public:
     Printf(var_tab,   "\nstatic swig_var_info swig_variables[] = {\n");
     Printf(const_tab, "\nstatic swig_const_info swig_constants[] = {\n");
     
-    Printf(f_wrappers,"#ifdef __cplusplus\nextern \"C\" {\n#endif\n");
-    
     /* Start emitting code */
     Language::top(n);
     
@@ -166,8 +164,6 @@ public:
     
     /* Dump the pointer equivalency table */
     SwigType_emit_type_table(f_runtime, f_wrappers);
-    
-    Printf(f_wrappers,"#ifdef __cplusplus\n}\n#endif\n");
     
     /* Close the init function and quit */
     Printf(f_init,"return TCL_OK;\n}\n");
