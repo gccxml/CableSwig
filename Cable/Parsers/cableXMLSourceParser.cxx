@@ -183,6 +183,7 @@ void XMLSourceParser::StartElement(const char *name, const char **atts)
   else if(n == "Argument")         { this->Start_Argument(atts); }
   else if(n == "Ellipsis")         { this->Start_Ellipsis(atts); }
   else if(n == "EnumValue")        { this->Start_EnumValue(atts); }
+  else if(n == "Base")             { this->Start_Base(atts); }
   else if(m_CurrentElement)
     {
     // Cannot start a new top-level element while one is open.
@@ -249,6 +250,7 @@ void XMLSourceParser::EndElement(const char *name)
   else if(n == "Argument")         { this->End_Argument(); }
   else if(n == "Ellipsis")         { this->End_Ellipsis(); }
   else if(n == "EnumValue")        { this->End_EnumValue(); }
+  else if(n == "Base")             { this->End_Base(); }
   else if(n == "File")             { this->End_File(); }
   else if(n == "Unimplemented")    { this->End_Unimplemented(); }
   else if(n == "CvQualifiedType")  { this->End_CvQualifiedType(); }
@@ -342,7 +344,7 @@ void XMLSourceParser::Start_EnumValue(const char** atts)
     {
     m_SourceParseError = true;
     cableErrorMacro(this->GetErrorPrefix().c_str()
-                    << "EnumValue element not nested Enumeration element.");
+                    << "EnumValue element not nested in Enumeration element.");
     return;
     }
 
@@ -355,6 +357,31 @@ void XMLSourceParser::Start_EnumValue(const char** atts)
 
 //----------------------------------------------------------------------------
 void XMLSourceParser::End_EnumValue()
+{
+}
+
+//----------------------------------------------------------------------------
+void XMLSourceParser::Start_Base(const char** atts)
+{
+  if(!m_CurrentElement ||
+     ((String(m_CurrentElement->GetName()) != "Class") &&
+      (String(m_CurrentElement->GetName()) != "Struct")))
+    {
+    m_SourceParseError = true;
+    cableErrorMacro(this->GetErrorPrefix().c_str()
+                    << "Base element not nested in Class or Struct element.");
+    return;
+    }
+
+  XMLSourceElement::Pointer element = XMLSourceElement::New();
+  element->SetName("Base");
+  element->SetAttributes(atts);
+  element->SetXMLSourceParser(this);
+  m_CurrentElement->AddNestedElement(element);
+}
+
+//----------------------------------------------------------------------------
+void XMLSourceParser::End_Base()
 {
 }
 

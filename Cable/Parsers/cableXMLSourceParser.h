@@ -88,6 +88,7 @@ protected:
   void Start_Argument(const char** atts);
   void Start_Ellipsis(const char** atts);
   void Start_EnumValue(const char** atts);
+  void Start_Base(const char** atts);
   void Start_File(const char** atts);
   void Start_Unimplemented(const char** atts);
   void Start_CvQualifiedType(const char** atts);
@@ -98,6 +99,7 @@ protected:
   void End_Argument();
   void End_Ellipsis();
   void End_EnumValue();
+  void End_Base();
   void End_File();
   void End_Unimplemented();
   void End_CvQualifiedType();
