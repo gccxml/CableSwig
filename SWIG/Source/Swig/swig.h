@@ -84,8 +84,8 @@ typedef  DOH     SwigType;
 /* --- File interface --- */
 
 extern void     Swig_add_directory(const String_or_char *dirname);
-extern String  *Swig_last_file();
-extern List    *Swig_search_path();
+extern String  *Swig_last_file(void);
+extern List    *Swig_search_path(void);
 extern FILE    *Swig_open(const String_or_char *name);
 extern String  *Swig_read_file(FILE *f);
 extern String  *Swig_include(const String_or_char *name);
@@ -93,7 +93,7 @@ extern int      Swig_insert_file(const String_or_char *name, File *outfile);
 extern void     Swig_set_config_file(const String_or_char *filename);
 extern String  *Swig_get_config_file(void);
 extern void     Swig_swiglib_set(const String_or_char *);
-extern String  *Swig_swiglib_get();
+extern String  *Swig_swiglib_get(void);
 extern void     Swig_register_filebyname(const String_or_char *filename, File *outfile);
 extern File    *Swig_filebyname(const String_or_char *filename);
 extern char    *Swig_file_suffix(const String_or_char *filename);
@@ -112,14 +112,14 @@ extern char    *Swig_file_dirname(const String_or_char *filename);
 extern void     Swig_init_args(int argc, char **argv);
 extern void     Swig_mark_arg(int n);
 extern int      Swig_check_marked(int n);
-extern void     Swig_check_options();
-extern void     Swig_arg_error();
+extern void     Swig_check_options(void);
+extern void     Swig_arg_error(void);
 
 /* --- Scanner Interface --- */
 
 typedef struct SwigScanner SwigScanner;
 
-extern SwigScanner *NewSwigScanner();
+extern SwigScanner *NewSwigScanner(void);
 extern void         DelSwigScanner(SwigScanner *);
 extern void         SwigScanner_clear(SwigScanner *);
 extern void         SwigScanner_push(SwigScanner *, String *);
@@ -240,7 +240,7 @@ extern String     *SwigType_default(SwigType *t);
 extern void        SwigType_typename_replace(SwigType *t, String *pat, String *rep);
 
 /* --- Type-system managment --- */
-extern void        SwigType_typesystem_init();
+extern void        SwigType_typesystem_init(void);
 extern int         SwigType_typedef(SwigType *type, String_or_char *name);
 extern int         SwigType_typedef_class(String_or_char *name);
 extern int         SwigType_typedef_using(String_or_char *qname);
@@ -249,10 +249,10 @@ extern int         SwigType_issubtype(SwigType *subtype, SwigType *basetype);
 extern void        SwigType_scope_alias(String *aliasname, Typetab *t);
 extern void        SwigType_using_scope(Typetab *t);
 extern void        SwigType_new_scope(String_or_char *name);
-extern void        SwigType_reset_scopes();
+extern void        SwigType_reset_scopes(void);
 extern void        SwigType_set_scope_name(String_or_char *name);
 extern void        SwigType_inherit_scope(Typetab *scope);
-extern Typetab    *SwigType_pop_scope();
+extern Typetab    *SwigType_pop_scope(void);
 extern Typetab    *SwigType_set_scope(Typetab *h);
 extern void        SwigType_print_scope(Typetab *t);
 extern SwigType   *SwigType_typedef_resolve(SwigType *t);
@@ -269,15 +269,15 @@ extern int         SwigType_type(SwigType *t);
 
 /* --- Symbol table module --- */
 
-extern void     Swig_symbol_init();
+extern void     Swig_symbol_init(void);
 extern void     Swig_symbol_setscopename(const String_or_char *name);
-extern String   *Swig_symbol_getscopename();
+extern String   *Swig_symbol_getscopename(void);
 extern String   *Swig_symbol_qualifiedscopename(Symtab *symtab);
-extern Symtab   *Swig_symbol_newscope();
+extern Symtab   *Swig_symbol_newscope(void);
 extern Symtab   *Swig_symbol_setscope(Symtab *);
 extern Symtab   *Swig_symbol_getscope(const String_or_char *symname);
-extern Symtab   *Swig_symbol_current();
-extern Symtab   *Swig_symbol_popscope();
+extern Symtab   *Swig_symbol_current(void);
+extern Symtab   *Swig_symbol_popscope(void);
 extern Node     *Swig_symbol_add(String_or_char *symname, Node *node);
 extern void      Swig_symbol_cadd(String_or_char *symname, Node *node);
 extern Node     *Swig_symbol_clookup(String_or_char *symname, Symtab *tab);
@@ -352,7 +352,7 @@ typedef struct {
   String    *code;
 } Wrapper;
 
-extern Wrapper  *NewWrapper();
+extern Wrapper  *NewWrapper(void);
 extern void      DelWrapper(Wrapper *w);
 extern void      Wrapper_pretty_print(String *str, File *f);
 extern void      Wrapper_print(Wrapper *w, File *f);
@@ -394,7 +394,7 @@ extern String    *Swig_scopename_first(String *s);
 extern String    *Swig_scopename_suffix(String *s);
 extern int        Swig_scopename_check(String *s);
 
-extern void       Swig_init();
+extern void       Swig_init(void);
 extern void       Swig_warn(const char *filename, int line, const char *msg);
 
 
@@ -421,8 +421,8 @@ extern String    *Swig_cfunction_call(String_or_char *name, ParmList *parms);
 extern String    *Swig_cmethod_call(String_or_char *name, ParmList *parms, String_or_char *self);
 extern String    *Swig_cconstructor_call(String_or_char *name);
 extern String    *Swig_cppconstructor_call(String_or_char *name, ParmList *parms);
-extern String    *Swig_cdestructor_call();
-extern String    *Swig_cppdestructor_call();
+extern String    *Swig_cdestructor_call(void);
+extern String    *Swig_cppdestructor_call(void);
 extern String    *Swig_cmemberset_call(String_or_char *name, SwigType *type, String_or_char *self);
 extern String    *Swig_cmemberget_call(String_or_char *name, SwigType *t, String_or_char *self);
 
@@ -441,13 +441,13 @@ extern int        Swig_VarsetToFunction(Node *n);
 
 /* --- Legacy Typemap API (somewhat simplified, ha!) --- */
 
-extern     void   Swig_typemap_init();
+extern     void   Swig_typemap_init(void);
 extern     void   Swig_typemap_register(const String_or_char *op, ParmList *pattern, String_or_char *code, ParmList *locals, ParmList *kwargs);
 extern     int    Swig_typemap_copy(const String_or_char *op, ParmList *srcpattern, ParmList *pattern);
 extern     void   Swig_typemap_clear(const String_or_char *op, ParmList *pattern);
 extern     int    Swig_typemap_apply(ParmList *srcpat, ParmList *destpat);
 extern     void   Swig_typemap_clear_apply(ParmList *pattern);
-extern     void   Swig_typemap_debug();
+extern     void   Swig_typemap_debug(void);
 
 extern Hash  *Swig_typemap_search(const String_or_char *op, SwigType *type, String_or_char *pname, SwigType **matchtype);
 extern Hash  *Swig_typemap_search_multi(const String_or_char *op, ParmList *parms, int *nmatch);
@@ -457,8 +457,8 @@ extern String *Swig_typemap_lookup(const String_or_char *op, SwigType *type, Str
 extern String *Swig_typemap_lookup_new(const String_or_char *op, Node *n, const String_or_char *lname, Wrapper *f);
 
 extern String *Swig_typemap_lookup_multi(const String_or_char *op, ParmList *parms, String_or_char *source, Wrapper *f, int *nmatch);
-extern void   Swig_typemap_new_scope();
-extern Hash  *Swig_typemap_pop_scope();
+extern void   Swig_typemap_new_scope(void);
+extern Hash  *Swig_typemap_pop_scope(void);
 
 extern void   Swig_typemap_attach_parms(const String_or_char *op, ParmList *parms, Wrapper *f);
 
