@@ -165,7 +165,7 @@ TypeDownCastException::TypeDownCastException(RepresentationType from,
  */
 TypeDownCastException::TypeDownCastException(const Type* from,
                                              RepresentationType to):
-  m_From(from->GetRepresentationType()),
+  m_From(from? from->GetRepresentationType():Undefined_id),
   m_To(to)
 {
 }
