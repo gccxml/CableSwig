@@ -724,6 +724,7 @@ void WrapperFacility::SetEnumerationConstant(const String& name,
   if(e != m_EnumMap->end())
     {
     this->DeleteObject(e->second.m_Object, e->second.m_Type);
+    m_EnumMap->erase(e->first);
     }
   m_EnumMap->insert(EnumMap::value_type(name, EnumEntry(object, type)));
 }  
