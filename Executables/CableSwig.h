@@ -76,6 +76,7 @@ public:
 private:
   bool DumpCMakeDependInformation(cable::XMLSourceParser::Pointer sr, const char* f);
   void ParseIndexInformation(const char* s);
+  void ReduceCommaSpace(std::string& source);
   void ReplaceString(std::string& source,
                      const char* replace,
                      const char* with);

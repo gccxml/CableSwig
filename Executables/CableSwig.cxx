@@ -111,7 +111,33 @@ static List *pure_abstract(Node *n)
 }
 
 
+// function to reduce all commas followed by spaces to just commas
+void CableSwig::ReduceCommaSpace(std::string& source)
+{
+  const char *cs = ", ";
+  std::string::size_type start = source.find(cs);
+  if (start == std::string::npos)
+    {
+    return;
+    }
+  
+  std::string rest;
+  std::string::size_type cslen = strlen(cs);
+  while (start != std::string::npos)
+    {
+    rest = source.substr(start + cslen);
+    source = source.substr(0, start);
+    source += ",";
+    source += rest;
+    // this is the only real difference with ReplaceString:
+    // we restrict subsequent searches to begin at the replaced
+    // ',' so that commas with multiple spaces are also neatly
+    // reduced
+    start = source.find(cs, start);
+    }
 
+}
+								 
 // replace a substring in source
 void CableSwig::ReplaceString(std::string& source,
                               const char* replace,
@@ -164,6 +190,15 @@ std::string CableSwig::TemplateName(const char* s)
   std::string name = s;
   ReplaceString(name, "<", "<(");
   ReplaceString(name, ">", ")>");
+  // in order to following Swig convention, <int, 2> should be <int,2>
+  // if this is not so, Swig and CableSwig type mangling yields different
+  // results and ITK wrapped code created directly with Swig will not be
+  // able to operate on CableSwig wrapped objects.
+  ReduceCommaSpace(name);
+  // Once again, gcc_xml returns "short unsigned int", Swig convention is
+  // "unsigned short".  For the same reason as above, we convert to Swig
+  // convention.
+  ReplaceString(name, "short unsigned int", "unsigned short");
   return name;
 }
 
