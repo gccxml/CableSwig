@@ -778,7 +778,7 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
   
   // Parse the type id to separate any cv-qualifiers.
   String typeStr = tid;
-  String::size_type cvPosition = typeStr.find_first_of("cv");
+  String::size_type cvPosition = typeStr.find_first_of("cvr");
   String id = typeStr.substr(0, cvPosition);
   
   // Get the non-cv-qualified version of the type.
@@ -845,6 +845,15 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
       ot->SetVolatile(isVolatile);
       newType = ot;
       }; break;
+    case Type::EnumerationTypeId:
+      {
+      EnumerationType::Pointer et = EnumerationType::New();
+      const EnumerationType* etp = EnumerationType::SafeDownCast(type);
+      et->SetEnumeration(etp->GetEnumeration());
+      et->SetConst(isConst);
+      et->SetVolatile(isVolatile);
+      newType = et;
+      }; break;
     case Type::FunctionTypeId:
       {
       cableErrorMacro("Cannot add cv-qualifiers to FunctionType.");
@@ -861,6 +870,12 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
       return 0;
       }
     }  
+  if(!newType)
+    {
+    cableErrorMacro("Could not add cv-qualifiers to "
+                    << type->GetNameOfClass() << ".");
+    return 0;
+    }
   
   cxx::TypeSystem* ts = m_SourceRepresentation->GetTypeSystem();  
   if(!newType->CreateCxxType(ts)) { return 0; }
