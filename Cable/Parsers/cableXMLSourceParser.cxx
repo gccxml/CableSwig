@@ -1242,14 +1242,28 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
 {
   bool isConst = false;
   bool isStatic = false;
+  bool isVirtual = false;
+  bool isPureVirtual = false;
+  
+  const char* virtualAttr = element->GetAttribute("virtual");
+  if(virtualAttr && (String(virtualAttr) == "1")) { isVirtual = true; }
+  const char* pureVirtualAttr = element->GetAttribute("pure_virtual");
+  if(pureVirtualAttr && (String(pureVirtualAttr) == "1")) { isPureVirtual = true; }
+
   const char* constAttr = element->GetAttribute("const");
-  if(constAttr && (String(constAttr) == "1")) { isConst = true; }
+  if(constAttr && (String(constAttr) == "1")) { isConst = true; } 
   const char* staticAttr = element->GetAttribute("static");
   if(staticAttr && (String(staticAttr) == "1")) { isStatic = true; }  
   if(isConst && isStatic)
     {
     cableErrorMacro("Method " << element->GetId()
                     << " is both const and static.");
+    return 0;
+    }
+  if(isVirtual && isStatic)
+    {
+    cableErrorMacro("Method " << element->GetId()
+                    << " is both virtual and static.");
     return 0;
     }
   
@@ -1261,6 +1275,8 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
   m->SetFunctionType(ft);
   m->SetConst(isConst);
   m->SetStatic(isStatic);
+  m->SetVirtual(isVirtual);
+  m->SetPureVirtual(isPureVirtual);
   
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
