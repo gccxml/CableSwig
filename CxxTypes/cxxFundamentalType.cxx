@@ -74,7 +74,8 @@ const char* FundamentalType::fundamentalTypeNames[NumberOfTypes] =
 {
   "unsigned char", "unsigned short", "unsigned int", "unsigned long",
   "unsigned long long", "signed char", "char", "short", "int", "long",
-  "long long", "wchar_t", "bool", "float", "double", "long double", "void"
+  "long long", "wchar_t", "bool", "float", "double", "long double",
+  "std::complex<long double>", "void"
 };
 
 } // namespace _cxx_

@@ -73,6 +73,8 @@ bool FundamentalType::CreateCxxType(cxx::TypeSystem* ts)
     { t = ts->GetFundamentalType(cxx::FundamentalType::Double); }
   else if(n == "long double")
     { t = ts->GetFundamentalType(cxx::FundamentalType::LongDouble); }
+  else if(n == "complex long double")
+    { t = ts->GetFundamentalType(cxx::FundamentalType::ComplexLongDouble); }
   else if(n == "void")
     { t = ts->GetFundamentalType(cxx::FundamentalType::Void); }
    
