@@ -40,7 +40,7 @@ Function::FunctionIdType OperatorMethod::GetFunctionId() const
 //----------------------------------------------------------------------------
 String OperatorMethod::GetCallName() const
 {
-  return String("operator")+this->GetName();
+  return String("operator ")+this->GetName();
 }
 
 //----------------------------------------------------------------------------
@@ -50,7 +50,7 @@ void OperatorMethod::Print(std::ostream& os, Indent indent) const
     {
     cxx::CvQualifiedType cvType = m_FunctionType->GetCxxType();
     cvType = cvType.GetMoreQualifiedType(m_Const, false);
-    String declaration = cvType.GenerateDeclaration("operator"+m_Name);
+    String declaration = cvType.GenerateDeclaration("operator "+m_Name);
     os << indent;
     if(m_Static) { os << "static "; }
     os << declaration.c_str() << ";\n";
