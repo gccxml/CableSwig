@@ -506,20 +506,34 @@ void CableSwig::FindWrappedBases(List* bases, const cable::Class* c, bool skippe
           std::cerr << "Warning " << startClass->GetQualifiedName().c_str() 
                     << " has a parent class that is not wrapped when "
             "that parent's parent is wrapped.\n";
-          std::cerr 
-            << "        The first wrapped parent is: " 
-            << this->TemplateName((*i)->GetQualifiedName().c_str()).c_str() 
-            << "\n";
+          std::cerr << "        List of parents follows: (* notes first wrapped parent class):\n";
+          std::vector<cable::Class*> allp;
+          startClass->GetAllBaseClasses(allp);
+          for(unsigned int j=0; j < allp.size(); ++j)
+            {
+            if(allp[j] == *i)
+              {
+              std::cerr << "*";
+              }
+            std::cerr << this->TemplateName(allp[j]->GetQualifiedName().c_str()).c_str() << "\n";
+            }
           }
         else
           {
           std::cerr << "Warning " << c->GetQualifiedName().c_str() 
                     << " has a parent class that is not wrapped when "
             "that parent's parent is wrapped.\n";
-          std::cerr 
-            << "        The first wrapped parent is: " 
-            << this->TemplateName((*i)->GetQualifiedName().c_str()).c_str() 
-            << "\n";
+          std::cerr << "        List of parents follows: (* notes first wrapped parent class):\n";
+          std::vector<cable::Class*> allp;
+          startClass->GetAllBaseClasses(allp);
+          for(unsigned int j=0; j < allp.size(); ++j)
+            {
+            if(allp[j] == *i)
+              {
+              std::cerr << "*";
+              }
+            std::cerr << this->TemplateName(allp[j]->GetQualifiedName().c_str()).c_str() << "\n";
+            }
           }
         }
       }
