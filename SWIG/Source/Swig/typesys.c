@@ -1720,7 +1720,11 @@ SwigType_emit_type_table(File *f_forward, File *f_table) {
   }
 
   Printf(table, "0\n};\n");
+#ifdef __APPLE_CC__
+  Printf(f_forward,"static swig_type_info **swig_types = new swig_type_info*[%d];\n", i+1);
+#else
   Printf(f_forward,"static swig_type_info *swig_types[%d];\n", i+1);
+#endif
   Printf(f_forward,"\n/* -------- TYPES TABLE (END) -------- */\n\n");
   Printf(f_table,"%s\n", types);
   Printf(f_table,"%s\n", table);
