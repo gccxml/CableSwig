@@ -233,8 +233,8 @@ protected:
   ArgumentAsInstanceBase(const WrapperFacility* wrapperFacility,
                          const Type* type):
     m_WrapperFacility(wrapperFacility),
-    m_ConversionFunction(0),
-    m_To(type) {}
+    m_To(type),
+    m_ConversionFunction(0) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   
@@ -259,8 +259,8 @@ protected:
   ArgumentAsPointerBase(const WrapperFacility* wrapperFacility,
                         const Type* type):
     m_WrapperFacility(wrapperFacility),
-    m_ConversionFunction(0),
-    m_To(PointerType::SafeDownCast(type)) {}
+    m_To(PointerType::SafeDownCast(type)),
+    m_ConversionFunction(0) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   
@@ -286,8 +286,8 @@ protected:
                               const Type* type,
                               const CvQualifiedType& elementType):
     m_WrapperFacility(wrapperFacility),
-    m_ConversionFunction(0),
     m_To(PointerType::SafeDownCast(type)),
+    m_ConversionFunction(0),
     m_ElementType(elementType),
     m_NeedArray(false) {}
 
@@ -320,8 +320,8 @@ protected:
   ArgumentAsReferenceBase(const WrapperFacility* wrapperFacility,
                           const Type* type):
     m_WrapperFacility(wrapperFacility),
-    m_ConversionFunction(0),
-    m_To(ReferenceType::SafeDownCast(type)) {}
+    m_To(ReferenceType::SafeDownCast(type)),
+    m_ConversionFunction(0) {}
 
   bool FindConversionFunction(const CvQualifiedType& from);
   bool FindDirectConversionFunction(const CvQualifiedType& from);
