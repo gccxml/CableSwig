@@ -11,9 +11,14 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#define KWSYS_IN_PROCESS_C
 #include "kwsysPrivate.h"
 #include KWSYS_HEADER(Process.h)
+
+/* Work-around CMake dependency scanning limitation.  This must
+   duplicate the above list of headers.  */
+#if 0
+# include "Process.h.in"
+#endif
 
 /*
 
@@ -68,7 +73,16 @@ do.
 /* The maximum amount to read from a pipe at a time.  */
 #define KWSYSPE_PIPE_BUFFER_SIZE 1024
 
-typedef struct timeval kwsysProcessTime;
+/* Keep track of times using a signed representation.  Switch to the
+   native (possibly unsigned) representation only when calling native
+   functions.  */
+typedef struct timeval kwsysProcessTimeNative;
+typedef struct kwsysProcessTime_s kwsysProcessTime;
+struct kwsysProcessTime_s
+{
+  long tv_sec;
+  long tv_usec;
+};
 
 typedef struct kwsysProcessCreateInformation_s
 {
@@ -89,7 +103,7 @@ static int kwsysProcessSetupOutputPipeFile(int* p, const char* name);
 static int kwsysProcessGetTimeoutTime(kwsysProcess* cp, double* userTimeout,
                                       kwsysProcessTime* timeoutTime);
 static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
-                                      kwsysProcessTime* timeoutLength);
+                                      kwsysProcessTimeNative* timeoutLength);
 static kwsysProcessTime kwsysProcessTimeGetCurrent(void);
 static double kwsysProcessTimeToDouble(kwsysProcessTime t);
 static kwsysProcessTime kwsysProcessTimeFromDouble(double d);
@@ -684,7 +698,10 @@ void kwsysProcess_Execute(kwsysProcess* cp)
   }
 
   /* The parent process does not need the output pipe write ends.  */
-  kwsysProcessCleanupDescriptor(&si.StdErr);
+  if(si.StdErr != 2)
+    {
+    kwsysProcessCleanupDescriptor(&si.StdErr);
+    }
   kwsysProcessCleanupDescriptor(&si.TermPipe);
 
   /* Restore the working directory. */
@@ -754,10 +771,10 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
 {
   int i;
   int max = -1;
-  kwsysProcessTime* timeout = 0;
-  kwsysProcessTime timeoutLength;
+  kwsysProcessTimeNative* timeout = 0;
+  kwsysProcessTimeNative timeoutLength;
   kwsysProcessTime timeoutTime;
-  kwsysProcessTime userStartTime;
+  kwsysProcessTime userStartTime = {0, 0};
   int user = 0;
   int expired = 0;
   int pipeId = kwsysProcess_Pipe_None;
@@ -900,7 +917,6 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
       kwsysProcess_Kill(cp);
       cp->Killed = 0;
       cp->SelectError = 1;
-      cp->PipesLeft = 0;
       }
     }
 
@@ -938,7 +954,6 @@ int kwsysProcess_WaitForData(kwsysProcess* cp, char** data, int* length,
       kwsysProcess_Kill(cp);
       cp->Killed = 0;
       cp->TimeoutExpired = 1;
-      cp->PipesLeft = 0;
       return kwsysProcess_Pipe_None;
       }
     }
@@ -1071,6 +1086,13 @@ void kwsysProcess_Kill(kwsysProcess* cp)
       kwsysProcessKill(cp->ForkPIDs[i]);
       }
     }
+
+  /* Close all the pipe read ends.  */
+  for(i=0; i < KWSYSPE_PIPE_COUNT; ++i)
+    {
+    kwsysProcessCleanupDescriptor(&cp->PipeReadEnds[i]);
+    }
+  cp->PipesLeft = 0;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1385,7 +1407,10 @@ static int kwsysProcessCreate(kwsysProcess* cp, int prIndex,
     }
 
   /* The parent process does not need the output pipe write ends.  */
-  kwsysProcessCleanupDescriptor(&si->StdOut);
+  if(si->StdOut != 1)
+    {
+    kwsysProcessCleanupDescriptor(&si->StdOut);
+    }
 
   return 1;
 }
@@ -1457,7 +1482,7 @@ static int kwsysProcessGetTimeoutTime(kwsysProcess* cp, double* userTimeout,
 /* Get the length of time before the given timeout time arrives.
    Returns 1 if the time has already arrived, and 0 otherwise.  */
 static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
-                                      kwsysProcessTime* timeoutLength)
+                                      kwsysProcessTimeNative* timeoutLength)
 {
   if(timeoutTime->tv_sec < 0)
     {
@@ -1468,8 +1493,9 @@ static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
     {
     /* Calculate the remaining time.  */
     kwsysProcessTime currentTime = kwsysProcessTimeGetCurrent();
-    *timeoutLength = kwsysProcessTimeSubtract(*timeoutTime, currentTime);
-    if(timeoutLength->tv_sec < 0)
+    kwsysProcessTime timeLeft = kwsysProcessTimeSubtract(*timeoutTime,
+                                                         currentTime);
+    if(timeLeft.tv_sec < 0)
       {
       /* Timeout has already expired.  */
       return 1;
@@ -1477,6 +1503,8 @@ static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
     else
       {
       /* There is some time left.  */
+      timeoutLength->tv_sec = timeLeft.tv_sec;
+      timeoutLength->tv_usec = timeLeft.tv_usec;
       return 0;
       }
     }
@@ -1486,7 +1514,10 @@ static int kwsysProcessGetTimeoutLeft(kwsysProcessTime* timeoutTime,
 static kwsysProcessTime kwsysProcessTimeGetCurrent(void)
 {
   kwsysProcessTime current;
-  gettimeofday(&current, 0);
+  kwsysProcessTimeNative current_native;
+  gettimeofday(&current_native, 0);
+  current.tv_sec = (long)current_native.tv_sec;
+  current.tv_usec = (long)current_native.tv_usec;
   return current;
 }
 

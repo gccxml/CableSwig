@@ -33,7 +33,14 @@
 #include "kwsysPrivate.h"
 #include KWSYS_HEADER(RegularExpression.hxx)
 
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "RegularExpression.hxx.in"
+#endif
+
 #include <stdio.h>
+#include <string.h>
 
 namespace KWSYS_NAMESPACE
 {

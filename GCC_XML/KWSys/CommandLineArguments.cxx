@@ -22,11 +22,26 @@
 #include KWSYS_HEADER(ios/sstream)
 #include KWSYS_HEADER(ios/iostream)
 
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "CommandLineArguments.hxx.in"
+# include "Configure.hxx.in"
+# include "kwsys_stl.hxx.in"
+# include "kwsys_ios_sstream.h.in"
+# include "kwsys_ios_iostream.h.in"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #ifdef _MSC_VER
 # pragma warning (disable: 4786)
+#endif
+
+#if defined(__sgi) && !defined(__GNUC__)
+# pragma set woff 1375 /* base class destructor not virtual */
 #endif
 
 namespace KWSYS_NAMESPACE
@@ -454,7 +469,7 @@ const char* CommandLineArguments::GetHelp(const char* arg)
   // Since several arguments may point to the same argument, find the one this
   // one point to if this one is pointing to another argument.
   CommandLineArgumentsCallbackStructure *cs = &(it->second);
-  while ( 1 )
+  for(;;)
     {
     CommandLineArguments::Internal::CallbacksMap::iterator hit 
       = this->Internals->Callbacks.find(cs->Help);

@@ -11,9 +11,14 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#define KWSYS_IN_PROCESS_C
 #include "kwsysPrivate.h"
 #include KWSYS_HEADER(Process.h)
+
+/* Work-around CMake dependency scanning limitation.  This must
+   duplicate the above list of headers.  */
+#if 0
+# include "Process.h.in"
+#endif
 
 /*
 
@@ -1155,7 +1160,7 @@ void kwsysProcess_Execute(kwsysProcess* cp)
         {
         kwsysProcessCleanupHandle(&si.StartupInfo.hStdOutput);
         }
-      if(si.StartupInfo.hStdOutput != GetStdHandle(STD_ERROR_HANDLE))
+      if(si.StartupInfo.hStdError != GetStdHandle(STD_ERROR_HANDLE))
         {
         kwsysProcessCleanupHandle(&si.StartupInfo.hStdError);
         }
@@ -1171,7 +1176,10 @@ void kwsysProcess_Execute(kwsysProcess* cp)
 
   /* Close the inherited handles to the stderr pipe shared by all
      processes in the pipeline.  */
-  kwsysProcessCleanupHandle(&si.StartupInfo.hStdError);
+  if(si.StartupInfo.hStdError != GetStdHandle(STD_ERROR_HANDLE))
+    {
+    kwsysProcessCleanupHandle(&si.StartupInfo.hStdError);
+    }
 
   /* Restore the working directory.  */
   if(cp->RealWorkingDirectory)
@@ -1599,6 +1607,8 @@ DWORD WINAPI kwsysProcessPipeThreadWake(LPVOID ptd)
 */
 void kwsysProcessPipeThreadWakePipe(kwsysProcess* cp, kwsysProcessPipeData* td)
 {
+  (void)cp;
+
   /* Wait for a possible wake command. */
   WaitForSingleObject(td->Waker.Go, INFINITE);
 
@@ -2499,7 +2509,7 @@ static void kwsysProcess_List__Delete_NT4(kwsysProcess_List* self)
 static int kwsysProcess_List__Update_NT4(kwsysProcess_List* self)
 {
   self->CurrentInfo = 0;
-  while(1)
+  for(;;)
     {
     /* Query number 5 is for system process list.  */
     NTSTATUS status =

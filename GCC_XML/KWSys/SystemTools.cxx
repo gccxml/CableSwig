@@ -19,20 +19,38 @@
 #include KWSYS_HEADER(ios/fstream)
 #include KWSYS_HEADER(ios/sstream)
 
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "SystemTools.hxx.in"
+# include "Directory.hxx.in"
+# include "kwsys_ios_iostream.h.in"
+# include "kwsys_ios_fstream.h.in"
+# include "kwsys_ios_sstream.h.in"
+#endif
+
 #ifdef _MSC_VER
 # pragma warning (disable: 4786)
 #endif
 
-#include <stdio.h>
-#include <sys/stat.h>
+#if defined(__sgi) && !defined(__GNUC__)
+# pragma set woff 1375 /* base class destructor not virtual */
+#endif
+
 #include <ctype.h>
 #include <errno.h>
+#ifdef __QNX__
+# include <malloc.h> /* for malloc/free on QNX */
+#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <time.h>
 
 // support for realpath call
 #ifndef _WIN32
 #include <limits.h>
-#include <stdlib.h>
 #include <sys/param.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
@@ -40,11 +58,30 @@
 #include <termios.h>
 #endif
 
+// This is a hack to prevent warnings about these functions being
+// declared but not referenced.
+#if defined(__sgi) && !defined(__GNUC__)
+# include <sys/termios.h>
+namespace KWSYS_NAMESPACE
+{
+class SystemToolsHack
+{
+public:
+  enum
+  {
+    Ref1 = sizeof(cfgetospeed(0)),
+    Ref2 = sizeof(cfgetispeed(0)),
+    Ref3 = sizeof(tcgetattr(0, 0)),
+    Ref4 = sizeof(tcsetattr(0, 0, 0)),
+    Ref5 = sizeof(cfsetospeed(0,0)),
+    Ref6 = sizeof(cfsetispeed(0,0))
+  };
+};
+}
+#endif
+
 #if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
 #include <io.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <windows.h>
 #include <direct.h>
 #define _unlink unlink
@@ -795,6 +832,102 @@ kwsys_stl::string SystemTools::Capitalized(const kwsys_stl::string& s)
   return n;
 }
 
+// Return capitalized words
+kwsys_stl::string SystemTools::CapitalizedWords(const kwsys_stl::string& s)
+{
+  kwsys_stl::string n(s);
+  for (size_t i = 0; i < s.size(); i++)
+    {
+    if (isalpha(s[i]) && (i == 0 || isspace(s[i - 1])))
+      {
+      n[i] = static_cast<kwsys_stl::string::value_type>(toupper(s[i]));
+      }
+    }
+  return n;
+}
+
+// Return uncapitalized words
+kwsys_stl::string SystemTools::UnCapitalizedWords(const kwsys_stl::string& s)
+{
+  kwsys_stl::string n(s);
+  for (size_t i = 0; i < s.size(); i++)
+    {
+    if (isalpha(s[i]) && (i == 0 || isspace(s[i - 1])))
+      {
+      n[i] = static_cast<kwsys_stl::string::value_type>(tolower(s[i]));
+      }
+    }
+  return n;
+}
+
+kwsys_stl::string SystemTools::AddSpaceBetweenCapitalizedWords(
+  const kwsys_stl::string& s)
+{
+  kwsys_stl::string n;
+  if (s.size())
+    {
+    n.reserve(s.size());
+    n += s[0];
+    for (size_t i = 1; i < s.size(); i++)
+      {
+      if (isupper(s[i]) && !isspace(s[i - 1]) && !isupper(s[i - 1]))
+        {
+        n += ' ';
+        }
+      n += s[i];
+      }
+    }
+  return n;
+}
+
+char* SystemTools::AppendStrings(const char* str1, const char* str2)
+{
+  if (!str1)
+    {
+    return SystemTools::DuplicateString(str2);
+    }
+  if (!str2)
+    {
+    return SystemTools::DuplicateString(str1);
+    }
+  size_t len1 = strlen(str1);
+  char *newstr = new char[len1 + strlen(str2) + 1];
+  if (!newstr)
+    {
+    return 0;
+    }
+  strcpy(newstr, str1);
+  strcat(newstr + len1, str2);
+  return newstr;
+}
+
+char* SystemTools::AppendStrings(
+  const char* str1, const char* str2, const char* str3)
+{
+  if (!str1)
+    {
+    return SystemTools::AppendStrings(str2, str3);
+    }
+  if (!str2)
+    {
+    return SystemTools::AppendStrings(str1, str3);
+    }
+  if (!str3)
+    {
+    return SystemTools::AppendStrings(str1, str2);
+    }
+
+  size_t len1 = strlen(str1), len2 = strlen(str2);
+  char *newstr = new char[len1 + len2 + strlen(str3) + 1];
+  if (!newstr)
+    {
+    return 0;
+    }
+  strcpy(newstr, str1);
+  strcat(newstr + len1, str2);
+  strcat(newstr + len1 + len2, str3);
+  return newstr;
+}
 
 // Return a lower case string 
 kwsys_stl::string SystemTools::LowerCase(const kwsys_stl::string& s)
@@ -820,52 +953,315 @@ kwsys_stl::string SystemTools::UpperCase(const kwsys_stl::string& s)
   return n;
 }
 
+// Count char in string
+size_t SystemTools::CountChar(const char* str, char c)
+{
+  size_t count = 0;
+
+  if (str)
+    {
+    while (*str)
+      {
+      if (*str == c)
+        {
+        ++count;
+        }
+      ++str;
+      }
+    }
+  return count;
+}
+
+// Remove chars in string
+char* SystemTools::RemoveChars(const char* str, const char *toremove)
+{
+  if (!str)
+    {
+    return NULL;
+    }
+  char *clean_str = new char [strlen(str) + 1];
+  char *ptr = clean_str;
+  while (*str)
+    {
+    const char *str2 = toremove;
+    while (*str2 && *str != *str2)
+      {
+      ++str2;
+      }
+    if (!*str2)
+      {
+      *ptr++ = *str;
+      }
+    ++str;
+    }
+  *ptr = '\0';
+  return clean_str;
+}
+
+// Remove chars in string
+char* SystemTools::RemoveCharsButUpperHex(const char* str)
+{
+  if (!str)
+    {
+    return 0;
+    }
+  char *clean_str = new char [strlen(str) + 1];
+  char *ptr = clean_str;
+  while (*str)
+    {
+    if ((*str >= '0' && *str <= '9') || (*str >= 'A' && *str <= 'H'))
+      {
+      *ptr++ = *str;
+      }
+    ++str;
+    }
+  *ptr = '\0';
+  return clean_str;
+}
+
+// Replace chars in string
+char* SystemTools::ReplaceChars(char* str, const char *toreplace, char replacement)
+{
+  if (str)
+    {
+    char *ptr = str;
+    while (*ptr)
+      {
+      const char *ptr2 = toreplace;
+      while (*ptr2)
+        {
+        if (*ptr == *ptr2)
+          {
+          *ptr = replacement;
+          }
+        ++ptr2;
+        }
+      ++ptr;
+      }
+    }
+  return str;
+}
+
+// Returns if string starts with another string
+bool SystemTools::StringStartsWith(const char* str1, const char* str2)
+{
+  if (!str1 || !str2)
+    {
+    return false;
+    }
+  size_t len1 = strlen(str1), len2 = strlen(str2);
+  return len1 >= len2 && !strncmp(str1, str2, len2) ? true : false;
+}
+
+// Returns if string ends with another string
+bool SystemTools::StringEndsWith(const char* str1, const char* str2)
+{
+  if (!str1 || !str2)
+    {
+    return false;
+    }
+  size_t len1 = strlen(str1), len2 = strlen(str2);
+  return len1 >= len2 &&  !strncmp(str1 + (len1 - len2), str2, len2) ? true : false;
+}
+
+// Returns a pointer to the last occurence of str2 in str1
+const char* SystemTools::FindLastString(const char* str1, const char* str2)
+{
+  if (!str1 || !str2)
+    {
+    return NULL;
+    }
+  
+  size_t len1 = strlen(str1), len2 = strlen(str2);
+  if (len1 >= len2)
+    {
+    const char *ptr = str1 + len1 - len2;
+    do
+      {
+      if (!strncmp(ptr, str2, len2))
+        {
+        return ptr;
+        }
+      } while (ptr-- != str1);
+    }
+
+  return NULL;
+}
+
+// Duplicate string
+char* SystemTools::DuplicateString(const char* str)
+{
+  if (str)
+    {
+    char *newstr = new char [strlen(str) + 1];
+    return strcpy(newstr, str);
+    }
+  return NULL;
+}
+
+// Return a cropped string 
+kwsys_stl::string SystemTools::CropString(const kwsys_stl::string& s, 
+                                          size_t max_len)
+{
+  if (!s.size() || max_len == 0 || max_len >= s.size())
+    {
+    return s;
+    }
+
+  kwsys_stl::string n;
+  n.reserve(max_len);
+
+  size_t middle = max_len / 2;
+
+  n += s.substr(0, middle);
+  n += s.substr(s.size() - (max_len - middle), kwsys_stl::string::npos);
+
+  if (max_len > 2)
+    {
+    n[middle] = '.';
+    if (max_len > 3)
+      {
+      n[middle - 1] = '.';
+      if (max_len > 4)
+        {
+        n[middle + 1] = '.';
+        }
+      }
+    }
+
+  return n;
+}
+
+//----------------------------------------------------------------------------
+int SystemTools::EstimateFormatLength(const char *format, va_list ap)
+{
+  if (!format)
+    {
+    return 0;
+    }
+
+  // Quick-hack attempt at estimating the length of the string.
+  // Should never under-estimate.
+  
+  // Start with the length of the format string itself.
+
+  int length = strlen(format);
+  
+  // Increase the length for every argument in the format.
+
+  const char* cur = format;
+  while(*cur)
+    {
+    if(*cur++ == '%')
+      {
+      // Skip "%%" since it doesn't correspond to a va_arg.
+      if(*cur != '%')
+        {
+        while(!int(isalpha(*cur)))
+          {
+          ++cur;
+          }
+        switch (*cur)
+          {
+          case 's':
+          {
+          // Check the length of the string.
+          char* s = va_arg(ap, char*);
+          if(s)
+            {
+            length += strlen(s);
+            }
+          } break;
+          case 'e':
+          case 'f':
+          case 'g':
+          {
+          // Assume the argument contributes no more than 64 characters.
+          length += 64;
+            
+          // Eat the argument.
+          static_cast<void>(va_arg(ap, double));
+          } break;
+          default:
+          {
+          // Assume the argument contributes no more than 64 characters.
+          length += 64;
+            
+          // Eat the argument.
+          static_cast<void>(va_arg(ap, int));
+          } break;
+          }
+        }
+      
+      // Move past the characters just tested.
+      ++cur;
+      }
+    }
+  
+  return length;
+}
 
 // convert windows slashes to unix slashes 
 void SystemTools::ConvertToUnixSlashes(kwsys_stl::string& path)
 {
-  kwsys_stl::string::size_type pos = 0;
-  while((pos = path.find('\\', pos)) != kwsys_stl::string::npos)
+  const char* pathCString = path.c_str();
+  bool hasDoubleSlash = false;
+
+  const char* pos0 = pathCString;
+  const char* pos1 = pathCString+1;
+  for (kwsys_stl::string::size_type pos = 0; *pos0; ++ pos )
     {
     // make sure we don't convert an escaped space to a unix slash
-    if(pos < path.size()-1)
+    if ( *pos0 == '\\' && *pos1 != ' ' )
       {
-      if(path[pos+1] != ' ')
-        {
-        path[pos] = '/';
-        }
+      path[pos] = '/';
       }
-    pos++;
-    }
-  // Remove all // from the path just like most unix shells
-  int start_find;
 
+    // Also, reuse the loop to check for slash followed by another slash
+    if ( !hasDoubleSlash && *pos1 &&
+      *pos1 == '/' && *(pos1+1) == '/' )
+      {
 #ifdef _WIN32
-  // However, on windows if the first characters are both slashes,
-  // then keep them that way, so that network paths can be handled.
-  start_find = 1;
+      // However, on windows if the first characters are both slashes,
+      // then keep them that way, so that network paths can be handled.
+      if ( pos > 0)
+        {
+        hasDoubleSlash = true;
+        }
 #else
-  start_find = 0;
+      hasDoubleSlash = true;
 #endif
+      }
 
-  while((pos = path.find("//", start_find)) != kwsys_stl::string::npos)
+    pos0 ++;
+    pos1 ++;
+    }
+
+  if ( hasDoubleSlash )
     {
     SystemTools::ReplaceString(path, "//", "/");
     }
   
   // remove any trailing slash
-  if(path.size() > 1 && path[path.size()-1] == '/')
+  if(!path.empty())
     {
-    path = path.substr(0, path.size()-1);
-    }
-
-  // if there is a tilda ~ then replace it with HOME
-  if(path.find("~") == 0)
-    {
-    if (getenv("HOME"))
+    // if there is a tilda ~ then replace it with HOME
+    pathCString = path.c_str();
+    if(*pathCString == '~')
       {
-      path = kwsys_stl::string(getenv("HOME")) + path.substr(1);
+      const char* homeEnv = SystemTools::GetEnv("HOME");
+      if (homeEnv)
+        {
+        path.replace(0,1,homeEnv);
+        }
       }
+
+    pathCString = path.c_str();
+    if (*(pathCString+(path.size()-1)) == '/')
+      {
+      path = path.substr(0, path.size()-1);
+      }
+
     }
 }
 
@@ -875,7 +1271,7 @@ kwsys_stl::string SystemTools::ConvertToUnixOutputPath(const char* path)
   kwsys_stl::string ret = path;
   
   // remove // except at the beginning might be a cygwin drive
-  kwsys_stl::string::size_type pos = 1;
+  kwsys_stl::string::size_type pos=0;
   while((pos = ret.find("//", pos)) != kwsys_stl::string::npos)
     {
     ret.erase(pos, 1);
@@ -912,7 +1308,11 @@ kwsys_stl::string SystemTools::ConvertToOutputPath(const char* path)
 // remove double slashes not at the start
 kwsys_stl::string SystemTools::ConvertToWindowsOutputPath(const char* path)
 {  
-  kwsys_stl::string ret = path;
+  kwsys_stl::string ret;
+  // make it big enough for all of path and double quotes
+  ret.reserve(strlen(path)+3);
+  // put path into the string
+  ret.insert(0,path);
   kwsys_stl::string::size_type pos = 0;
   // first convert all of the slashes
   while((pos = ret.find('/', pos)) != kwsys_stl::string::npos)
@@ -943,12 +1343,12 @@ kwsys_stl::string SystemTools::ConvertToWindowsOutputPath(const char* path)
     }
   // now double quote the path if it has spaces in it
   // and is not already double quoted
-  if(ret.find(" ") != kwsys_stl::string::npos
+  if(ret.find(' ') != kwsys_stl::string::npos
      && ret[0] != '\"')
     {
-    kwsys_stl::string result;
-    result = "\"" + ret + "\"";
-    ret = result;
+    ret.insert(static_cast<kwsys_stl::string::size_type>(0),
+               static_cast<kwsys_stl::string::size_type>(1), '\"');
+    ret.append(1, '\"');
     }
   return ret;
 }
@@ -1200,7 +1600,7 @@ unsigned long SystemTools::FileLength(const char* filename)
     }
   else
     {
-      return fs.st_size;
+      return static_cast<unsigned long>(fs.st_size);
     }
 }
 
@@ -1218,7 +1618,7 @@ int SystemTools::Strucmp(const char *s1, const char *s2)
 
 }
 
-// return true if the file exists
+// return file's modified time
 long int SystemTools::ModifiedTime(const char* filename)
 {
   struct stat fs;
@@ -1232,6 +1632,121 @@ long int SystemTools::ModifiedTime(const char* filename)
     }
 }
 
+// return file's creation time
+long int SystemTools::CreationTime(const char* filename)
+{
+  struct stat fs;
+  if (stat(filename, &fs) != 0) 
+    {
+    return 0;
+    }
+  else
+    {
+    return fs.st_ctime >= 0 ? (long int)fs.st_ctime : 0;
+    }
+}
+
+bool SystemTools::ConvertDateMacroString(const char *str, time_t *tmt)
+{
+  if (!str || !tmt || strlen(str) < 12)
+    {
+    return false;
+    }
+
+  struct tm tmt2;
+
+  // __DATE__
+  // The compilation date of the current source file. The date is a string
+  // literal of the form Mmm dd yyyy. The month name Mmm is the same as for
+  // dates generated by the library function asctime declared in TIME.H. 
+
+  // index:   012345678901
+  // format:  Mmm dd yyyy
+  // example: Dec 19 2003
+
+  static char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+
+  char buffer[12];
+  strcpy(buffer, str);
+
+  buffer[3] = 0;
+  char *ptr = strstr(month_names, buffer);
+  if (!ptr)
+    {
+    return false;
+    }
+
+  int month = (ptr - month_names) / 3;
+  int day = atoi(buffer + 4);
+  int year = atoi(buffer + 7);
+
+  tmt2.tm_isdst = -1;
+  tmt2.tm_hour  = 0;
+  tmt2.tm_min   = 0;
+  tmt2.tm_sec   = 0;
+  tmt2.tm_wday  = 0;
+  tmt2.tm_yday  = 0;
+  tmt2.tm_mday  = day;
+  tmt2.tm_mon   = month;
+  tmt2.tm_year  = year - 1900;
+
+  *tmt = mktime(&tmt2);
+  return true;
+}
+
+bool SystemTools::ConvertTimeStampMacroString(const char *str, time_t *tmt)
+{
+  if (!str || !tmt || strlen(str) < 27)
+    {
+    return false;
+    }
+
+  struct tm tmt2;
+
+  // __TIMESTAMP__
+  // The date and time of the last modification of the current source file, 
+  // expressed as a string literal in the form Ddd Mmm Date hh:mm:ss yyyy, 
+  /// where Ddd is the abbreviated day of the week and Date is an integer 
+  // from 1 to 31.
+
+  // index:   0123456789
+  //                    0123456789
+  //                              0123456789
+  // format:  Ddd Mmm Date hh:mm:ss yyyy
+  // example: Fri Dec 19 14:34:58 2003
+
+  static char month_names[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+
+  char buffer[27];
+  strcpy(buffer, str);
+
+  buffer[7] = 0;
+  char *ptr = strstr(month_names, buffer + 4);
+  if (!ptr)
+    {
+    return false;
+    }
+
+  int month = (ptr - month_names) / 3;
+  int day = atoi(buffer + 8);
+  int hour = atoi(buffer + 11);
+  int min = atoi(buffer + 14);
+  int sec = atoi(buffer + 17);
+  int year = atoi(buffer + 20);
+
+  tmt2.tm_isdst = -1;
+  tmt2.tm_hour  = hour;
+  tmt2.tm_min   = min;
+  tmt2.tm_sec   = sec;
+  tmt2.tm_wday  = 0;
+  tmt2.tm_yday  = 0;
+  tmt2.tm_mday  = day;
+  tmt2.tm_mon   = month;
+  tmt2.tm_year  = year - 1900;
+
+  *tmt = mktime(&tmt2);
+  return true;
+}
 
 kwsys_stl::string SystemTools::GetLastSystemError()
 {
@@ -1509,7 +2024,7 @@ int SystemTools::ChangeDirectory(const char *dir)
   return Chdir(dir);
 }
 
-kwsys_stl::string SystemTools::GetCurrentWorkingDirectory()
+kwsys_stl::string SystemTools::GetCurrentWorkingDirectory(bool collapse)
 {
   char buf[2048];
   const char* cwd = Getcwd(buf, 2048);
@@ -1518,8 +2033,11 @@ kwsys_stl::string SystemTools::GetCurrentWorkingDirectory()
     {
     path = cwd;
     }
-
-  return SystemTools::CollapseFullPath(path.c_str());
+  if(collapse)
+    {
+    return SystemTools::CollapseFullPath(path.c_str());
+    }
+  return path;
 }
 
 kwsys_stl::string SystemTools::GetProgramPath(const char* in_name)
@@ -1695,61 +2213,186 @@ void SystemTools::CheckTranslationPath(kwsys_stl::string & path)
   path.erase(path.end()-1, path.end());
 }
 
-kwsys_stl::string SystemTools::CollapseFullPath(const char* in_relative,
+void
+SystemToolsAppendComponents(
+  kwsys_stl::vector<kwsys_stl::string>& out_components,
+  kwsys_stl::vector<kwsys_stl::string>::const_iterator first,
+  kwsys_stl::vector<kwsys_stl::string>::const_iterator last)
+{
+  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator i = first;
+      i != last; ++i)
+    {
+    if(*i == "..")
+      {
+      if(out_components.begin() != out_components.end())
+        {
+        out_components.erase(out_components.end()-1, out_components.end());
+        }
+      }
+    else if(!(*i == ".") && !(*i == ""))
+      {
+      out_components.push_back(*i);
+      }
+    }
+}
+
+kwsys_stl::string SystemTools::CollapseFullPath(const char* in_path,
                                                 const char* in_base)
 {
-  kwsys_stl::string orig;
-  
-  // Change to base of relative path.
-  if(in_base)
-    {
-    // Save original working directory.
-    orig = SystemTools::GetCurrentWorkingDirectory();
-    Chdir(in_base);
-    }
-  
-  kwsys_stl::string dir, file;
-  SystemTools::SplitProgramPath(in_relative, dir, file, false);
-  if(dir.size() == 0 && 
-      in_relative && strlen(in_relative) > 0 &&
-      in_relative[0] == '/')
-     {
-     dir = "/";
-     }
+  // Collect the output path components.
+  kwsys_stl::vector<kwsys_stl::string> out_components;
 
-  // Resolve relative path.
-  kwsys_stl::string newDir;
-  if(!(dir == ""))
+  // Split the input path components.
+  kwsys_stl::vector<kwsys_stl::string> path_components;
+  SystemTools::SplitPath(in_path, path_components);
+
+  // If the input path is relative, start with a base path.
+  if(path_components[0].length() == 0)
     {
-    Realpath(dir.c_str(), newDir);    
+    kwsys_stl::vector<kwsys_stl::string> base_components;
+    if(in_base)
+      {
+      // Use the given base path.
+      SystemTools::SplitPath(in_base, base_components);
+      }
+    else
+      {
+      // Use the current working directory as a base path.
+      char buf[2048];
+      if(const char* cwd = Getcwd(buf, 2048))
+        {
+        SystemTools::SplitPath(cwd, base_components);
+        }
+      else
+        {
+        // ??
+        }
+      }
+
+    // Append base path components to the output path.
+    out_components.push_back(base_components[0]);
+    SystemToolsAppendComponents(out_components,
+                                base_components.begin()+1,
+                                base_components.end());
+    }
+
+  // Append input path components to the output path.
+  SystemToolsAppendComponents(out_components,
+                              path_components.begin(),
+                              path_components.end());
+
+  // Transform the path back to a string.
+  kwsys_stl::string newPath = SystemTools::JoinPath(out_components);
+
+  // Update the translation table with this potentially new path.
+  SystemTools::AddTranslationPath(newPath.c_str(), in_path);
+  SystemTools::CheckTranslationPath(newPath);
+#ifdef _WIN32
+  newPath = SystemTools::GetActualCaseForPath(newPath.c_str());
+#endif
+  // Return the reconstructed path.
+  return newPath;
+}
+
+
+// OK, some fun stuff to get the actual case of a given path.
+// Basically, you just need to call ShortPath, then GetLongPathName,
+// However, GetLongPathName is not implemented on windows NT and 95,
+// so we have to simulate it on those versions
+#ifdef _WIN32
+int OldWindowsGetLongPath(kwsys_stl::string const& shortPath,
+                          kwsys_stl::string& longPath  )
+{
+  kwsys_stl::string::size_type iFound = shortPath.rfind('/');
+  if (iFound > 1  && iFound != shortPath.npos)
+    {
+    // recurse to peel off components
+    //
+    if (OldWindowsGetLongPath(shortPath.substr(0, iFound), longPath) > 0)
+      {
+      longPath += '/';
+      if (shortPath[1] != '/')
+        {
+        WIN32_FIND_DATA findData;
+
+        // append the long component name to the path
+        //
+        if (INVALID_HANDLE_VALUE != ::FindFirstFile
+            (shortPath.c_str(), &findData))
+          {
+          longPath += findData.cFileName;
+          }
+        else
+          {
+          // if FindFirstFile fails, return the error code
+          //
+          longPath = "";
+          return 0;
+          }
+        }
+      }
     }
   else
     {
-    newDir = SystemTools::GetCurrentWorkingDirectory();
+    longPath = shortPath;
     }
+  return longPath.size();
+}
 
-  if(in_base)
+
+int PortableGetLongPathName(const char* pathIn,
+                            kwsys_stl::string & longPath)
+{ 
+  kwsys_stl::string shortPath;
+  if(!SystemTools::GetShortPath(pathIn, shortPath))
     {
-    // Restore original working directory.
-    Chdir(orig.c_str());
+    return 0;
     }
-  
-  // Construct and return the full path.
-  kwsys_stl::string newPath = newDir;
-  if(!(file == ""))
+  HMODULE lh = LoadLibrary("Kernel32.dll");
+  if(lh)
     {
-    if(!(newDir.size() == 1 && newDir[0] ==  '/'))
+    FARPROC proc =  GetProcAddress(lh, "GetLongPathNameA");
+    if(proc)
       {
-      newPath += "/";
+      typedef  DWORD (WINAPI * GetLongFunctionPtr) (LPCSTR,LPSTR,DWORD); 
+      GetLongFunctionPtr func = (GetLongFunctionPtr)proc;
+      char buffer[MAX_PATH+1];
+      int len = (*func)(shortPath.c_str(), buffer, MAX_PATH+1);
+      if(len == 0 || len > MAX_PATH+1)
+        {
+        FreeLibrary(lh);
+        return 0;
+        }
+      longPath = buffer;
+      FreeLibrary(lh);
+      return len;
       }
-    newPath += file;
+    FreeLibrary(lh);
     }
+  return OldWindowsGetLongPath(shortPath.c_str(), longPath);
+}
+#endif
 
-  // Now we need to update the translation table with this potentially new path
-  SystemTools::AddTranslationPath(newPath.c_str(), in_relative);
-  SystemTools::CheckTranslationPath(newPath);
 
-  return newPath;
+//----------------------------------------------------------------------------
+kwsys_stl::string SystemTools::GetActualCaseForPath(const char* p)
+{
+#ifndef _WIN32
+  return p;
+#else
+  kwsys_stl::string shortPath;
+  if(!SystemTools::GetShortPath(p, shortPath))
+    {
+    return p;
+    }
+  kwsys_stl::string longPath;
+  int len = PortableGetLongPathName(shortPath.c_str(), longPath);
+  if(len == 0 || len > MAX_PATH+1)
+    {
+    return p;
+    }
+  return longPath;
+#endif  
 }
 
 //----------------------------------------------------------------------------
@@ -1759,7 +2402,7 @@ void SystemTools::SplitPath(const char* p,
   components.clear();
   // Identify the root component.
   const char* c = p;
-  if(c[0] == '/' && c[1] == '/')
+  if((c[0] == '/' && c[1] == '/') || (c[0] == '\\' && c[1] == '\\'))
     {
     // Network path.
     components.push_back("//");
@@ -1771,7 +2414,7 @@ void SystemTools::SplitPath(const char* p,
     components.push_back("/");
     c += 1;
     }
-  else if(c[0] && c[1] == ':' && c[2] == '/')
+  else if(c[0] && c[1] == ':' && (c[2] == '/' || c[2] == '\\'))
     {
     // Windows path.
     kwsys_stl::string root = "_:/";
@@ -1798,7 +2441,7 @@ void SystemTools::SplitPath(const char* p,
   const char* last = first;
   for(;*last; ++last)
     {
-    if(*last == '/')
+    if(*last == '/' || *last == '\\')
       {
       // End of a component.  Save it.
       components.push_back(kwsys_stl::string(first, last-first));
@@ -1844,6 +2487,31 @@ bool SystemTools::ComparePath(const char* c1, const char* c2)
 #endif
 }
 
+//----------------------------------------------------------------------------
+bool SystemTools::Split(const char* str, kwsys_stl::vector<kwsys_stl::string>& lines, char separator)
+{
+  kwsys_stl::string data(str);
+  kwsys_stl::string::size_type lpos = 0;
+  while(lpos < data.length())
+    {
+    kwsys_stl::string::size_type rpos = data.find_first_of(separator, lpos);
+    if(rpos == kwsys_stl::string::npos)
+      {
+      // Line ends at end of string without a newline.
+      lines.push_back(data.substr(lpos));
+      return false;
+      }
+    else
+      {
+      // Line ends in a "\n", remove the character.
+      lines.push_back(data.substr(lpos, rpos-lpos));
+      }
+    lpos = rpos+1;
+    }
+  return true;
+}
+
+//----------------------------------------------------------------------------
 bool SystemTools::Split(const char* str, kwsys_stl::vector<kwsys_stl::string>& lines)
 {
   kwsys_stl::string data(str);
@@ -1898,13 +2566,14 @@ kwsys_stl::string SystemTools::GetFilenamePath(const kwsys_stl::string& filename
  */
 kwsys_stl::string SystemTools::GetFilenameName(const kwsys_stl::string& filename)
 {
-  kwsys_stl::string fn = filename;
-  SystemTools::ConvertToUnixSlashes(fn);
-  
-  kwsys_stl::string::size_type slash_pos = fn.rfind("/");
+#if defined(_WIN32)
+  kwsys_stl::string::size_type slash_pos = filename.find_last_of("/\\");
+#else
+  kwsys_stl::string::size_type slash_pos = filename.find_last_of("/");
+#endif
   if(slash_pos != kwsys_stl::string::npos)
     {
-    return fn.substr(slash_pos + 1);
+    return filename.substr(slash_pos + 1);
     }
   else
     {
@@ -1986,6 +2655,136 @@ SystemTools::GetFilenameWithoutLastExtension(const kwsys_stl::string& filename)
     {
     return name;
     }
+}
+
+bool SystemTools::FileHasSignature(const char *filename,
+                                   const char *signature, 
+                                   long offset)
+{
+  if (!filename || !signature)
+    {
+    return false;
+    }
+
+  FILE *fp;
+  fp = fopen(filename, "rb");
+  if (!fp)
+    {
+    return false;
+    }
+
+  fseek(fp, offset, SEEK_SET);
+
+  bool res = false;
+  size_t signature_len = strlen(signature);
+  char *buffer = new char [signature_len];
+
+  if (fread(buffer, 1, signature_len, fp) == signature_len)
+    {
+    res = (!strncmp(buffer, signature, signature_len) ? true : false);
+    }
+
+  delete [] buffer;
+
+  fclose(fp);
+  return res;
+}
+
+bool SystemTools::LocateFileInDir(const char *filename, 
+                                  const char *dir, 
+                                  kwsys_stl::string& filename_found,
+                                  int try_filename_dirs)
+{
+  if (!filename || !dir)
+    {
+    return false;
+    }
+
+  // Get the basename of 'filename'
+
+  kwsys_stl::string filename_base = SystemTools::GetFilenameName(filename);
+
+  // Check if 'dir' is really a directory 
+  // If win32 and matches something like C:, accept it as a dir
+
+  kwsys_stl::string real_dir;
+  if (!SystemTools::FileIsDirectory(dir))
+    {
+#if _WIN32
+    size_t dir_len = strlen(dir);
+    if (dir_len < 2 || dir[dir_len - 1] != ':')
+      {
+#endif
+      real_dir = SystemTools::GetFilenamePath(dir);
+      dir = real_dir.c_str();
+#if _WIN32
+      }
+#endif
+    }
+
+  // Try to find the file in 'dir'
+
+  bool res = false;
+  if (filename_base.size() && dir)
+    {
+    size_t dir_len = strlen(dir);
+    int need_slash = 
+      (dir_len && dir[dir_len - 1] != '/' && dir[dir_len - 1] != '\\');
+
+    kwsys_stl::string temp = dir;
+    if (need_slash)
+      {
+      temp += "/";
+      }
+    temp += filename_base;
+
+    if (SystemTools::FileExists(filename_found.c_str()))
+      {
+      res = true;
+      filename_found = temp;
+      }
+
+    // If not found, we can try harder by appending part of the file to
+    // to the directory to look inside.
+    // Example: if we were looking for /foo/bar/yo.txt in /d1/d2, then
+    // try to find yo.txt in /d1/d2/bar, then /d1/d2/foo/bar, etc.
+
+    else if (try_filename_dirs)
+      {
+      kwsys_stl::string filename_dir(filename);
+      kwsys_stl::string filename_dir_base;
+      kwsys_stl::string filename_dir_bases;
+      do
+        {
+        filename_dir = SystemTools::GetFilenamePath(filename_dir);
+        filename_dir_base = SystemTools::GetFilenameName(filename_dir);
+#if _WIN32
+        if (!filename_dir_base.size() || 
+            filename_dir_base[filename_dir_base.size() - 1] == ':')
+#else
+        if (!filename_dir_base.size())
+#endif
+          {
+          break;
+          }
+
+        filename_dir_bases = filename_dir_base + "/" + filename_dir_bases;
+
+        temp = dir;
+        if (need_slash)
+          {
+          temp += "/";
+          }
+        temp += filename_dir_bases;
+
+        res = SystemTools::LocateFileInDir(
+          filename_base.c_str(), temp.c_str(), filename_found, 0);
+
+        } while (!res && filename_dir_base.size());
+      }
+    }
+    
+  return res;
 }
 
 bool SystemTools::FileIsFullPath(const char* in_name)
@@ -2337,6 +3136,375 @@ void SystemTools::Delay(unsigned int msec)
 #else
   usleep(msec * 1000);
 #endif
+}
+
+void SystemTools::ConvertWindowsCommandLineToUnixArguments(
+  const char *cmd_line, int *argc, char ***argv)
+{
+  if (!cmd_line || !argc || !argv)
+    {
+    return;
+    }
+
+  // A space delimites an argument except when it is inside a quote
+
+  (*argc) = 1;
+
+  size_t cmd_line_len = strlen(cmd_line);
+
+  size_t i;
+  for (i = 0; i < cmd_line_len; i++)
+    {
+    while (isspace(cmd_line[i]) && i < cmd_line_len)
+      {
+      i++;
+      }
+    if (i < cmd_line_len)
+      {
+      if (cmd_line[i] == '\"')
+        {
+        i++;
+        while (cmd_line[i] != '\"' && i < cmd_line_len)
+          {
+          i++;
+          }
+        (*argc)++;
+        }
+      else
+        {
+        while (!isspace(cmd_line[i]) && i < cmd_line_len)
+          {
+          i++;
+          }
+        (*argc)++;
+        }
+      }
+    }
+
+  (*argv) = new char* [(*argc) + 1];
+  (*argv)[(*argc)] = NULL;
+
+  // Set the first arg to be the exec name
+
+  (*argv)[0] = new char [1024];
+#ifdef _WIN32
+  ::GetModuleFileName(0, (*argv)[0], 1024);
+#else
+  (*argv)[0][0] = '\0';
+#endif
+
+  // Allocate the others
+
+  int j;
+  for (j = 1; j < (*argc); j++)
+    {
+    (*argv)[j] = new char [cmd_line_len + 10];
+    }
+
+  // Grab the args
+
+  size_t pos;
+  int argc_idx = 1;
+
+  for (i = 0; i < cmd_line_len; i++)
+    {
+    while (isspace(cmd_line[i]) && i < cmd_line_len)
+      {
+      i++;
+      }
+    if (i < cmd_line_len)
+      {
+      if (cmd_line[i] == '\"')
+        {
+        i++;
+        pos = i;
+        while (cmd_line[i] != '\"' && i < cmd_line_len)
+          {
+          i++;
+          }
+        memcpy((*argv)[argc_idx], &cmd_line[pos], i - pos);
+        (*argv)[argc_idx][i - pos] = '\0';
+        argc_idx++;
+        }
+      else
+        {
+        pos = i;
+        while (!isspace(cmd_line[i]) && i < cmd_line_len)
+          {
+          i++;
+          }
+        memcpy((*argv)[argc_idx], &cmd_line[pos], i - pos);
+        (*argv)[argc_idx][i - pos] = '\0';
+        argc_idx++;
+        }
+      }
+    }
+ }
+
+kwsys_stl::string SystemTools::GetOperatingSystemNameAndVersion()
+{
+  kwsys_stl::string res;
+
+#ifdef _WIN32
+  char buffer[256];
+
+  OSVERSIONINFOEX osvi;
+  BOOL bOsVersionInfoEx;
+
+  // Try calling GetVersionEx using the OSVERSIONINFOEX structure.
+  // If that fails, try using the OSVERSIONINFO structure.
+
+  ZeroMemory(&osvi, sizeof(OSVERSIONINFOEX));
+  osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
+
+  bOsVersionInfoEx = GetVersionEx((OSVERSIONINFO *)&osvi);
+  if (!bOsVersionInfoEx)
+    {
+    osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+    if (!GetVersionEx((OSVERSIONINFO *)&osvi)) 
+      {
+      return 0;
+      }
+    }
+  
+  switch (osvi.dwPlatformId)
+    {
+    // Test for the Windows NT product family.
+
+    case VER_PLATFORM_WIN32_NT:
+      
+      // Test for the specific product family.
+
+      if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2)
+        {
+        res += "Microsoft Windows Server 2003 family";
+        }
+
+      if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 1)
+        {
+        res += "Microsoft Windows XP";
+        }
+
+      if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
+        {
+        res += "Microsoft Windows 2000";
+        }
+
+      if (osvi.dwMajorVersion <= 4)
+        {
+        res += "Microsoft Windows NT";
+        }
+
+      // Test for specific product on Windows NT 4.0 SP6 and later.
+
+      if (bOsVersionInfoEx)
+        {
+        // Test for the workstation type.
+
+#if (_MSC_VER >= 1300) 
+        if (osvi.wProductType == VER_NT_WORKSTATION)
+          {
+          if (osvi.dwMajorVersion == 4)
+            {
+            res += " Workstation 4.0";
+            }
+          else if (osvi.wSuiteMask & VER_SUITE_PERSONAL)
+            {
+            res += " Home Edition";
+            }
+          else
+            {
+            res += " Professional";
+            }
+          }
+            
+        // Test for the server type.
+
+        else if (osvi.wProductType == VER_NT_SERVER)
+          {
+          if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 2)
+            {
+            if (osvi.wSuiteMask & VER_SUITE_DATACENTER)
+              {
+              res += " Datacenter Edition";
+              }
+            else if (osvi.wSuiteMask & VER_SUITE_ENTERPRISE)
+              {
+              res += " Enterprise Edition";
+              }
+            else if (osvi.wSuiteMask == VER_SUITE_BLADE)
+              {
+              res += " Web Edition";
+              }
+            else
+              {
+              res += " Standard Edition";
+              }
+            }
+          
+          else if (osvi.dwMajorVersion == 5 && osvi.dwMinorVersion == 0)
+            {
+            if (osvi.wSuiteMask & VER_SUITE_DATACENTER)
+              {
+              res += " Datacenter Server";
+              }
+            else if (osvi.wSuiteMask & VER_SUITE_ENTERPRISE)
+              {
+              res += " Advanced Server";
+              }
+            else
+              {
+              res += " Server";
+              }
+            }
+
+          else  // Windows NT 4.0 
+            {
+            if (osvi.wSuiteMask & VER_SUITE_ENTERPRISE)
+              {
+              res += " Server 4.0, Enterprise Edition";
+              }
+            else
+              {
+              res += " Server 4.0";
+              }
+            }
+          }
+#endif // Visual Studio 7 and up
+        }
+
+      // Test for specific product on Windows NT 4.0 SP5 and earlier
+
+      else  
+        {
+        HKEY hKey;
+        #define BUFSIZE 80
+        char szProductType[BUFSIZE];
+        DWORD dwBufLen=BUFSIZE;
+        LONG lRet;
+
+        lRet = RegOpenKeyEx(
+          HKEY_LOCAL_MACHINE,
+          "SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+          0, KEY_QUERY_VALUE, &hKey);
+        if (lRet != ERROR_SUCCESS)
+          {
+          return 0;
+          }
+
+        lRet = RegQueryValueEx(hKey, "ProductType", NULL, NULL,
+                               (LPBYTE) szProductType, &dwBufLen);
+
+        if ((lRet != ERROR_SUCCESS) || (dwBufLen > BUFSIZE))
+          {
+          return 0;
+          }
+
+        RegCloseKey(hKey);
+
+        if (lstrcmpi("WINNT", szProductType) == 0)
+          {
+          res += " Workstation";
+          }
+        if (lstrcmpi("LANMANNT", szProductType) == 0)
+          {
+          res += " Server";
+          }
+        if (lstrcmpi("SERVERNT", szProductType) == 0)
+          {
+          res += " Advanced Server";
+          }
+
+        res += " ";
+        sprintf(buffer, "%d", osvi.dwMajorVersion);
+        res += buffer;
+        res += ".";
+        sprintf(buffer, "%d", osvi.dwMinorVersion);
+        res += buffer;
+        }
+
+      // Display service pack (if any) and build number.
+
+      if (osvi.dwMajorVersion == 4 && 
+          lstrcmpi(osvi.szCSDVersion, "Service Pack 6") == 0)
+        {
+        HKEY hKey;
+        LONG lRet;
+
+        // Test for SP6 versus SP6a.
+
+        lRet = RegOpenKeyEx(
+          HKEY_LOCAL_MACHINE,
+          "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Hotfix\\Q246009",
+          0, KEY_QUERY_VALUE, &hKey);
+
+        if (lRet == ERROR_SUCCESS)
+          {
+          res += " Service Pack 6a (Build ";
+          sprintf(buffer, "%d", osvi.dwBuildNumber & 0xFFFF);
+          res += buffer;
+          res += ")";
+          }
+        else // Windows NT 4.0 prior to SP6a
+          {
+          res += " ";
+          res += osvi.szCSDVersion;
+          res += " (Build ";
+          sprintf(buffer, "%d", osvi.dwBuildNumber & 0xFFFF);
+          res += buffer;
+          res += ")";
+          }
+        
+        RegCloseKey(hKey);
+        }
+      else // Windows NT 3.51 and earlier or Windows 2000 and later
+        {
+        res += " ";
+        res += osvi.szCSDVersion;
+        res += " (Build ";
+        sprintf(buffer, "%d", osvi.dwBuildNumber & 0xFFFF);
+        res += buffer;
+        res += ")";
+        }
+
+      break;
+
+      // Test for the Windows 95 product family.
+
+    case VER_PLATFORM_WIN32_WINDOWS:
+
+      if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 0)
+        {
+        res += "Microsoft Windows 95";
+        if (osvi.szCSDVersion[1] == 'C' || osvi.szCSDVersion[1] == 'B')
+          {
+          res += " OSR2";
+          }
+        }
+
+      if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 10)
+        {
+        res += "Microsoft Windows 98";
+        if (osvi.szCSDVersion[1] == 'A')
+          {
+          res += " SE";
+          }
+        }
+
+      if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 90)
+        {
+        res += "Microsoft Windows Millennium Edition";
+        } 
+      break;
+
+    case VER_PLATFORM_WIN32s:
+      
+      res +=  "Microsoft Win32s";
+      break;
+    }
+#endif
+
+  return res;
 }
 
 // These must NOT be initialized.  Default initialization to zero is

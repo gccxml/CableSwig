@@ -70,6 +70,9 @@
 IF(NOT KWSYS_NAMESPACE)
   SET(KWSYS_NAMESPACE "kwsys")
   SET(KWSYS_STANDALONE 1)
+ENDIF(NOT KWSYS_NAMESPACE)
+
+IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   SET(KWSYS_ENABLE_C 1)
 
   # Enable all components.
@@ -79,7 +82,7 @@ IF(NOT KWSYS_NAMESPACE)
   SET(KWSYS_USE_RegularExpression 1)
   SET(KWSYS_USE_SystemTools 1)
   SET(KWSYS_USE_CommandLineArguments 1)
-ENDIF(NOT KWSYS_NAMESPACE)
+ENDIF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
 
 #-----------------------------------------------------------------------------
 # The project name is that of the specified namespace.
@@ -87,7 +90,7 @@ PROJECT(${KWSYS_NAMESPACE})
 
 # Enable testing if building standalone.
 IF(KWSYS_STANDALONE)
-  INCLUDE(${CMAKE_ROOT}/Modules/Dart.cmake)
+  INCLUDE(Dart)
   MARK_AS_ADVANCED(BUILD_TESTING DART_ROOT TCL_TCLSH)
   IF(BUILD_TESTING)
     ENABLE_TESTING()
@@ -175,6 +178,66 @@ ELSE(KWSYS_IOS_USE_SSTREAM)
   ENDIF(KWSYS_IOS_USE_STRSTREAM_H)
 ENDIF(KWSYS_IOS_USE_SSTREAM)
 
+KWSYS_PLATFORM_CXX_TEST(KWSYS_CXX_HAS_CSTDDEF
+  "Checking whether header cstddef is available" DIRECT)
+
+SET(KWSYS_PLATFORM_CXX_TEST_DEFINES
+  -DKWSYS_STL_HAVE_STD=${KWSYS_STL_HAVE_STD})
+KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_STRING_HAVE_NEQ_CHAR
+  "Checking whether stl string has operator!= for char*" DIRECT)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ITERATOR_TRAITS
+  "Checking whether stl has iterator_traits" DIRECT)
+IF(KWSYS_STL_HAS_ITERATOR_TRAITS)
+  SET(KWSYS_STL_HAS_ITERATOR_CATEGORY 0)
+  SET(KWSYS_STL_HAS___ITERATOR_CATEGORY 0)
+ELSE(KWSYS_STL_HAS_ITERATOR_TRAITS)
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ITERATOR_CATEGORY
+    "Checking whether stl has old iterator_category" DIRECT)
+  IF(KWSYS_STL_HAS_ITERATOR_CATEGORY)
+    SET(KWSYS_STL_HAS___ITERATOR_CATEGORY 0)
+  ELSE(KWSYS_STL_HAS_ITERATOR_CATEGORY)
+    KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS___ITERATOR_CATEGORY
+      "Checking whether stl has internal __iterator_category" DIRECT)
+  ENDIF(KWSYS_STL_HAS_ITERATOR_CATEGORY)
+ENDIF(KWSYS_STL_HAS_ITERATOR_TRAITS)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ALLOCATOR_TEMPLATE
+  "Checking whether stl has standard template allocator" DIRECT)
+IF(KWSYS_STL_HAS_ALLOCATOR_TEMPLATE)
+  SET(KWSYS_STL_HAS_ALLOCATOR_NONTEMPLATE 0)
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ALLOCATOR_REBIND
+    "Checking for rebind member of stl allocator" DIRECT)
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ALLOCATOR_MAX_SIZE_ARGUMENT
+    "Checking for non-standard argument to stl allocator<>::max_size" DIRECT)
+ELSE(KWSYS_STL_HAS_ALLOCATOR_TEMPLATE)
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ALLOCATOR_NONTEMPLATE
+    "Checking whether stl has old non-template allocator" DIRECT)
+  SET(KWSYS_STL_HAS_ALLOCATOR_REBIND 0)
+  SET(KWSYS_STL_HAS_ALLOCATOR_MAX_SIZE_ARGUMENT 0)
+ENDIF(KWSYS_STL_HAS_ALLOCATOR_TEMPLATE)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_HAS_ALLOCATOR_OBJECTS
+  "Checking whether stl containers support allocator objects." DIRECT)
+IF(KWSYS_IOS_USE_ANSI)
+  # ANSI streams always have string operators.
+  SET(KWSYS_STL_STRING_HAVE_OSTREAM 1)
+  SET(KWSYS_STL_STRING_HAVE_ISTREAM 1)
+ELSE(KWSYS_IOS_USE_ANSI)
+  # There may not be string operators for old streams.
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_STRING_HAVE_OSTREAM
+    "Checking whether stl string has ostream operator<<" DIRECT)
+  KWSYS_PLATFORM_CXX_TEST(KWSYS_STL_STRING_HAVE_ISTREAM
+    "Checking whether stl string has istream operator>>" DIRECT)
+ENDIF(KWSYS_IOS_USE_ANSI)
+SET(KWSYS_PLATFORM_CXX_TEST_DEFINES)
+
+KWSYS_PLATFORM_CXX_TEST(KWSYS_CXX_HAS_NULL_TEMPLATE_ARGS
+  "Checking whether \"<>\" is needed for template friends" INVERT)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_CXX_HAS_MEMBER_TEMPLATES
+  "Checking for member template support" DIRECT)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_CXX_HAS_FULL_SPECIALIZATION
+  "Checking for standard template specialization syntax" DIRECT)
+KWSYS_PLATFORM_CXX_TEST(KWSYS_CXX_HAS_ARGUMENT_DEPENDENT_LOOKUP
+  "Checking whether argument dependent lookup is supported" DIRECT)
+
 IF(UNIX)
   KWSYS_PLATFORM_CXX_TEST(KWSYS_STAT_HAS_ST_MTIM
     "Checking whether struct stat has st_mtim member" DIRECT)
@@ -210,11 +273,25 @@ INCLUDE_DIRECTORIES(${KWSYS_HEADER_ROOT})
 #-----------------------------------------------------------------------------
 # Create STL header wrappers to block warnings in the STL headers and
 # give standard names by which they may be included.
+SET(KWSYS_STL_HEADER_EXTRA_string 1)
 FOREACH(header algorithm deque iterator list map numeric queue set stack string
-               utility vector)
+               utility vector memory functional)
   # Configure the header wrapper.
   SET(KWSYS_STL_HEADER "${header}")
-  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/kwsys_stl.h.in
+  IF(KWSYS_STL_HEADER_EXTRA_${header})
+    SET(KWSYS_STL_HEADER_EXTRA
+      "#define ${KWSYS_NAMESPACE}_stl_${header}_including_hxx\n# include <${KWSYS_NAMESPACE}/stl/${header}.hxx>\n#undef ${KWSYS_NAMESPACE}_stl_${header}_including_hxx\n")
+    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/kwsys_stl_${header}.hxx.in
+                   ${KWSYS_HEADER_DIR}/stl/${header}.hxx
+                   @ONLY IMMEDIATE)
+    IF(KWSYS_HEADER_INSTALL_DIR)
+      INSTALL_FILES(${KWSYS_HEADER_INSTALL_DIR}/${KWSYS_NAMESPACE}/stl
+        FILES ${KWSYS_HEADER_DIR}/stl/${header}.hxx)
+    ENDIF(KWSYS_HEADER_INSTALL_DIR)
+  ELSE(KWSYS_STL_HEADER_EXTRA_${header})
+    SET(KWSYS_STL_HEADER_EXTRA "")
+  ENDIF(KWSYS_STL_HEADER_EXTRA_${header})
+  CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/kwsys_stl.hxx.in
                  ${KWSYS_HEADER_DIR}/stl/${header}
                  @ONLY IMMEDIATE)
 
@@ -224,6 +301,11 @@ FOREACH(header algorithm deque iterator list map numeric queue set stack string
       FILES ${KWSYS_HEADER_DIR}/stl/${header})
   ENDIF(KWSYS_HEADER_INSTALL_DIR)
 ENDFOREACH(header)
+
+# Provide cstddef header.
+CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/kwsys_cstddef.hxx.in
+               ${KWSYS_HEADER_DIR}/cstddef
+               @ONLY IMMEDIATE)
 
 #-----------------------------------------------------------------------------
 # Create streams header wrappers to give standard names by which they
@@ -245,8 +327,8 @@ ENDFOREACH(header)
 # Build a list of classes and headers we need to implement the
 # selected components.  Initialize with required components.
 SET(KWSYS_CLASSES)
-SET(KWSYS_H_FILES Configure)
-SET(KWSYS_HXX_FILES Configure)
+SET(KWSYS_H_FILES Configure SharedForward)
+SET(KWSYS_HXX_FILES Configure hashtable hash_fun hash_map hash_set)
 
 # Enforce component dependencies.
 IF(KWSYS_USE_SystemTools)
@@ -259,16 +341,6 @@ FOREACH(c Directory RegularExpression SystemTools CommandLineArguments)
     SET(KWSYS_CLASSES ${KWSYS_CLASSES} ${c})
   ENDIF(KWSYS_USE_${c})
 ENDFOREACH(c)
-
-IF(KWSYS_USE_CommandLineArguments)
-  IF(NOT ParaView_SOURCE_DIR)
-    IF(NOT CMake_SOURCE_DIR)
-      IF(NOT KWSYS_STANDALONE)
-        MESSAGE("Command Line Arguments is experimental code for now")
-      ENDIF(NOT KWSYS_STANDALONE)
-    ENDIF(NOT CMake_SOURCE_DIR)
-  ENDIF(NOT ParaView_SOURCE_DIR)
-ENDIF(KWSYS_USE_CommandLineArguments)
 
 # Add selected C components.
 FOREACH(c Process Base64)
@@ -423,15 +495,24 @@ ENDIF(KWSYS_USE_Process)
 
 #-----------------------------------------------------------------------------
 # Setup testing if not being built as part of another project.
-IF(KWSYS_STANDALONE)
-  ADD_EXECUTABLE(testIOS testIOS.cxx)
-  ADD_EXECUTABLE(testProcess testProcess.c)
-  ADD_EXECUTABLE(test1 test1.cxx)
-  ADD_EXECUTABLE(testCommandLineArguments testCommandLineArguments.cxx)
-  TARGET_LINK_LIBRARIES(testIOS ${KWSYS_NAMESPACE})
-  TARGET_LINK_LIBRARIES(testProcess ${KWSYS_NAMESPACE}_c)
-  TARGET_LINK_LIBRARIES(test1 ${KWSYS_NAMESPACE})
-  TARGET_LINK_LIBRARIES(testCommandLineArguments ${KWSYS_NAMESPACE})
+IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
+  # C++ tests
+  FOREACH(test
+      testSystemTools
+      testIOS
+      testhash
+      testCommandLineArguments
+      )
+    ADD_EXECUTABLE(${test} ${test}.cxx)
+    TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE})
+  ENDFOREACH(test)
+  # C tests
+  FOREACH(test
+      testProcess
+      )
+    ADD_EXECUTABLE(${test} ${test}.c)
+    TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE}_c)
+  ENDFOREACH(test)
 
   SET(EXEC_DIR "${CMAKE_CURRENT_BINARY_DIR}")
   IF(EXECUTABLE_OUTPUT_PATH)
@@ -439,11 +520,13 @@ IF(KWSYS_STANDALONE)
   ENDIF(EXECUTABLE_OUTPUT_PATH)
 
   IF(BUILD_TESTING)
-    ADD_TEST(testProcess-1 ${EXEC_DIR}/testProcess 1)
-    ADD_TEST(testProcess-2 ${EXEC_DIR}/testProcess 2)
-    ADD_TEST(testProcess-3 ${EXEC_DIR}/testProcess 3)
-    ADD_TEST(testProcess-4 ${EXEC_DIR}/testProcess 4)
-    ADD_TEST(testProcess-5 ${EXEC_DIR}/testProcess 5)
-    ADD_TEST(testProcess-6 ${EXEC_DIR}/testProcess 6)
+    ADD_TEST(kwsys-testSystemTools ${EXEC_DIR}/testSystemTools)
+    ADD_TEST(kwsys-testProcess-1 ${EXEC_DIR}/testProcess 1)
+    ADD_TEST(kwsys-testProcess-2 ${EXEC_DIR}/testProcess 2)
+    ADD_TEST(kwsys-testProcess-3 ${EXEC_DIR}/testProcess 3)
+    ADD_TEST(kwsys-testProcess-4 ${EXEC_DIR}/testProcess 4)
+    ADD_TEST(kwsys-testProcess-5 ${EXEC_DIR}/testProcess 5)
+    ADD_TEST(kwsys-testProcess-6 ${EXEC_DIR}/testProcess 6)
+    ADD_TEST(kwsys-testhash ${EXEC_DIR}/testhash)
   ENDIF(BUILD_TESTING)
-ENDIF(KWSYS_STANDALONE)
+ENDIF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)

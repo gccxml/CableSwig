@@ -11,7 +11,15 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include <kwsys/Process.h>
+#include "kwsysPrivate.h"
+#include KWSYS_HEADER(Process.h)
+
+/* Work-around CMake dependency scanning limitation.  This must
+   duplicate the above list of headers.  */
+#if 0
+# include "Process.h.in"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,9 +57,9 @@ int test3(int argc, const char* argv[])
   fflush(stdout);
   fflush(stderr);
 #if defined(_WIN32)
-  Sleep(5000);
+  Sleep(15000);
 #else
-  sleep(5);
+  sleep(15);
 #endif
   fprintf(stdout, "Output after sleep on stdout from timeout test.\n");
   fprintf(stderr, "Output after sleep on stderr from timeout test.\n");
@@ -60,6 +68,10 @@ int test3(int argc, const char* argv[])
 
 int test4(int argc, const char* argv[])
 {
+#if defined(_WIN32)
+  /* Avoid error diagnostic popups since we are crashing on purpose.  */
+  SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
+#endif
   (void)argc; (void)argv;
   fprintf(stdout, "Output before crash on stdout from crash test.\n");
   fprintf(stderr, "Output before crash on stderr from crash test.\n");  
@@ -85,7 +97,7 @@ int test5(int argc, const char* argv[])
   fflush(stdout);
   fflush(stderr);
   r = runChild(cmd, kwsysProcess_State_Exception,
-               kwsysProcess_Exception_Fault, 1, 1, 1, 0, 2);
+               kwsysProcess_Exception_Fault, 1, 1, 1, 0, 15);
   fprintf(stdout, "Output on stdout after recursive test.\n");
   fprintf(stderr, "Output on stderr after recursive test.\n");
   fflush(stdout);
@@ -94,7 +106,7 @@ int test5(int argc, const char* argv[])
 }
 
 #define TEST6_SIZE (4096*2)
-int test6(int argc, const char* argv[])
+void test6(int argc, const char* argv[])
 {
   int i;
   char runaway[TEST6_SIZE+1];
@@ -111,7 +123,6 @@ int test6(int argc, const char* argv[])
     fwrite(runaway, 1, TEST6_SIZE+1, stdout);
     fflush(stdout);
     }
-  return 0;
 }
 
 
@@ -187,19 +198,23 @@ int runChild(const char* cmd[], int state, int exception, int value,
     {
     if(exception != kwsysProcess_GetExitException(kp))
       {
-      fprintf(stderr, "Mismatch in exit exception.  Should have been %d.\n",
-              exception);
+      fprintf(stderr, "Mismatch in exit exception.  "
+              "Should have been %d, was %d.\n",
+              exception, kwsysProcess_GetExitException(kp));
       }
     if(value != kwsysProcess_GetExitValue(kp))
       {
-      fprintf(stderr, "Mismatch in exit value.  Should have been %d.\n",
-              value);
+      fprintf(stderr, "Mismatch in exit value.  "
+              "Should have been %d, was %d.\n",
+              value, kwsysProcess_GetExitValue(kp));
       }
     }
   
   if(kwsysProcess_GetState(kp) != state)
     {
-    fprintf(stderr, "Mismatch in state.  Should have been %d.\n", state);
+    fprintf(stderr, "Mismatch in state.  "
+            "Should have been %d, was %d.\n",
+            state, kwsysProcess_GetState(kp));
     result = 1;
     }
   
@@ -249,7 +264,7 @@ int main(int argc, const char* argv[])
       case 3: return test3(argc, argv);
       case 4: return test4(argc, argv);
       case 5: return test5(argc, argv);
-      case 6: return test6(argc, argv);
+      case 6: test6(argc, argv); return 0;
       }
     fprintf(stderr, "Invalid test number %d.\n", n);
     return 1;
@@ -278,10 +293,31 @@ int main(int argc, const char* argv[])
     int values[6] = {0, 123, 1, 1, 0, 0};
     int outputs[6] = {1, 1, 1, 1, 1, 0};
     int delays[6] = {0, 0, 0, 0, 0, 1};
-    double timeouts[6] = {3, 3, 3, 3, 3, 0.1};
+    double timeouts[6] = {10, 10, 10, 10, 30, 10};
     int r;
     const char* cmd[4];
+#ifdef _WIN32
+    char* argv0 = 0;
+    if(n == 0 && (argv0 = strdup(argv[0])))
+      {
+      /* Try converting to forward slashes to see if it works.  */
+      char* c;
+      for(c=argv0; *c; ++c)
+        {
+        if(*c == '\\')
+          {
+          *c = '/';
+          }
+        }
+      cmd[0] = argv0;
+      }
+    else
+      {
+      cmd[0] = argv[0];
+      }
+#else
     cmd[0] = argv[0];
+#endif
     cmd[1] = "run";
     cmd[2] = argv[1];
     cmd[3] = 0;
@@ -295,6 +331,9 @@ int main(int argc, const char* argv[])
     fprintf(stderr, "Output on stderr after test %d.\n", n);
     fflush(stdout);
     fflush(stderr);
+#if _WIN32
+    if(argv0) { free(argv0); }
+#endif
     return r;
     }
   else

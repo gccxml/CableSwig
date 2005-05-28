@@ -11,9 +11,16 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#include <kwsys/CommandLineArguments.hxx>
+#include "kwsysPrivate.h"
+#include KWSYS_HEADER(CommandLineArguments.hxx)
+#include KWSYS_HEADER(ios/iostream)
 
-#include <kwsys/ios/iostream>
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "CommandLineArguments.hxx.in"
+# include "kwsys_ios_iostream.h.in"
+#endif
 
 void* random_ptr = (void*)0x123;
 

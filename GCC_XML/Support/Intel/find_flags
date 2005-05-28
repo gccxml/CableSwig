@@ -30,7 +30,7 @@ fi
 # Find the macro definition options.
 MACROS=`echo "" | ${CXX} -x c++ -E -dM ${CXXFLAGS} - 2>/dev/null |
   sed -n '
-/^#define / {s/#define \([A-Za-z_][A-Za-z0-9_]*\) \(.*\)/-D\1=\2/;p;}
+/^#define / {s/#define \([A-Za-z_][A-Za-z0-9_]*\) \(.*\)/-D\1='\''\2'\''/;p;}
 ' |
   awk '
 BEGIN { first=1 }
@@ -49,7 +49,7 @@ SELFPATH=`echo $0 | sed -n '/\//{s/\/find_flags//;p;}'`
 if test "x$SELFPATH" = "x" ; then SELFPATH="." ; fi
 SELFPATH=`cd "$SELFPATH" ; pwd`
 
-INCLUDES="-iwrapper$SELFPATH $INCLUDES"
+INCLUDES="-iwrapper\"$SELFPATH\" $INCLUDES"
 
 # Format and print out the options.
 OPTIONS="$MACROS -D_WCHAR_T $INCLUDES"

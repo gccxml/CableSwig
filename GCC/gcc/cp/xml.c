@@ -74,7 +74,7 @@
 # define XML_PRE_3_4_TREE_VIA_PUBLIC
 #endif
 
-#define GCC_XML_C_VERSION "$Revision: 1.96 $"
+#define GCC_XML_C_VERSION "$Revision: 1.101 $"
 
 /* A "dump node" corresponding to a particular tree node.  */
 typedef struct xml_dump_node
@@ -754,6 +754,16 @@ xml_print_extern_attribute (xml_dump_info_p xdi, tree d)
     }
 }
 
+/* Print the XML attribute inline="1" if the given decl is inline.  */
+static void
+xml_print_inline_attribute (xml_dump_info_p xdi, tree d)
+{
+  if (DECL_DECLARED_INLINE_P (d))
+    {
+    fprintf (xdi->file, " inline=\"1\"");
+    }
+}
+
 /* Print the XML attribute extern="1" if the given decl is external.  */
 static void
 xml_print_function_extern_attribute (xml_dump_info_p xdi, tree fd)
@@ -1274,6 +1284,7 @@ xml_output_function_decl (xml_dump_info_p xdi, tree fd, xml_dump_node_p dn)
     xml_print_endline_attribute (xdi, body);
     }
   xml_print_function_extern_attribute (xdi, fd);
+  xml_print_inline_attribute (xdi, fd);
   xml_print_attributes_attribute (xdi, GCC_XML_DECL_ATTRIBUTES(fd),
                                   TYPE_ATTRIBUTES(TREE_TYPE(fd)));
 
@@ -2028,8 +2039,19 @@ xml_find_template_parm (tree t)
 
     /* Template parameter types.  */
     case TEMPLATE_TYPE_PARM: return 1;
+    case TEMPLATE_TEMPLATE_PARM: return 1;
     case TEMPLATE_PARM_INDEX: return 1;
     case TYPENAME_TYPE: return 1;
+
+    /* A constant or variable declaration is encountered when a
+       template instantiates another template using an enum or static
+       const value that is not known until the outer tempalte is
+       instantiated.  */
+    case CONST_DECL: return 1;
+    case VAR_DECL: return 1;
+
+    /* A template deferred lookup expression.  */
+    case LOOKUP_EXPR: return 1;
 
     /* Types with nested types.  */
     case METHOD_TYPE:
@@ -2078,8 +2100,46 @@ xml_find_template_parm (tree t)
     case REAL_TYPE: return 0;
     case VOID_TYPE: return 0;
 
+    /* Template declarations are part of instantiations of template
+       template parameters.  */
+    case TEMPLATE_DECL: return 0;
+
     /* Other types that have no nested types.  */
     case INTEGER_CST: return 0;
+    case SIZEOF_EXPR: return 0;
+    case ADDR_EXPR: return 0;
+    case BIT_AND_EXPR: return 0;
+    case BIT_IOR_EXPR: return 0;
+    case BIT_NOT_EXPR: return 0;
+    case BIT_XOR_EXPR: return 0;
+    case COMPOUND_EXPR: return 0;
+    case COND_EXPR: return 0;
+    case CONVERT_EXPR: return 0;
+    case EQ_EXPR: return 0;
+    case GE_EXPR: return 0;
+    case GT_EXPR: return 0;
+    case LE_EXPR: return 0;
+    case LSHIFT_EXPR: return 0;
+    case LT_EXPR: return 0;
+    case MAX_EXPR: return 0;
+    case MINUS_EXPR: return 0;
+    case MIN_EXPR: return 0;
+    case MODIFY_EXPR: return 0;
+    case MULT_EXPR: return 0;
+    case NEGATE_EXPR: return 0;
+    case NE_EXPR: return 0;
+    case NOP_EXPR: return 0;
+    case PLUS_EXPR: return 0;
+    case POSTDECREMENT_EXPR: return 0;
+    case POSTINCREMENT_EXPR: return 0;
+    case PREDECREMENT_EXPR: return 0;
+    case PREINCREMENT_EXPR: return 0;
+    case RSHIFT_EXPR: return 0;
+    case TRUNC_DIV_EXPR: return 0;
+    case TRUNC_MOD_EXPR: return 0;
+    case TRUTH_ANDIF_EXPR: return 0;
+    case TRUTH_NOT_EXPR: return 0;
+    case TRUTH_ORIF_EXPR: return 0;
     default:
       fprintf(stderr, "xml_find_template_parm encountered unsupported type %s\n",
               tree_code_name[TREE_CODE (t)]);

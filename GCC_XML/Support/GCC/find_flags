@@ -30,7 +30,7 @@ fi
 # Find the macro definition options.
 MACROS=`echo "" | ${CXX} -x c++ -E -dM ${CXXFLAGS} - 2>/dev/null |
   sed -n '
-/^#define / {s/#define \([A-Za-z_][A-Za-z0-9_]*\) \(.*\)/-D\1=\2/;p;}
+/^#define / {s/#define \([A-Za-z_][A-Za-z0-9_]*\) \(.*\)/-D\1='\''\2'\''/;p;}
 ' |
   awk '
 BEGIN { first=1 }
@@ -62,19 +62,25 @@ echo "__GNUC_MINOR__" | ${CXX} -v -x c++ -E ${CXXFLAGS} - 2>/dev/null |
 
 # For GCC versions before 3, some special options are needed.
 if [ "$MAJOR_VERSION" -lt 3 ]; then
-  INCLUDES="-iwrapper$SELFPATH/2.95 $INCLUDES"
+  INCLUDES="-iwrapper\"$SELFPATH/2.95\" $INCLUDES"
   if [ "$MINOR_VERSION" = 96 ]; then
-    INCLUDES="-iwrapper$SELFPATH/2.96 $INCLUDES"
+    INCLUDES="-iwrapper\"$SELFPATH/2.96\" $INCLUDES"
   fi
-elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" -ge 3 ]; then
-  INCLUDES="-iwrapper$SELFPATH/3.3 $INCLUDES"
-  SPECIAL="-include $SELFPATH/3.3/gccxml_builtins.h"
+elif [ "$MAJOR_VERSION" = 4 -a "$MINOR_VERSION" -ge 0 ]; then
+  INCLUDES="-iwrapper\"$SELFPATH/4.0\" $INCLUDES"
+  SPECIAL="-include \"$SELFPATH/4.0/gccxml_builtins.h\""
+elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" -ge 4 ]; then
+  INCLUDES="-iwrapper\"$SELFPATH/3.4\" $INCLUDES"
+  SPECIAL="-include \"$SELFPATH/3.4/gccxml_builtins.h\""
+elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" = 3 ]; then
+  INCLUDES="-iwrapper\"$SELFPATH/3.3\" $INCLUDES"
+  SPECIAL="-include \"$SELFPATH/3.3/gccxml_builtins.h\""
 elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" = 2 ]; then
-  INCLUDES="-iwrapper$SELFPATH/3.2 $INCLUDES"
+  INCLUDES="-iwrapper\"$SELFPATH/3.2\" $INCLUDES"
 elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" = 1 ]; then
-  INCLUDES="-iwrapper$SELFPATH/3.1 $INCLUDES"
+  INCLUDES="-iwrapper\"$SELFPATH/3.1\" $INCLUDES"
 elif [ "$MAJOR_VERSION" = 3 -a "$MINOR_VERSION" = 0 ]; then
-  INCLUDES="-iwrapper$SELFPATH/3.0 $INCLUDES"
+  INCLUDES="-iwrapper\"$SELFPATH/3.0\" $INCLUDES"
 fi
 
 # Format and print out the options.
