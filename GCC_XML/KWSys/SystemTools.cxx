@@ -58,6 +58,11 @@
 #include <termios.h>
 #endif
 
+// Windows API.  Some parts used even on cygwin.
+#if defined(_WIN32)
+# include <windows.h>
+#endif
+
 // This is a hack to prevent warnings about these functions being
 // declared but not referenced.
 #if defined(__sgi) && !defined(__GNUC__)
@@ -82,7 +87,6 @@ public:
 
 #if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
 #include <io.h>
-#include <windows.h>
 #include <direct.h>
 #define _unlink unlink
 inline int Mkdir(const char* dir)
@@ -1199,6 +1203,41 @@ int SystemTools::EstimateFormatLength(const char *format, va_list ap)
     }
   
   return length;
+}
+
+kwsys_stl::string SystemTools::EscapeChars(
+  const char *str, 
+  const char *chars_to_escape, 
+  char escape_char)
+{
+  kwsys_stl::string n;
+  if (str)
+    {
+    if (!chars_to_escape | !*chars_to_escape)
+      {
+      n.append(str);
+      }
+    else
+      {
+      n.reserve(strlen(str));
+      while (*str)
+        {
+        const char *ptr = chars_to_escape;
+        while (*ptr)
+          {
+          if (*str == *ptr)
+            {
+            n += escape_char;
+            break;
+            }
+          ++ptr;
+          }
+        n += *str;
+        ++str;
+        }
+      }
+    }
+  return n;
 }
 
 // convert windows slashes to unix slashes 
