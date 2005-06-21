@@ -683,9 +683,17 @@ Node* CableSwig::CreateSwigClassInNamespace(const cable::Class*c, const char* td
   context = context->GetContext();
   if(context && (strcmp(context->GetName(), "::") != 0))
     {
-//    std::cerr << "skipping nest namespace " << context->GetName() 
-//              << "::" << classNameSpace->GetName() << "\n";
-    return 0;
+    if(classNameSpace)
+      {
+      // Nested namespace.  Add a using declaration to work around
+      // swig behavior.
+      m_NamespacesToUse.insert(context->GetName());
+      }
+    else
+      {
+      // Nested class.  Skip it.
+      return 0;
+      }
     }
   // Create a new module node that copies the values from moduleIn
   Node* module = this->new_node("module");
@@ -1221,17 +1229,15 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
       return false;
       }
     }
-  // Include the cable configuration file
+
+  // Create a node to use later for adding code at this point in the
+  // generated output.
+  Node* includeConfigNode = 0;
   if(configFile.size())
     {
-    Node* n = new_node("insert");
-    std::string headerCode = "\n#include <";
-    headerCode += configFile;
-    headerCode += ">\n";
-    headerCode += "#include <exception>\n";
-    Setattr(n, "code", headerCode.c_str());
-    Setattr(n, "section", "header");
-    appendChild(top, n);
+    includeConfigNode = new_node("insert");
+    Setattr(includeConfigNode, "section", "header");
+    appendChild(top, includeConfigNode);
     }
 
   // look for the std namespace, and if there isn't one, use
@@ -1433,6 +1439,24 @@ bool CableSwig::ProcessSource(cable::SourceRepresentation::Pointer sr, Node* top
       Setattr(java, "lang", "java");
       appendChild(top, java);
       }
+    }
+
+  // Include the cable configuration file
+  if(includeConfigNode)
+    {
+    std::string headerCode = "\n#include <";
+    headerCode += configFile;
+    headerCode += ">\n";
+    // Add using directives for nested namespaces.
+    for(std::set<std::string>::const_iterator i = m_NamespacesToUse.begin();
+        i != m_NamespacesToUse.end(); ++i)
+      {
+      headerCode += "using namespace ";
+      headerCode += *i;
+      headerCode += ";\n";
+      }
+    headerCode += "#include <exception>\n";
+    Setattr(includeConfigNode, "code", headerCode.c_str());
     }
 
   //  printf("********************cable swig file******************\n");

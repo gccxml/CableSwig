@@ -116,6 +116,7 @@ private:
   const char* m_CurrentFile;
   int         m_CurrentLine;
   std::string m_NativeStringName;
+  std::set<std::string> m_NamespacesToUse;
   std::vector<std::string> m_MasterIndexFiles;
   std::vector<std::string> m_Loaders;
   std::map<csString, csString> m_ClassGroupLookup;   // GetQualifiedName to cable group
