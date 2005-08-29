@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   KWSys - Kitware System Library
-  Module:    testhash.cxx
+  Module:    testHashSTL.cxx
 
   Copyright (c) Kitware, Inc., Insight Consortium.  All rights reserved.
   See Copyright.txt or http://www.kitware.com/Copyright.htm for details.

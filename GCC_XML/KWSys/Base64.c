@@ -11,7 +11,6 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#define KWSYS_IN_BASE64_C
 #include "kwsysPrivate.h"
 #include KWSYS_HEADER(Base64.h)
 
@@ -254,16 +253,27 @@ unsigned long kwsysBase64_Decode(const unsigned char *input,
       {
       unsigned char temp[3];
       int len = kwsysBase64_Decode3(ptr, temp);
-      optr[0] = temp[0];
-      optr[1] = temp[1];
-      optr += (len > 2 ? 2 : len); 
+      if(len >= 2)
+        {
+        optr[0] = temp[0];
+        optr[1] = temp[1];
+        optr += 2;
+        }
+      else if(len > 0)
+        {
+        optr[0] = temp[0];
+        optr += 1;
+        }
       }
     else if (oend - optr == 1)
       {
       unsigned char temp[3];
       int len = kwsysBase64_Decode3(ptr, temp);
-      optr[0] = temp[0];
-      optr += (len > 2 ? 2 : len); 
+      if(len > 0)
+        {
+        optr[0] = temp[0];
+        optr += 1;
+        }
       }
     }
 
