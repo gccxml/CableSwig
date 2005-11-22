@@ -89,6 +89,18 @@ public:
 #include <io.h>
 #include <direct.h>
 #define _unlink unlink
+#endif 
+
+/* The maximum length of a file name.  */
+#if defined(PATH_MAX)
+# define KWSYS_SYSTEMTOOLS_MAXPATH PATH_MAX
+#elif defined(MAXPATHLEN)
+# define KWSYS_SYSTEMTOOLS_MAXPATH MAXPATHLEN
+#else
+# define KWSYS_SYSTEMTOOLS_MAXPATH 16384
+#endif
+
+#if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
 inline int Mkdir(const char* dir)
 {
   return _mkdir(dir);
@@ -141,15 +153,7 @@ inline int Chdir(const char* dir)
 }
 inline void Realpath(const char *path, kwsys_stl::string & resolved_path)
 {
-# ifdef MAXPATHLEN
-  char resolved_name[MAXPATHLEN];
-# else
-#  ifdef PATH_MAX
-  char resolved_name[PATH_MAX];
-#  else
-  char resolved_name[5024];
-#  endif  //PATH_MAX
-# endif //MAXPATHLEN
+  char resolved_name[KWSYS_SYSTEMTOOLS_MAXPATH];
 
   realpath(path, resolved_name);
   resolved_path = resolved_name;
@@ -195,6 +199,7 @@ class SystemToolsTranslationMap :
     public kwsys_stl::map<kwsys_stl::string,kwsys_stl::string>
 {
 };
+
 
 double
 SystemTools::GetTime(void)
@@ -781,38 +786,20 @@ bool SystemTools::FileTimeCompare(const char* f1, const char* f2,
     }
 # endif
 #else
-  // Windows version.  Create file handles and get the modification times.
-  HANDLE hf1 = CreateFile(f1, GENERIC_READ, FILE_SHARE_READ,
-                          NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS,
-                          NULL);
-  if(hf1 == INVALID_HANDLE_VALUE)
+  // Windows version.  Get the modification time from extended file attributes.
+  WIN32_FILE_ATTRIBUTE_DATA f1d;
+  WIN32_FILE_ATTRIBUTE_DATA f2d;
+  if(!GetFileAttributesEx(f1, GetFileExInfoStandard, &f1d))
     {
     return false;
     }
-  FILETIME tf1;
-  if(!GetFileTime(hf1, 0, 0, &tf1))
-    {
-    CloseHandle(hf1);
-    return false;
-    }
-  CloseHandle(hf1);
-  HANDLE hf2 = CreateFile(f2, GENERIC_READ, FILE_SHARE_READ,
-                          NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS,
-                          NULL);
-  if(hf2 == INVALID_HANDLE_VALUE)
+  if(!GetFileAttributesEx(f2, GetFileExInfoStandard, &f2d))
     {
     return false;
     }
-  FILETIME tf2;
-  if(!GetFileTime(hf2, 0, 0, &tf2))
-    {
-    CloseHandle(hf2);
-    return false;
-    }
-  CloseHandle(hf2);
 
   // Compare the file times using resolution provided by system call.
-  *result = (int)CompareFileTime(&tf1, &tf2);
+  *result = (int)CompareFileTime(&f1d.ftLastWriteTime, &f2d.ftLastWriteTime);
 #endif
   return true;
 }
@@ -1846,6 +1833,13 @@ bool SystemTools::RemoveADirectory(const char* source)
     }
 
   return (Rmdir(source) == 0);
+}
+
+/**
+ */
+size_t SystemTools::GetMaximumFilePathLength()
+{
+  return KWSYS_SYSTEMTOOLS_MAXPATH;
 }
 
 /**

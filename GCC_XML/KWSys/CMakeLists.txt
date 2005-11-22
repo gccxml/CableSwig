@@ -63,6 +63,14 @@
 #  foosys::Directory directory;
 #
 
+# NOTE: This library is intended for internal use by Kitware-driven
+# projects.  In order to keep it simple no attempt will be made to
+# maintain backward compatibility when changes are made to KWSys.
+# When an incompatible change is made Kitware's projects that use
+# KWSys will be fixed, but no notification will necessarily be sent to
+# any outside mailing list and no documentation of the change will be
+# written.
+
 #-----------------------------------------------------------------------------
 # If a namespace is not specified, use "kwsys" and enable testing.
 # This should be the case only when kwsys is not included inside
@@ -78,8 +86,10 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   # Enable all components.
   SET(KWSYS_USE_Base64 1)
   SET(KWSYS_USE_Directory 1)
+  SET(KWSYS_USE_Glob 1)
   SET(KWSYS_USE_Process 1)
   SET(KWSYS_USE_RegularExpression 1)
+  SET(KWSYS_USE_Registry 1)
   SET(KWSYS_USE_SystemTools 1)
   SET(KWSYS_USE_CommandLineArguments 1)
   SET(KWSYS_USE_FundamentalType 1)
@@ -407,9 +417,15 @@ SET(KWSYS_HXX_FILES Configure hashtable hash_fun hash_map hash_set)
 IF(KWSYS_USE_SystemTools)
   SET(KWSYS_USE_Directory 1)
 ENDIF(KWSYS_USE_SystemTools)
+IF(KWSYS_USE_Glob)
+  SET(KWSYS_USE_Directory 1)
+  SET(KWSYS_USE_SystemTools 1)
+  SET(KWSYS_USE_RegularExpression 1)
+ENDIF(KWSYS_USE_Glob)
 
 # Add selected C++ classes.
-FOREACH(c Directory RegularExpression SystemTools CommandLineArguments)
+SET(cppclasses Directory Glob RegularExpression SystemTools CommandLineArguments Registry)
+FOREACH(c ${cppclasses})
   IF(KWSYS_USE_${c})
     SET(KWSYS_CLASSES ${KWSYS_CLASSES} ${c})
   ENDIF(KWSYS_USE_${c})
@@ -589,6 +605,7 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
       testIOS
       testHashSTL
       testCommandLineArguments
+      testRegistry
       )
     ADD_EXECUTABLE(${test} ${test}.cxx)
     TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE})
@@ -596,6 +613,7 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   # C tests
   FOREACH(test
       testProcess
+      testFail
       )
     ADD_EXECUTABLE(${test} ${test}.c)
     TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE}_c)
@@ -607,19 +625,38 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   ENDIF(EXECUTABLE_OUTPUT_PATH)
 
   IF(BUILD_TESTING)
+
+    SET(TEST_SYSTEMTOOLS_BIN_FILE
+      "${CMAKE_CURRENT_SOURCE_DIR}/testSystemTools.bin")
+    SET(TEST_SYSTEMTOOLS_SRC_FILE 
+      "${CMAKE_CURRENT_SOURCE_DIR}/testSystemTools.cxx")
+    CONFIGURE_FILE(
+      ${PROJECT_SOURCE_DIR}/testSystemTools.h.in
+      ${PROJECT_BINARY_DIR}/testSystemTools.h)
+    INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
+
     IF(CTEST_TEST_KWSYS)
       CONFIGURE_FILE("${CMAKE_CURRENT_SOURCE_DIR}/ExtraTest.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/ExtraTest.cmake")
       SET_DIRECTORY_PROPERTIES(PROPERTIES TEST_INCLUDE_FILE "${CMAKE_CURRENT_BINARY_DIR}/ExtraTest.cmake")
     ENDIF(CTEST_TEST_KWSYS)
-    ADD_TEST(kwsys-testSystemTools ${EXEC_DIR}/testSystemTools)
-    ADD_TEST(kwsys-testProcess-1 ${EXEC_DIR}/testProcess 1)
-    ADD_TEST(kwsys-testProcess-2 ${EXEC_DIR}/testProcess 2)
-    ADD_TEST(kwsys-testProcess-3 ${EXEC_DIR}/testProcess 3)
-    ADD_TEST(kwsys-testProcess-4 ${EXEC_DIR}/testProcess 4)
-    ADD_TEST(kwsys-testProcess-5 ${EXEC_DIR}/testProcess 5)
-    ADD_TEST(kwsys-testProcess-6 ${EXEC_DIR}/testProcess 6)
-    ADD_TEST(kwsys-testProcess-7 ${EXEC_DIR}/testProcess 7)
-    ADD_TEST(kwsys-testHashSTL ${EXEC_DIR}/testHashSTL)
+    ADD_TEST(kwsys.testSystemTools ${EXEC_DIR}/testSystemTools)
+    ADD_TEST(kwsys.testProcess-1 ${EXEC_DIR}/testProcess 1)
+    ADD_TEST(kwsys.testProcess-2 ${EXEC_DIR}/testProcess 2)
+    ADD_TEST(kwsys.testProcess-3 ${EXEC_DIR}/testProcess 3)
+    ADD_TEST(kwsys.testProcess-4 ${EXEC_DIR}/testProcess 4)
+    ADD_TEST(kwsys.testProcess-5 ${EXEC_DIR}/testProcess 5)
+    ADD_TEST(kwsys.testProcess-6 ${EXEC_DIR}/testProcess 6)
+    ADD_TEST(kwsys.testProcess-7 ${EXEC_DIR}/testProcess 7)
+    ADD_TEST(kwsys.testHashSTL ${EXEC_DIR}/testHashSTL)
+    ADD_TEST(kwsys.testRegistry ${EXEC_DIR}/testRegistry)
+    IF(COMMAND SET_TESTS_PROPERTIES AND COMMAND GET_TEST_PROPERTY AND KWSYS_STANDALONE)
+      ADD_TEST(kwsys.testFail ${EXEC_DIR}/testFail)
+      SET_TESTS_PROPERTIES(kwsys.testFail PROPERTIES WILL_FAIL ON)
+      GET_TEST_PROPERTY(kwsys.testFail WILL_FAIL wfv)
+      SET_TESTS_PROPERTIES(kwsys.testRegistry PROPERTIES FAIL_REGULAR_EXPRESSION "ERROR;FAIL;Test failed")
+      SET_TESTS_PROPERTIES(kwsys.testRegistry PROPERTIES PASS_REGULAR_EXPRESSION "Test passed")
+      MESSAGE(STATUS "GET_TEST_PROPERTY returned: ${wfv}")
+    ENDIF(COMMAND SET_TESTS_PROPERTIES AND COMMAND GET_TEST_PROPERTY AND KWSYS_STANDALONE)
   ENDIF(BUILD_TESTING)
 ENDIF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
