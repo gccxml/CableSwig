@@ -26,6 +26,7 @@
 // duplicate the above list of headers.
 #if 0
 # include "Glob.hxx.in"
+# include "Directory.hxx.in"
 # include "Configure.hxx.in"
 # include "RegularExpression.hxx.in"
 # include "SystemTools.hxx.in"
@@ -35,7 +36,7 @@
 
 #include <ctype.h>
 #include <stdio.h>
-
+#include <string.h>
 namespace KWSYS_NAMESPACE
 {
 #if defined( _WIN32 ) || defined( APPLE ) || defined( __CYGWIN__ )

@@ -26,6 +26,7 @@
 # include "Configure.hxx.in"
 # include "kwsys_stl.hxx.in"
 # include "kwsys_stl_string.hxx.in"
+# include "kwsys_stl_vector.hxx.in"
 #endif
 
 namespace KWSYS_NAMESPACE
@@ -55,13 +56,13 @@ Directory::~Directory()
 }
 
 //----------------------------------------------------------------------------
-unsigned long Directory::GetNumberOfFiles()
+unsigned long Directory::GetNumberOfFiles() const
 {
   return static_cast<unsigned long>(this->Internal->Files.size());
 }
 
 //----------------------------------------------------------------------------
-const char* Directory::GetFile(unsigned long dindex)
+const char* Directory::GetFile(unsigned long dindex) const
 {
   if ( dindex >= this->Internal->Files.size() )
     {
@@ -70,11 +71,25 @@ const char* Directory::GetFile(unsigned long dindex)
   return this->Internal->Files[dindex].c_str();
 }
 
+//----------------------------------------------------------------------------
+const char* Directory::GetPath() const
+{
+  return this->Internal->Path.c_str();
+}
+
+//----------------------------------------------------------------------------
+void Directory::Clear()
+{
+  //this->Internal->Path.clear();
+  this->Internal->Path = "";
+  this->Internal->Files.clear();
+}
+
 } // namespace KWSYS_NAMESPACE
 
 // First microsoft compilers
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__WATCOMC__)
 #include <windows.h>
 #include <io.h>
 #include <ctype.h>
@@ -90,6 +105,7 @@ namespace KWSYS_NAMESPACE
 
 bool Directory::Load(const char* name)
 {
+  this->Clear();
 #if _MSC_VER < 1300
   long srchHandle;
 #else
@@ -142,6 +158,7 @@ namespace KWSYS_NAMESPACE
 
 bool Directory::Load(const char* name)
 {
+  this->Clear();
   DIR* dir = opendir(name);
 
   if (!dir)

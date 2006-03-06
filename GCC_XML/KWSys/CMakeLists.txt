@@ -86,6 +86,7 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   # Enable all components.
   SET(KWSYS_USE_Base64 1)
   SET(KWSYS_USE_Directory 1)
+  SET(KWSYS_USE_DynamicLoader 1)
   SET(KWSYS_USE_Glob 1)
   SET(KWSYS_USE_Process 1)
   SET(KWSYS_USE_RegularExpression 1)
@@ -411,7 +412,7 @@ ENDFOREACH(header)
 # selected components.  Initialize with required components.
 SET(KWSYS_CLASSES)
 SET(KWSYS_H_FILES Configure SharedForward)
-SET(KWSYS_HXX_FILES Configure hashtable hash_fun hash_map hash_set)
+SET(KWSYS_HXX_FILES Configure String hashtable hash_fun hash_map hash_set)
 
 # Enforce component dependencies.
 IF(KWSYS_USE_SystemTools)
@@ -424,7 +425,7 @@ IF(KWSYS_USE_Glob)
 ENDIF(KWSYS_USE_Glob)
 
 # Add selected C++ classes.
-SET(cppclasses Directory Glob RegularExpression SystemTools CommandLineArguments Registry)
+SET(cppclasses Directory DynamicLoader Glob RegularExpression SystemTools CommandLineArguments Registry)
 FOREACH(c ${cppclasses})
   IF(KWSYS_USE_${c})
     SET(KWSYS_CLASSES ${KWSYS_CLASSES} ${c})
@@ -599,32 +600,32 @@ ENDIF(KWSYS_USE_Process)
 #-----------------------------------------------------------------------------
 # Setup testing if not being built as part of another project.
 IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
-  # C++ tests
-  FOREACH(test
-      testSystemTools
-      testIOS
-      testHashSTL
-      testCommandLineArguments
-      testRegistry
-      )
-    ADD_EXECUTABLE(${test} ${test}.cxx)
-    TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE})
-  ENDFOREACH(test)
-  # C tests
-  FOREACH(test
-      testProcess
-      testFail
-      )
-    ADD_EXECUTABLE(${test} ${test}.c)
-    TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE}_c)
-  ENDFOREACH(test)
-
-  SET(EXEC_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-  IF(EXECUTABLE_OUTPUT_PATH)
-    SET(EXEC_DIR "${EXECUTABLE_OUTPUT_PATH}")
-  ENDIF(EXECUTABLE_OUTPUT_PATH)
-
   IF(BUILD_TESTING)
+    # C++ tests
+    FOREACH(test
+        testSystemTools
+        testIOS
+        testHashSTL
+        testCommandLineArguments
+        testRegistry
+        )
+      ADD_EXECUTABLE(${test} ${test}.cxx)
+      TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE})
+    ENDFOREACH(test)
+    # C tests
+    FOREACH(test
+        testProcess
+        testFail
+        )
+      ADD_EXECUTABLE(${test} ${test}.c)
+      TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE}_c)
+    ENDFOREACH(test)
+
+    SET(EXEC_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    IF(EXECUTABLE_OUTPUT_PATH)
+      SET(EXEC_DIR "${EXECUTABLE_OUTPUT_PATH}")
+    ENDIF(EXECUTABLE_OUTPUT_PATH)
+
 
     SET(TEST_SYSTEMTOOLS_BIN_FILE
       "${CMAKE_CURRENT_SOURCE_DIR}/testSystemTools.bin")

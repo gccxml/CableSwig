@@ -2,10 +2,10 @@ Index: assert.h
 ===================================================================
 RCS file: /cvsroot/GxInclude/Vc71/Include/assert.h,v
 retrieving revision 1.1
-retrieving revision 1.2
-diff -c -3 -p -r1.1 -r1.2
+retrieving revision 1.3
+diff -c -3 -p -r1.1 -r1.3
 *** assert.h	10 Jun 2003 16:12:29 -0000	1.1
---- assert.h	10 Jun 2003 17:36:05 -0000	1.2
+--- assert.h	27 Jan 2006 14:16:50 -0000	1.3
 *************** _CRTIMP void __cdecl _assert(const char 
 *** 53,58 ****
   }
@@ -18,7 +18,7 @@ diff -c -3 -p -r1.1 -r1.2
   }
   #endif
   
-! #define assert(exp) (void)( (exp) || (_assert((void*)#exp, __FILE__, __LINE__), 0) )
+! #define assert(exp)     ((void)0)
   
   #endif  /* NDEBUG */
 Index: limits.h
@@ -102,12 +102,6 @@ diff -c -3 -p -r1.1 -r1.2
   _CRTIMP int __cdecl raise(int);
   
   
-Index: typeinfo
-===================================================================
-RCS file: /cvsroot/GxInclude/Vc71/Include/typeinfo,v
-retrieving revision 1.1
-retrieving revision 1.3
-diff -c -3 -p -r1.1 -r1.3
 Index: typeinfo.h
 ===================================================================
 RCS file: /cvsroot/GxInclude/Vc71/Include/typeinfo.h,v

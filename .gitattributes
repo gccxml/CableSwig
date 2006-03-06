@@ -1,6 +1,7 @@
 .git*            export-ignore
 
 *.bat.in        -crlf
+*.bin           -crlf
 *.csproj        -crlf
 *.dsp           -crlf
 *.png           -crlf

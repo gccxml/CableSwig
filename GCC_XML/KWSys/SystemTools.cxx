@@ -85,7 +85,7 @@ public:
 }
 #endif
 
-#if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
+#if defined(_WIN32) && (defined(_MSC_VER) || defined(__WATCOMC__) ||defined(__BORLANDC__) || defined(__MINGW32__))
 #include <io.h>
 #include <direct.h>
 #define _unlink unlink
@@ -99,8 +99,15 @@ public:
 #else
 # define KWSYS_SYSTEMTOOLS_MAXPATH 16384
 #endif
+#if defined(__WATCOMC__)
+#include <direct.h>
+#define _mkdir mkdir
+#define _rmdir rmdir
+#define _getcwd getcwd
+#define _chdir chdir
+#endif
 
-#if defined(_WIN32) && (defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__))
+#if defined(_WIN32) && (defined(_MSC_VER) || defined(__WATCOMC__) || defined(__BORLANDC__) || defined(__MINGW32__)) 
 inline int Mkdir(const char* dir)
 {
   return _mkdir(dir);
@@ -1124,6 +1131,29 @@ kwsys_stl::string SystemTools::CropString(const kwsys_stl::string& s,
 }
 
 //----------------------------------------------------------------------------
+kwsys_stl::vector<kwsys::String> SystemTools::SplitString(const char* p, char sep, bool isPath)
+{
+  kwsys_stl::string path = p;
+  kwsys_stl::vector<kwsys::String> paths;
+  if(isPath && path[0] == '/')
+    {
+    path.erase(path.begin());
+    paths.push_back("/"); 
+    }
+  kwsys_stl::string::size_type pos1 = 0;
+  kwsys_stl::string::size_type pos2 = path.find(sep, pos1+1);
+  while(pos2 != kwsys_stl::string::npos)
+    {
+    paths.push_back(path.substr(pos1, pos2-pos1));
+    pos1 = pos2+1;
+    pos2 = path.find(sep, pos1+1);
+    } 
+  paths.push_back(path.substr(pos1, pos2-pos1));
+  
+  return paths;
+}
+
+//----------------------------------------------------------------------------
 int SystemTools::EstimateFormatLength(const char *format, va_list ap)
 {
   if (!format)
@@ -1856,7 +1886,11 @@ kwsys_stl::string SystemTools
   SystemTools::GetPath(path, "CMAKE_FILE_PATH");
   SystemTools::GetPath(path);
   // now add the additional paths
-  path.insert(path.end(), userPaths.begin(), userPaths.end());
+  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator i = userPaths.begin();
+        i != userPaths.end(); ++i)
+    {
+    path.push_back(*i);
+    }
   // now look for the file
   kwsys_stl::string tryPath;
   for(kwsys_stl::vector<kwsys_stl::string>::const_iterator p = path.begin();
@@ -1889,21 +1923,35 @@ kwsys_stl::string SystemTools::FindProgram(
     {
     return "";
     }
+  kwsys_stl::string ext = SystemTools::GetExecutableExtension();
+  if(ext.size())
+    {
+    unsigned int len = strlen(name);
+    if(len > ext.size())
+      {
+      if(strcmp(name+(len-ext.size()), ext.c_str()) == 0)
+        {
+        ext = ""; // name already has Executable extension
+        }
+      }
+    }
   // See if the executable exists as written.
   if(SystemTools::FileExists(name) &&
       !SystemTools::FileIsDirectory(name))
     {
     return SystemTools::CollapseFullPath(name);
     }
-  kwsys_stl::string tryPath = name;
-  tryPath += SystemTools::GetExecutableExtension();
-  if(SystemTools::FileExists(tryPath.c_str()) &&
-     !SystemTools::FileIsDirectory(tryPath.c_str()))
+  if(ext.size())
     {
-    return SystemTools::CollapseFullPath(tryPath.c_str());
+    kwsys_stl::string tryPath = name;
+    tryPath += ext;
+    if(SystemTools::FileExists(tryPath.c_str()) &&
+       !SystemTools::FileIsDirectory(tryPath.c_str()))
+      {
+      return SystemTools::CollapseFullPath(tryPath.c_str());
+      }
     }
   kwsys_stl::vector<kwsys_stl::string> path;
-  SystemTools::GetPath(path, "CMAKE_PROGRAM_PATH");
   // Add the system search path to our path.
   if (!no_system_path)
     {
@@ -1911,12 +1959,19 @@ kwsys_stl::string SystemTools::FindProgram(
     }
   
   // now add the additional paths
-  path.insert(path.end(), userPaths.begin(), userPaths.end());
-  
-  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator p = path.begin();
+  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator i = userPaths.begin();
+        i != userPaths.end(); ++i)
+    {
+    path.push_back(*i);
+    }
+  for(kwsys_stl::vector<kwsys_stl::string>::iterator p = path.begin();
       p != path.end(); ++p)
     {
-    tryPath = *p;
+#ifdef _WIN32
+    // Remove double quotes from the path on windows
+    SystemTools::ReplaceString(*p, "\"", "");
+#endif
+    kwsys_stl::string tryPath = *p;
     tryPath += "/";
     tryPath += name;
     if(SystemTools::FileExists(tryPath.c_str()) &&
@@ -1925,21 +1980,34 @@ kwsys_stl::string SystemTools::FindProgram(
       return SystemTools::CollapseFullPath(tryPath.c_str());
       }
 #ifdef _WIN32
-    tryPath += ".com";
+    // on windows try .com before .exe
+    if(ext.size() == 0)
+      {
+      SystemTools::ReplaceString(tryPath, ".exe", ".com");
+      SystemTools::ReplaceString(tryPath, ".EXE", ".com");
+      }
+    else
+      {
+      tryPath += ".com";
+      }
     if(SystemTools::FileExists(tryPath.c_str()) &&
        !SystemTools::FileIsDirectory(tryPath.c_str()))
       {
       return SystemTools::CollapseFullPath(tryPath.c_str());
       }
-    tryPath = *p;
-    tryPath += "/";
-    tryPath += name;
 #endif
-    tryPath += SystemTools::GetExecutableExtension();
-    if(SystemTools::FileExists(tryPath.c_str()) &&
-       !SystemTools::FileIsDirectory(tryPath.c_str()))
+    // now try to add ext if it is different than name
+    if(ext.size())
       {
-      return SystemTools::CollapseFullPath(tryPath.c_str());
+      tryPath = *p;
+      tryPath += "/";
+      tryPath += name;
+      tryPath += ext;
+      if(SystemTools::FileExists(tryPath.c_str()) &&
+         !SystemTools::FileIsDirectory(tryPath.c_str()))
+        {
+        return SystemTools::CollapseFullPath(tryPath.c_str());
+        }
       }
     }
 
@@ -1947,6 +2015,25 @@ kwsys_stl::string SystemTools::FindProgram(
   return "";
 }
 
+kwsys_stl::string SystemTools::FindProgram(
+  const kwsys_stl::vector<kwsys_stl::string>& names,
+  const kwsys_stl::vector<kwsys_stl::string>& path,
+  bool noSystemPath)
+{
+  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator it = names.begin();
+      it != names.end() ; ++it)
+    {
+    // Try to find the program.
+    kwsys_stl::string result = SystemTools::FindProgram(it->c_str(), 
+                                                  path, 
+                                                  noSystemPath);
+    if ( !result.empty() )
+      {
+      return result;
+      }
+    }
+  return "";
+}
 
 /**
  * Find the library with the given name.  Searches the given path and then
@@ -1968,11 +2055,26 @@ kwsys_stl::string SystemTools
   kwsys_stl::vector<kwsys_stl::string> path;
   SystemTools::GetPath(path);
    // now add the additional paths
-  path.insert(path.end(), userPaths.begin(), userPaths.end());
+  for(kwsys_stl::vector<kwsys_stl::string>::const_iterator i = userPaths.begin();
+        i != userPaths.end(); ++i)
+    {
+    path.push_back(*i);
+    }
   kwsys_stl::string tryPath;
   for(kwsys_stl::vector<kwsys_stl::string>::const_iterator p = path.begin();
       p != path.end(); ++p)
     {
+#if defined(__APPLE__)
+    tryPath = *p;
+    tryPath += "/";
+    tryPath += name;
+    tryPath += ".framework";
+    if(SystemTools::FileExists(tryPath.c_str())
+       && SystemTools::FileIsDirectory(tryPath.c_str()))
+      {
+      return SystemTools::CollapseFullPath(tryPath.c_str());
+      }
+#endif
 #if defined(_WIN32) && !defined(__CYGWIN__) && !defined(__MINGW32__)
     tryPath = *p;
     tryPath += "/";
@@ -2341,11 +2443,91 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_path,
   SystemTools::CheckTranslationPath(newPath);
 #ifdef _WIN32
   newPath = SystemTools::GetActualCaseForPath(newPath.c_str());
+  SystemTools::ConvertToUnixSlashes(newPath);
 #endif
   // Return the reconstructed path.
   return newPath;
 }
 
+// compute the relative path from here to there
+kwsys_stl::string SystemTools::RelativePath(const char* local, const char* remote)
+{
+  if(!SystemTools::FileIsFullPath(local))
+    {
+    return "";
+    }
+  if(!SystemTools::FileIsFullPath(remote))
+    {
+    return "";
+    }
+  
+  // split up both paths into arrays of strings using / as a separator
+  kwsys_stl::vector<kwsys::String> localSplit = SystemTools::SplitString(local, '/', true); 
+  kwsys_stl::vector<kwsys::String> remoteSplit = SystemTools::SplitString(remote, '/', true);
+  kwsys_stl::vector<kwsys::String> commonPath; // store shared parts of path in this array
+  kwsys_stl::vector<kwsys::String> finalPath;  // store the final relative path here
+  // count up how many matching directory names there are from the start
+  unsigned int sameCount = 0;
+  while(
+    ((sameCount <= (localSplit.size()-1)) && (sameCount <= (remoteSplit.size()-1)))
+    && 
+// for windows and apple do a case insensitive string compare    
+#if defined(_WIN32) || defined(__APPLE__)
+    SystemTools::Strucmp(localSplit[sameCount].c_str(),
+                         remoteSplit[sameCount].c_str()) == 0
+#else
+    localSplit[sameCount] == remoteSplit[sameCount]
+#endif
+    )
+    {
+    // put the common parts of the path into the commonPath array
+    commonPath.push_back(localSplit[sameCount]);
+    // erase the common parts of the path from the original path arrays
+    localSplit[sameCount] = "";
+    remoteSplit[sameCount] = "";
+    sameCount++;
+    }
+  // If there is nothing in common but the root directory, then just
+  // return the full path.
+  if(sameCount <= 1)
+    {
+    return remote;
+    }
+  
+  // for each entry that is not common in the local path
+  // add a ../ to the finalpath array, this gets us out of the local
+  // path into the remote dir
+  for(unsigned int i = 0; i < localSplit.size(); ++i)
+    {
+    if(localSplit[i].size())
+      {
+      finalPath.push_back("../");
+      }
+    }
+  // for each entry that is not common in the remote path add it
+  // to the final path.
+  for(kwsys_stl::vector<String>::iterator vit = remoteSplit.begin();
+      vit != remoteSplit.end(); ++vit)
+    {
+    if(vit->size())
+      {
+      finalPath.push_back(*vit);
+      }
+    }
+  kwsys_stl::string relativePath;     // result string
+  // now turn the array of directories into a unix path by puttint / 
+  // between each entry that does not already have one
+  for(kwsys_stl::vector<String>::iterator vit1 = finalPath.begin();
+      vit1 != finalPath.end(); ++vit1)
+    {
+    if(relativePath.size() && relativePath[relativePath.size()-1] != '/')
+      {
+      relativePath += "/";
+      }
+    relativePath += *vit1;
+    }
+  return relativePath;
+}
 
 // OK, some fun stuff to get the actual case of a given path.
 // Basically, you just need to call ShortPath, then GetLongPathName,

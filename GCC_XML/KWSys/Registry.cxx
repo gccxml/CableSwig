@@ -21,6 +21,18 @@
 #include KWSYS_HEADER(ios/iostream)
 #include KWSYS_HEADER(ios/fstream)
 #include KWSYS_HEADER(ios/sstream)
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "Registry.hxx.in"
+# include "Configure.hxx.in"
+# include "kwsys_stl.hxx.in"
+# include "kwsys_stl_string.hxx.in"
+# include "kwsys_stl_map.hxx.in"
+# include "kwsys_ios_iostream.h.in"
+# include "kwsys_ios_fstream.h.in"
+# include "kwsys_ios_sstream.h.in"
+#endif
 
 #include <ctype.h> // for isspace
 #include <stdio.h>
@@ -367,9 +379,7 @@ RegistryHelper::~RegistryHelper()
 bool RegistryHelper::Open(const char *toplevel, const char *subkey,
   int readonly)
 {  
-  this->EntriesMap.erase(
-    this->EntriesMap.begin(),
-    this->EntriesMap.end());
+  this->EntriesMap.clear();
   m_Empty = 1;
 
 #ifdef _WIN32
@@ -416,7 +426,7 @@ bool RegistryHelper::Open(const char *toplevel, const char *subkey,
         }
       }
     m_HomeDirectory = homeDirectory;
-    str << m_HomeDirectory << "/." << toplevel << "rc";
+    str << m_HomeDirectory.c_str() << "/." << toplevel << "rc";
     if ( readonly == Registry::READWRITE )
       {
       kwsys_ios::ofstream ofs( str.str().c_str(), kwsys_ios::ios::out|kwsys_ios::ios::app );
@@ -503,7 +513,7 @@ bool RegistryHelper::Close()
       }
 
     kwsys_ios::ostringstream str;
-    str << m_HomeDirectory << "/." << this->GetTopLevel() << "rc";
+    str << m_HomeDirectory.c_str() << "/." << this->GetTopLevel() << "rc";
     kwsys_ios::ofstream *ofs = new kwsys_ios::ofstream(str.str().c_str(), kwsys_ios::ios::out);
     if ( !ofs )
       {
@@ -531,9 +541,7 @@ bool RegistryHelper::Close()
         *ofs << it->first.c_str() << " = " << this->EncodeValue(it->second.c_str()).c_str() << kwsys_ios::endl;
         }
       }
-    this->EntriesMap.erase(
-      this->EntriesMap.begin(),
-      this->EntriesMap.end());
+    this->EntriesMap.clear();
     ofs->close();
     delete ofs;
     this->SetSubKey(0);
@@ -673,7 +681,8 @@ kwsys_stl::string RegistryHelper::CreateKey( const char *key )
     return "";
     }
   kwsys_ios::ostringstream ostr;
-  ostr << this->EncodeKey(this->m_SubKey.c_str()) << "\\" << this->EncodeKey(key);
+  ostr << this->EncodeKey(this->m_SubKey.c_str()).c_str()
+       << "\\" << this->EncodeKey(key).c_str();
   return ostr.str();
 }
 
