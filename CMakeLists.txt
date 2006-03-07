@@ -71,16 +71,34 @@ INCLUDE_DIRECTORIES(BEFORE
 
 LINK_DIRECTORIES( ${CableSwig_BINARY_DIR}/bin  )
 
-# Tell GCC-XML that we are building gccxml_cc1plus.
-SET(GCCXML_NATIVE_CC1PLUS 1)
+SUBDIRS(SWIG Cable)
 
 # Tell CABLE to not install CxxTypes headers.
 SET(CABLE_NO_INSTALL_FACILITIES 1)
 
-# Tell GCC-XML where to install.
-SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
+# Provide an option to use an outside gccxml.
+OPTION(CSWIG_USE_SYSTEM_GCCXML "Use a separately installed gccxml." OFF)
+IF(CSWIG_USE_SYSTEM_GCCXML)
+  # Location of external gccxml
+  FIND_PROGRAM(GCCXML_EXE gccxml DOC "Path to external gccxml executable.")
+  IF(NOT GCCXML_EXE)
+    MESSAGE(FATAL_ERROR "CSWIG_USE_SYSTEM_GCCXML requires GCCXML_EXE to be set!")
+  ENDIF(NOT GCCXML_EXE)
+ELSE(CSWIG_USE_SYSTEM_GCCXML)
+  # Tell GCC-XML that we are building gccxml_cc1plus.
+  SET(GCCXML_NATIVE_CC1PLUS 1)
 
-SUBDIRS(SWIG Cable GCC GCC_XML Executables)
+  # Tell GCC-XML where to install.
+  SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
+
+  # Build GCC-XML itself.
+  SUBDIRS(GCC GCC_XML)
+
+  # No external gccxml.
+  SET(GCCXML_EXE)
+ENDIF(CSWIG_USE_SYSTEM_GCCXML)
+
+SUBDIRS(Executables)
 
 #-----------------------------------------------------------------------------
 # Create the CableSwigConfig.cmake files for external projects to use.
@@ -92,7 +110,11 @@ UTILITY_SOURCE(CableSwig_gccxml_EXE gccxml GCC_XML/GXFront gxFront.cxx)
 MARK_AS_ADVANCED(CableSwig_cableidx_EXE CableSwig_cswig_EXE CableSwig_gccxml_EXE)
 SET(CableSwig_cableidx_EXE_CONFIG ${CableSwig_cableidx_EXE})
 SET(CableSwig_cswig_EXE_CONFIG ${CableSwig_cswig_EXE})
-SET(CableSwig_gccxml_EXE_CONFIG ${CableSwig_gccxml_EXE})
+IF(CSWIG_USE_SYSTEM_GCCXML)
+  SET(CableSwig_gccxml_EXE_CONFIG ${GCCXML_EXE})
+ELSE(CSWIG_USE_SYSTEM_GCCXML)
+  SET(CableSwig_gccxml_EXE_CONFIG ${CableSwig_gccxml_EXE})
+ENDIF(CSWIG_USE_SYSTEM_GCCXML)
 SET(CableSwig_DEFAULT_LIB_CONFIG ${CableSwig_SOURCE_DIR}/SWIG/Lib)
 CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/CableSwigConfig.cmake @ONLY IMMEDIATE)
@@ -100,7 +122,11 @@ CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
 # Settings for the install tree.
 SET(CableSwig_cableidx_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cableidx)
 SET(CableSwig_cswig_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cswig)
-SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${GCCXML_INSTALL_ROOT}/bin/gccxml)
+IF(CSWIG_USE_SYSTEM_GCCXML)
+  SET(CableSwig_gccxml_EXE_CONFIG ${GCCXML_EXE})
+ELSE(CSWIG_USE_SYSTEM_GCCXML)
+  SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${GCCXML_INSTALL_ROOT}/bin/gccxml)
+ENDIF(CSWIG_USE_SYSTEM_GCCXML)
 SET(CableSwig_DEFAULT_LIB_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
 
 CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
