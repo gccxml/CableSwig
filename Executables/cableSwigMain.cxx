@@ -588,7 +588,7 @@ int SWIG_main(int argc, char *argv[], Language *l) {
 
   
   if (help) {
-    Printf(stderr,"\nNote: 'swig -<lang> -help' displays options for a specific target language.\n\n");
+    Printf(stderr,"\nNote: 'cswig -<lang> -help' displays options for a specific target language.\n\n");
     SWIG_exit (EXIT_SUCCESS);    // Exit if we're in help mode
   }
 

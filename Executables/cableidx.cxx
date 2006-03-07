@@ -220,9 +220,9 @@ int CreateIndexFile(std::ofstream& fout, SourceRepresentation::Pointer sr)
   
 int main(int ac, char* av[])
 {
-  if(ac < 2)
+  if(ac != 3)
     {
-    std::cerr << "Usage: " << av[0] << " input.xml output.idx";
+    std::cerr << "Usage: " << av[0] << " input.xml output.idx\n";
     return 1;
     }
   std::string outFileName = av[2];
