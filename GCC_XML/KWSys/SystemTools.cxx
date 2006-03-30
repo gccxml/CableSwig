@@ -359,10 +359,10 @@ bool SystemTools::MakeDirectory(const char* path)
     // return EACCES when it should return EEXISTS
     // if it is some other error besides directory exists
     // then return false
-    if( (errno != EEXIST) 
+    if( (errno != EEXIST)
 #ifdef __BORLANDC__
-        && (errno != EACCES) 
-#endif      
+        && (errno != EACCES)
+#endif
       )
       {
       return false;
@@ -1166,7 +1166,7 @@ int SystemTools::EstimateFormatLength(const char *format, va_list ap)
   
   // Start with the length of the format string itself.
 
-  int length = strlen(format);
+  size_t length = strlen(format);
   
   // Increase the length for every argument in the format.
 
@@ -1219,7 +1219,7 @@ int SystemTools::EstimateFormatLength(const char *format, va_list ap)
       }
     }
   
-  return length;
+  return (int)length;
 }
 
 kwsys_stl::string SystemTools::EscapeChars(
@@ -1918,11 +1918,13 @@ kwsys_stl::string SystemTools::FindProgram(
   const kwsys_stl::vector<kwsys_stl::string>& userPaths,
   bool no_system_path)
 {
-  if(!nameIn)
+  if(!nameIn || !*nameIn)
     {
     return "";
     }
   kwsys_stl::string name = nameIn;
+  kwsys_stl::vector<kwsys_stl::string> extensions;
+#if defined (_WIN32) || defined(__CYGWIN__) | defined(__MINGW32__)
   bool hasExtension = false;
   // check to see if the name already has a .xxx at
   // the end of it
@@ -1930,8 +1932,6 @@ kwsys_stl::string SystemTools::FindProgram(
     {
     hasExtension = true;
     }
-  kwsys_stl::vector<kwsys_stl::string> extensions;
-#if defined (_WIN32) || defined(__CYGWIN__) | defined(__MINGW32__)
   // on windows try .com then .exe
   if(!hasExtension)
     {
@@ -2245,9 +2245,9 @@ bool SystemTools::FindProgramPath(const char* argv0,
                                   const char* installPrefix )
 {
   kwsys_stl::vector<kwsys_stl::string> failures;
-  kwsys_stl::string self = argv0;
+  kwsys_stl::string self = argv0 ? argv0 : "";
+  failures.push_back(self);
   SystemTools::ConvertToUnixSlashes(self);
-  failures.push_back(argv0);
   self = SystemTools::FindProgram(self.c_str());
   if(!SystemTools::FileExists(self.c_str()))
     {
@@ -2279,8 +2279,16 @@ bool SystemTools::FindProgramPath(const char* argv0,
     {
     failures.push_back(self);
     kwsys_ios::ostringstream msg;
-    msg << "Can not find the command line program " << exeName << "\n";
-    msg << "  argv[0] = \"" << argv0 << "\"\n";
+    msg << "Can not find the command line program ";
+    if (exeName)
+      {
+      msg << exeName;
+      }
+    msg << "\n";
+    if (argv0)
+      {
+      msg << "  argv[0] = \"" << argv0 << "\"\n";
+      }
     msg << "  Attempted paths:\n";
     kwsys_stl::vector<kwsys_stl::string>::iterator i;
     for(i=failures.begin(); i != failures.end(); ++i)
@@ -2573,7 +2581,7 @@ int OldWindowsGetLongPath(kwsys_stl::string const& shortPath,
     {
     longPath = shortPath;
     }
-  return longPath.size();
+  return (int)longPath.size();
 }
 
 
