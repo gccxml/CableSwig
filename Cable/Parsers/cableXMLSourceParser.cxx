@@ -563,6 +563,10 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
     {
     named->SetName("{anonymous-class}");
     }
+  else if(Constructor::SafeDownCast(named))
+    {
+    named->SetName("{anonymous-constructor}");
+    }
   else
     {
     cableErrorMacro("No name on Named object " << named->GetNameOfClass());
