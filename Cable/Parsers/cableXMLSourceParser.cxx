@@ -551,6 +551,10 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
     {
     named->SetName(name);
     }
+  else if(Namespace::SafeDownCast(named))
+    {
+    named->SetName("{anonymous-namespace}");
+    }
   else if(Struct::SafeDownCast(named))
     {
     named->SetName("{anonymous-struct}");
