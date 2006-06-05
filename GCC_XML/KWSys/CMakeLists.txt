@@ -94,6 +94,7 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   SET(KWSYS_USE_SystemTools 1)
   SET(KWSYS_USE_CommandLineArguments 1)
   SET(KWSYS_USE_FundamentalType 1)
+  SET(KWSYS_USE_Terminal 1)
 ENDIF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
 
 #-----------------------------------------------------------------------------
@@ -436,7 +437,7 @@ FOREACH(cpp ${cppclasses})
 ENDFOREACH(cpp)
 
 # Add selected C components.
-FOREACH(c Process Base64 FundamentalType)
+FOREACH(c Process Base64 FundamentalType Terminal)
   IF(KWSYS_USE_${c})
     SET(KWSYS_H_FILES ${KWSYS_H_FILES} ${c})
   ENDIF(KWSYS_USE_${c})
@@ -463,10 +464,12 @@ IF(KWSYS_USE_Process)
   ENDIF(NOT UNIX)
 ENDIF(KWSYS_USE_Process)
 
-# Add sources for Base64 encoding.
-IF(KWSYS_USE_Base64)
-  SET(KWSYS_C_SRCS ${KWSYS_C_SRCS} Base64.c)
-ENDIF(KWSYS_USE_Base64)
+# Add selected C sources.
+FOREACH(c Base64 Terminal)
+  IF(KWSYS_USE_${c})
+    SET(KWSYS_C_SRCS ${KWSYS_C_SRCS} ${c}.c)
+  ENDIF(KWSYS_USE_${c})
+ENDFOREACH(c)
 
 # Configure headers of C++ classes and construct the list of sources.
 FOREACH(c ${KWSYS_CLASSES})
@@ -515,6 +518,11 @@ ENDFOREACH(h)
 IF(KWSYS_C_SRCS OR KWSYS_CXX_SRCS)
   ADD_LIBRARY(${KWSYS_NAMESPACE} ${KWSYS_LIBRARY_TYPE}
     ${KWSYS_C_SRCS} ${KWSYS_CXX_SRCS})
+  IF(KWSYS_USE_DynamicLoader)
+    IF(UNIX)
+      TARGET_LINK_LIBRARIES(${KWSYS_NAMESPACE} ${CMAKE_DL_LIBS})
+    ENDIF(UNIX)
+  ENDIF(KWSYS_USE_DynamicLoader)
 
   # Apply user-defined target properties to the library.
   IF(KWSYS_PROPERTIES_CXX)
@@ -611,9 +619,6 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
         )
       # If kwsys contains the DynamicLoader, need extra library
       ADD_LIBRARY(testDynload MODULE testDynload.c)
-      IF(UNIX)
-        TARGET_LINK_LIBRARIES(${KWSYS_NAMESPACE} ${CMAKE_DL_LIBS})
-      ENDIF(UNIX)
     ENDIF(KWSYS_USE_DynamicLoader)
     FOREACH(test
         testSystemTools
@@ -630,6 +635,7 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
     FOREACH(test
         testProcess
         testFail
+        testTerminal
         )
       ADD_EXECUTABLE(${test} ${test}.c)
       TARGET_LINK_LIBRARIES(${test} ${KWSYS_NAMESPACE}_c)
