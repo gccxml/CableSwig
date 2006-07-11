@@ -243,4 +243,3 @@ String *Swig_method_decl(SwigType *s, const String_or_char *id, List *args, int 
   Chop(result);
   return result;
 }
-
