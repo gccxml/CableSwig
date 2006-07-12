@@ -34,6 +34,14 @@ IF(NOT CMAKE_COMPILER_IS_GNUCXX)
   ENDIF(CMAKE_CXX_ACCEPTS_FLAGS)
 ENDIF(NOT CMAKE_COMPILER_IS_GNUCXX)
 
+# CableSwig makes heavy use of "deprecated" C runtime functions...
+# Don't let Visual Studio 2005 compiles spew all those warnings:
+#
+IF(CMAKE_COMPILER_2005)
+  ADD_DEFINITIONS(-D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE)
+  ADD_DEFINITIONS(-D_SCL_SECURE_NO_DEPRECATE)
+ENDIF(CMAKE_COMPILER_2005)
+
 IF(NOT LIBRARY_OUTPUT_PATH)
   SET(LIBRARY_OUTPUT_PATH ${CableSwig_BINARY_DIR}/bin CACHE INTERNAL
     "Single output directory for building all libraries.  Can not be changed.")
