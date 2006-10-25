@@ -7,6 +7,26 @@
 # endif
 #endif
 
+// Setup for tests that use iostreams.
+#if defined(KWSYS_IOS_USE_ANSI) && defined(KWSYS_IOS_HAVE_STD)
+# if defined(_MSC_VER)
+#  pragma warning (push,1)
+# endif
+# if KWSYS_IOS_USE_ANSI
+#  include <iostream>
+# else
+#  include <iostream.h>
+# endif
+# if defined(_MSC_VER)
+#  pragma warning (pop)
+# endif
+# if KWSYS_IOS_HAVE_STD
+#  define kwsys_ios std
+# else
+#  define kwsys_ios
+# endif
+#endif
+
 #ifdef TEST_KWSYS_STL_HAVE_STD
 #include <list>
 void f(std::list<int>*) {}
@@ -266,12 +286,68 @@ int main()
 }
 #endif
 
+#ifdef TEST_KWSYS_IOS_HAS_ISTREAM_LONG_LONG
+int test_istream(kwsys_ios::istream& is, long long& x)
+{
+  return (is >> x)? 1:0;
+}
+int main()
+{
+  long long x = 0;
+  return test_istream(kwsys_ios::cin, x);
+}
+#endif
+
+#ifdef TEST_KWSYS_IOS_HAS_OSTREAM_LONG_LONG
+int test_ostream(kwsys_ios::ostream& os, long long x)
+{
+  return (os << x)? 1:0;
+}
+int main()
+{
+  long long x = 0;
+  return test_ostream(kwsys_ios::cout, x);
+}
+#endif
+
 #ifdef TEST_KWSYS_CHAR_IS_SIGNED
-/* Return 1 for char signed and 0 for char unsigned.  */
+/* Return 0 for char signed and 1 for char unsigned.  */
 int main()
 {
   unsigned char uc = 255;
-  return (*reinterpret_cast<char*>(&uc) < 0)?1:0;
+  return (*reinterpret_cast<char*>(&uc) < 0)?0:1;
+}
+#endif
+
+#ifdef TEST_KWSYS_LFS_WORKS
+/* Return 0 when LFS is available and 1 otherwise.  */
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
+#define _LARGE_FILES
+#define _FILE_OFFSET_BITS 64
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <assert.h>
+#include <stdio.h>
+
+int main(int, char **argv)
+{
+  /* check that off_t can hold 2^63 - 1 and perform basic operations... */
+#define OFF_T_64 (((off_t) 1 << 62) - 1 + ((off_t) 1 << 62))
+  if (OFF_T_64 % 2147483647 != 1)
+    return 1;
+
+  // stat breaks on SCO OpenServer
+  struct stat buf;
+  stat( argv[0], &buf );
+  if (!S_ISREG(buf.st_mode))
+    return 2;
+
+  FILE *file = fopen( argv[0], "r" );
+  off_t offset = ftello( file );
+  fseek( file, offset, SEEK_CUR );
+  fclose( file );
+  return 0;
 }
 #endif
 
