@@ -1,3 +1,4 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
 PROJECT(CableSwig)
 
 IF("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" GREATER 1.9)
@@ -98,6 +99,7 @@ ELSE(CSWIG_USE_SYSTEM_GCCXML)
 
   # Tell GCC-XML where to install.
   SET(GCCXML_INSTALL_ROOT ${CableSwig_INSTALL_ROOT}/lib/CableSwig)
+  STRING(REGEX REPLACE "^/" "" GCCXML_INSTALL_ROOT_CM24 "${GCCXML_INSTALL_ROOT}")
 
   # Build GCC-XML itself.
   SUBDIRS(GCC GCC_XML)
@@ -141,5 +143,7 @@ CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
                @ONLY IMMEDIATE)
 
-INSTALL_FILES(${CableSwig_INSTALL_ROOT}/lib/CableSwig FILES
-              ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake)
+STRING(REGEX REPLACE "^/" "" CableSwig_INSTALL_ROOT_CM24 "${CableSwig_INSTALL_ROOT}")
+INSTALL(FILES ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
+  DESTINATION ${CableSwig_INSTALL_ROOT_CM24}/lib/CableSwig
+  COMPONENT Development)

@@ -19,4 +19,6 @@ TARGET_LINK_LIBRARIES(cableidx
         CxxTypes 
         )
 
-INSTALL_TARGETS(${CableSwig_INSTALL_ROOT}/bin cswig cableidx)
+INSTALL(TARGETS cswig cableidx
+  RUNTIME DESTINATION ${GCCXML_INSTALL_ROOT_CM24}/bin
+  COMPONENT Development)
