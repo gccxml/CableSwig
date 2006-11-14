@@ -282,8 +282,17 @@ CvTypeWriter::WriteInitialization(std::ostream& os,
           os << "Double"; break;
         case cxx::FundamentalType::LongDouble:
           os << "LongDouble"; break;
+        case cxx::FundamentalType::ComplexFloat:
+          os << "ComplexFloat"; break;
+        case cxx::FundamentalType::ComplexDouble:
+          os << "ComplexDouble"; break;
+        case cxx::FundamentalType::ComplexLongDouble:
+          os << "ComplexLongDouble"; break;
         case cxx::FundamentalType::Void:
           os << "Void"; break;
+        case cxx::FundamentalType::NumberOfTypes:
+        default:
+          os << "ERROR: Incorrect cxx::FundamentalType value..."; break;
         }
       os << ", " << (cvType.IsConst()? "true":"false")
          << ", " << (cvType.IsVolatile()? "true":"false") << ");\n";

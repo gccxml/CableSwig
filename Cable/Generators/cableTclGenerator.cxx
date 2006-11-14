@@ -118,8 +118,8 @@ TclGenerator::TclGenerator():
   m_WrapperList(*WrapperList::New()),
   m_ClassesForDerivedToBase(*ClassesForDerivedToBase::New()),
   m_ClassesThatNeedDestructor(*ClassesThatNeedDestructor::New()),
-  m_EnumerationsThatNeedValues(*EnumerationsThatNeedValues::New()),
-  m_EnumerationsThatNeedReturn(*EnumerationsThatNeedReturn::New())
+  m_EnumerationsThatNeedReturn(*EnumerationsThatNeedReturn::New()),
+  m_EnumerationsThatNeedValues(*EnumerationsThatNeedValues::New())
 {
   m_WriteGroup = false;
   m_WritePackage = false;
@@ -132,8 +132,8 @@ TclGenerator::~TclGenerator()
   m_ClassWrapperMap.Delete();
   m_ClassesForDerivedToBase.Delete();
   m_ClassesThatNeedDestructor.Delete();
-  m_EnumerationsThatNeedValues.Delete();
   m_EnumerationsThatNeedReturn.Delete();
+  m_EnumerationsThatNeedValues.Delete();
 }
 
 //----------------------------------------------------------------------------

@@ -88,7 +88,7 @@ String ArrayType::GenerateDeclaration(const String& name,
 String ArrayType::GenerateLengthString() const
 {
   char buf[128];
-  sprintf(buf, "%ul", m_Length);
+  sprintf(buf, "%lu", m_Length);
   return buf;
 }
 

@@ -66,6 +66,9 @@ extern    int           NoExtern;
 #define CPLUS_PROTECTED  1
 #define CPLUS_PRIVATE    2
 
+Dispatcher::~Dispatcher() {
+}
+
 /* ----------------------------------------------------------------------
  * Dispatcher::emit_one()
  *

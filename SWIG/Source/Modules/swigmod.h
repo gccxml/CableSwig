@@ -54,7 +54,8 @@ extern String *argc_template_string;
 
 class Dispatcher {
  public:
-  
+  virtual ~Dispatcher();
+
   virtual int emit_one(Node *n);
   virtual int emit_children(Node *n);
   virtual int defaultHandler(Node *n);
