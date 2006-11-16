@@ -708,7 +708,8 @@ bool XMLSourceParser::SetupFunctionType(XMLSourceElement* element,
         return false;
         }
       const char* defaultArg = argElement->GetAttribute("default");
-      type->AddArgument(argType, defaultArg != 0);
+      const char* name = argElement->GetAttribute("name");
+      type->AddArgument(argType, defaultArg != 0, name);
       }
     else if(String(argElement->GetName()) == "Ellipsis")
       {
