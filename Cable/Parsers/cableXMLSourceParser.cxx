@@ -531,6 +531,14 @@ XMLSourceParser::AddElementRepresentation(XMLSourceElement* element)
   else if(n == "OperatorFunction") { o=this->AddOperatorFunction(element); }
   else if(n == "OperatorMethod")   { o=this->AddOperatorMethod(element); }
   else if(n == "Converter")        { o=this->AddConverter(element); }
+
+  // Save the "attributes" attribute in the SourceObject for later use.
+  const char* atts_att = element->GetAttribute("attributes");
+  if (atts_att)
+    {
+    o->SetAttributes(atts_att);
+    }
+
   return o;
 }
 
@@ -709,7 +717,8 @@ bool XMLSourceParser::SetupFunctionType(XMLSourceElement* element,
         }
       const char* defaultArg = argElement->GetAttribute("default");
       const char* name = argElement->GetAttribute("name");
-      type->AddArgument(argType, defaultArg != 0, name);
+      const char* atts_att = argElement->GetAttribute("attributes");
+      type->AddArgument(argType, defaultArg != 0, name, atts_att);
       }
     else if(String(argElement->GetName()) == "Ellipsis")
       {
@@ -1210,6 +1219,13 @@ SourceObject* XMLSourceParser::AddEnumeration(XMLSourceElement* element)
         cableErrorMacro("Invalid init " << initStr << " on EnumValue " << i
                         << " in Enumeration " << element->GetId());
         return 0;
+        }
+      const char* atts_att = valueElement->GetAttribute("attributes");
+      if (atts_att)
+        {
+        cableWarningMacro("Ignoring attributes string '" << atts_att << "' on EnumValue " << i
+                        << " in Enumeration " << element->GetId() << "\n"
+                        << "New code needed in the Enumeration class to support attributes...");
         }
       e->AddValue(name, init);
       }

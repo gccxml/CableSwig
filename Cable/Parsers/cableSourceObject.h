@@ -27,14 +27,20 @@ class CABLE_PARSERS_EXPORT SourceObject: public Object
 {
 public:
   cableTypeMacro(SourceObject, Object);
-  
+
+  /** Get/Set attributes.  */
+  const char* GetAttributes() const;
+  void SetAttributes(const char* atts);
+
   /** Print the source object's representation.  */
   virtual void Print(std::ostream& os, Indent indent) const = 0;
   
 protected:
   SourceObject();
   ~SourceObject();
-  
+
+  String m_Attributes;
+
 private:
   SourceObject(const Self&);  // Not implemented.
   void operator=(const Self&);  // Not implemented.

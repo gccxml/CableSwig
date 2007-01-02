@@ -44,10 +44,22 @@ public:
   void Delete() { delete this; }
 };
 
+typedef std::vector<std::string> ArgumentAttsVectorBase;
+class FunctionType::ArgumentAttsVector: public ArgumentAttsVectorBase
+{
+public:
+  typedef ArgumentAttsVectorBase::iterator iterator;
+  typedef ArgumentAttsVectorBase::const_iterator const_iterator;
+  typedef ArgumentAttsVectorBase::value_type value_type;
+  static ArgumentAttsVector* New() { return new ArgumentAttsVector; }
+  void Delete() { delete this; }
+};
+
 //----------------------------------------------------------------------------
 FunctionType::FunctionType():
   m_ArgumentTypeVector(*ArgumentTypeVector::New()),
-  m_ArgumentNameVector(*ArgumentNameVector::New())
+  m_ArgumentNameVector(*ArgumentNameVector::New()),
+  m_ArgumentAttsVector(*ArgumentAttsVector::New())
 {
   m_Returns = 0;
   m_RequiredArguments = 0;
@@ -58,6 +70,7 @@ FunctionType::~FunctionType()
 {
   m_ArgumentTypeVector.Delete();
   m_ArgumentNameVector.Delete();
+  m_ArgumentAttsVector.Delete();
 }
 
 //----------------------------------------------------------------------------
@@ -100,15 +113,17 @@ void FunctionType::SetReturns(Type* returns)
 //----------------------------------------------------------------------------
 void FunctionType::AddArgument(Type* argument)
 {
-  this->AddArgument(argument, false, 0);
+  this->AddArgument(argument, false, 0, 0);
 }
 
 //----------------------------------------------------------------------------
-void FunctionType::AddArgument(Type* argument, bool hasDefault, const char *name)
+void FunctionType::AddArgument(Type* argument, bool hasDefault, const char *name, const char *attributes)
 {
   std::string argname = name ? name : "";
+  std::string argatts = attributes ? attributes : "";
   m_ArgumentTypeVector.push_back(argument);
   m_ArgumentNameVector.push_back(argname);
+  m_ArgumentAttsVector.push_back(argatts);
   if(!hasDefault)
     {
     ++m_RequiredArguments;
@@ -146,6 +161,17 @@ const char* FunctionType::GetArgumentName(unsigned int index) const
     }
   // WARNING: Return value only valid for the lifetime of this object.
   return (*(m_ArgumentNameVector.begin() + index)).c_str();
+}
+
+//----------------------------------------------------------------------------
+const char* FunctionType::GetArgumentAttributes(unsigned int index) const
+{
+  if(index >= m_ArgumentAttsVector.size())
+    {
+    return 0;
+    }
+  // WARNING: Return value only valid for the lifetime of this object.
+  return (*(m_ArgumentAttsVector.begin() + index)).c_str();
 }
 
 //----------------------------------------------------------------------------

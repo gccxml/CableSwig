@@ -45,8 +45,8 @@ public:
   void AddArgument(Type* argument);
   
   /** Add an argument of the given type to this FunctionType.  */
-  void AddArgument(Type* argument, bool hasDefault, const char *name);
-  
+  void AddArgument(Type* argument, bool hasDefault, const char *name, const char* attributes);
+
   /** Get the number of arguments to the function.  */
   unsigned int GetNumberOfArguments() const;
   
@@ -59,6 +59,9 @@ public:
   /** Get the name of the argument with the given index.  */
   const char* GetArgumentName(unsigned int index) const;
 
+  /** Get the attributes of the argument with the given index.  */
+  const char* GetArgumentAttributes(unsigned int index) const;
+
   /** Get the CxxTypes representation without cv-qualifiers.  */
   const cxx::FunctionType* GetCxxFunctionType(cxx::TypeSystem* ts) const;
   
@@ -68,11 +71,13 @@ protected:
   
   class ArgumentTypeVector;
   class ArgumentNameVector;
-  
+  class ArgumentAttsVector;
+
   // The argument types of this FunctionType.
   ArgumentTypeVector& m_ArgumentTypeVector;
   ArgumentNameVector& m_ArgumentNameVector;
-  
+  ArgumentAttsVector& m_ArgumentAttsVector;
+
   // The return Type of this FunctionType.
   Type* m_Returns;
   

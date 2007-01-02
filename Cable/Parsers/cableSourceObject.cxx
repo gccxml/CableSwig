@@ -29,4 +29,23 @@ SourceObject::~SourceObject()
 {
 }
 
+//----------------------------------------------------------------------------
+const char* SourceObject::GetAttributes() const
+{
+  return m_Attributes.c_str();
+}
+
+//----------------------------------------------------------------------------
+void SourceObject::SetAttributes(const char* atts)
+{
+  if (atts)
+    {
+    m_Attributes = atts;
+    }
+  else
+    {
+    m_Attributes = "";
+    }
+}
+
 } // namespace cable
