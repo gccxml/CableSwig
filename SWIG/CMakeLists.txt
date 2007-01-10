@@ -160,5 +160,5 @@ CONFIGURE_FILE(${SWIG_SOURCE_DIR}/SWIGConfig.cmake.in
 
 # Install support library.
 SET(SWIG_LIB_INSTALL
-  ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
+  ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}lib/CableSwig/SWIGLib)
 SUBDIRS(Lib)

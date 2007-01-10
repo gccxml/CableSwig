@@ -84,7 +84,13 @@ SUBDIRS(SWIG Cable)
 
 # Tell CABLE to not install CxxTypes headers.
 SET(CABLE_NO_INSTALL_FACILITIES 1)
-
+# make sure CableSwig_INSTALL_ROOT has a / on the end
+IF(NOT "${CableSwig_INSTALL_ROOT}" MATCHES "/$")
+  SET(CableSwig_INSTALL_ROOT "${CableSwig_INSTALL_ROOT}/")
+ENDIF(NOT "${CableSwig_INSTALL_ROOT}" MATCHES "/$")
+# remove leading slash
+STRING(REGEX REPLACE "^/" "" CableSwig_INSTALL_ROOT 
+  "${CableSwig_INSTALL_ROOT}")
 # Provide an option to use an outside gccxml.
 OPTION(CSWIG_USE_SYSTEM_GCCXML "Use a separately installed gccxml." OFF)
 IF(CSWIG_USE_SYSTEM_GCCXML)
@@ -98,7 +104,7 @@ ELSE(CSWIG_USE_SYSTEM_GCCXML)
   SET(GCCXML_NATIVE_CC1PLUS 1)
 
   # Tell GCC-XML where to install.
-  STRING(REGEX REPLACE "^/" "" GCCXML_INSTALL_ROOT "${CableSwig_INSTALL_ROOT}/lib/CableSwig/")
+  SET(GCCXML_INSTALL_ROOT "${CableSwig_INSTALL_ROOT}lib/CableSwig/")
 
   # Build GCC-XML itself.
   SUBDIRS(GCC GCC_XML)
@@ -129,20 +135,19 @@ CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/CableSwigConfig.cmake @ONLY IMMEDIATE)
 
 # Settings for the install tree.
-SET(CableSwig_cableidx_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cableidx)
-SET(CableSwig_cswig_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/bin/cswig)
+SET(CableSwig_cableidx_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}bin/cableidx)
+SET(CableSwig_cswig_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}bin/cswig)
 IF(CSWIG_USE_SYSTEM_GCCXML)
   SET(CableSwig_gccxml_EXE_CONFIG ${GCCXML_EXE})
 ELSE(CSWIG_USE_SYSTEM_GCCXML)
-  SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}${GCCXML_INSTALL_ROOT}/bin/gccxml)
+  SET(CableSwig_gccxml_EXE_CONFIG ${CMAKE_INSTALL_PREFIX}/${GCCXML_INSTALL_ROOT}bin/gccxml)
 ENDIF(CSWIG_USE_SYSTEM_GCCXML)
-SET(CableSwig_DEFAULT_LIB_CONFIG ${CMAKE_INSTALL_PREFIX}${CableSwig_INSTALL_ROOT}/lib/CableSwig/SWIGLib)
+SET(CableSwig_DEFAULT_LIB_CONFIG ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}lib/CableSwig/SWIGLib)
 
 CONFIGURE_FILE(${CableSwig_SOURCE_DIR}/CableSwigConfig.cmake.in
                ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
                @ONLY IMMEDIATE)
 
-STRING(REGEX REPLACE "^/" "" CableSwig_INSTALL_ROOT_CM24 "${CableSwig_INSTALL_ROOT}")
 INSTALL(FILES ${CableSwig_BINARY_DIR}/InstallOnly/CableSwigConfig.cmake
-  DESTINATION ${CableSwig_INSTALL_ROOT_CM24}/lib/CableSwig
+  DESTINATION ${CableSwig_INSTALL_ROOT}lib/CableSwig
   COMPONENT Development)
