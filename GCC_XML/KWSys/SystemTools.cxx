@@ -55,6 +55,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include <pwd.h>
 #include <termios.h>
 #include <signal.h>    /* sigprocmask */
 #endif
@@ -1367,7 +1368,7 @@ void SystemTools::ConvertToUnixSlashes(kwsys_stl::string& path)
     {
     // if there is a tilda ~ then replace it with HOME
     pathCString = path.c_str();
-    if(*pathCString == '~')
+    if(pathCString[0] == '~' && (pathCString[1] == '/' || pathCString[1] == '\0'))
       {
       const char* homeEnv = SystemTools::GetEnv("HOME");
       if (homeEnv)
@@ -1375,6 +1376,18 @@ void SystemTools::ConvertToUnixSlashes(kwsys_stl::string& path)
         path.replace(0,1,homeEnv);
         }
       }
+#if !defined(_WIN32)
+    else if(pathCString[0] == '~')
+      {
+      kwsys_stl::string::size_type idx = path.find_first_of("/\0");
+      kwsys_stl::string user = path.substr(1, idx-1);
+      passwd* pw = getpwnam(user.c_str());
+      if(pw)
+        {
+        path.replace(0, idx, pw->pw_dir);
+        }
+      }
+#endif
     // remove trailing slash if the path is more than 
     // a single /
     pathCString = path.c_str();
@@ -1494,10 +1507,33 @@ kwsys_stl::string SystemTools::ConvertToWindowsOutputPath(const char* path)
 bool SystemTools::CopyFileIfDifferent(const char* source,
                                       const char* destination)
 {
+  // special check for a destination that is a directory
+  // FilesDiffer does not handle file to directory compare
+  if(SystemTools::FileIsDirectory(destination))
+    {
+    kwsys_stl::string new_destination = destination;
+    SystemTools::ConvertToUnixSlashes(new_destination);
+    new_destination += '/';
+    kwsys_stl::string source_name = source;
+    new_destination += SystemTools::GetFilenameName(source_name);
+    if(SystemTools::FilesDiffer(source, new_destination.c_str()))
+      {
+      return SystemTools::CopyFileAlways(source, destination);
+      }
+    else
+      {
+      // the files are the same so the copy is done return
+      // true
+      return true;
+      }
+    }
+  // source and destination are files so do a copy if they
+  // are different
   if(SystemTools::FilesDiffer(source, destination))
     {
     return SystemTools::CopyFileAlways(source, destination);
     }
+  // at this point the files must be the same so return true
   return true;
 }
 
@@ -1586,7 +1622,6 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
     {
     return true;
     }
-
   mode_t perm = 0;
   bool perms = SystemTools::GetPermissions(source, perm);
 
@@ -1681,7 +1716,7 @@ bool SystemTools::CopyFileAlways(const char* source, const char* destination)
     }
   else if(statSource.st_size != statDestination.st_size)
     {
-    return false;
+   return false;
     }
   if ( perms )
     {
@@ -2478,6 +2513,8 @@ void SystemTools::AddTranslationPath(const char * a, const char * b)
   if( SystemTools::FileIsDirectory( path_a.c_str() ) )
     {
     // Make sure the path is a full path and does not contain no '..'
+    // Ken--the following code is incorrect. .. can be in a valid path
+    // for example  /home/martink/MyHubba...Hubba/Src
     if( SystemTools::FileIsFullPath(path_b.c_str()) && path_b.find("..")
         == kwsys_stl::string::npos )
       {
@@ -2570,6 +2607,7 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_path,
   // Split the input path components.
   kwsys_stl::vector<kwsys_stl::string> path_components;
   SystemTools::SplitPath(in_path, path_components);
+
   // If the input path is relative, start with a base path.
   if(path_components[0].length() == 0)
     {
@@ -2608,8 +2646,20 @@ kwsys_stl::string SystemTools::CollapseFullPath(const char* in_path,
   // Transform the path back to a string.
   kwsys_stl::string newPath = SystemTools::JoinPath(out_components);
 
-  // Update the translation table with this potentially new path.
-  SystemTools::AddTranslationPath(newPath.c_str(), in_path);
+  // Update the translation table with this potentially new path.  I am not
+  // sure why this line is here, it seems really questionable, but yet I
+  // would put good money that if I remove it something will break, basically
+  // from what I can see it created a mapping from the collapsed path, to be
+  // replaced by the input path, which almost completely does the opposite of
+  // this function, the only thing preventing this from happening a lot is
+  // that if the in_path has a .. in it, then it is not added to the
+  // translation table. So for most calls this either does nothing due to the
+  // ..  or it adds a translation between identical paths as nothing was
+  // collapsed, so I am going to try to comment it out, and see what hits the
+  // fan, hopefully quickly.
+  // Commented out line below:
+  //SystemTools::AddTranslationPath(newPath.c_str(), in_path);
+
   SystemTools::CheckTranslationPath(newPath);
 #ifdef _WIN32
   newPath = SystemTools::GetActualCaseForPath(newPath.c_str());
@@ -2829,6 +2879,42 @@ void SystemTools::SplitPath(const char* p,
     components.push_back(root);
     c += 2;
     }
+#if !defined(_WIN32)
+  else if(c[0] == '~')
+    {
+    int numChars = 1;
+    while(c[numChars] && c[numChars] != '/')
+      {
+      numChars++;
+      }
+    const char* homedir;
+    if(numChars == 1)
+      {
+      homedir = getenv("HOME");
+      }
+    else
+      {
+      char user[PATH_MAX];
+      strncpy(user, c+1, numChars-1);
+      user[numChars] = '\0';
+      passwd* pw = getpwnam(user);
+      if(p)
+        {
+        homedir = pw->pw_dir;
+        }
+      else
+        {
+        homedir = "";
+        }
+      }
+    kwsys_stl::vector<kwsys_stl::string> home_components;
+    SystemTools::SplitPath(homedir, home_components);
+    components.insert(components.end(), 
+                      home_components.begin(), 
+                      home_components.end());
+    c += numChars;
+    }
+#endif
   else
     {
     // Relative path.
@@ -3299,6 +3385,12 @@ bool SystemTools::FileIsFullPath(const char* in_name)
   if(name.length() < 1)
     {
     return false;
+    }
+#endif
+#if !defined(_WIN32)
+  if(name[0] == '~')
+    {
+    return true;
     }
 #endif
   // On UNIX, the name must begin in a '/'.
