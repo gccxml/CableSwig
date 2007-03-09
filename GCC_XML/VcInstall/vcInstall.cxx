@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <process.h>
+#include <stdio.h>
 #include <string>
 #include <vector>
 #include <windows.h>
@@ -50,6 +51,14 @@ int main(int argc, char* argv[])
   gxSystemTools::ConvertToUnixSlashes(patchDir);
   gxSystemTools::ConvertToUnixSlashes(gccxmlRoot);
 
+  // Wipe out any existing VC support directories.  We will create
+  // them from scratch.
+  gxSystemTools::RemoveADirectory((gccxmlRoot+"/Vc6").c_str());
+  gxSystemTools::RemoveADirectory((gccxmlRoot+"/Vc7").c_str());
+  gxSystemTools::RemoveADirectory((gccxmlRoot+"/Vc71").c_str());
+  gxSystemTools::RemoveADirectory((gccxmlRoot+"/Vc8").c_str());
+  gxSystemTools::RemoveADirectory((gccxmlRoot+"/Vc8ex").c_str());
+
   // The registry keys for MSVC install detection.
   const char* vc6Registry =
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\"
@@ -60,8 +69,12 @@ int main(int argc, char* argv[])
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\7.1;InstallDir";
   const char* vc8Registry =
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\8.0;InstallDir";
+  const char* vc8sp1Registry =
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\8.0\\InstalledProducts\\KB926601;";
   const char* vc8exRegistry =
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VCExpress\\8.0;InstallDir";
+  const char* vc8exSP1Registry =
+    "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\VisualStudio\\8.0\\InstalledProducts\\KB926748;";
   const char* vc8sdkRegistry =
     "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\MicrosoftSDK\\InstalledSDKs\\8F9E5EF3-A9A5-491B-A889-C58EFFECE8B3;Install Dir";
   const char* vc8sdk2Registry =
@@ -245,10 +258,20 @@ int main(int argc, char* argv[])
     std::string msvc8p = msvc8 + "/../../Vc/PlatformSDK/Include";
     msvc8i = gxSystemTools::CollapseDirectory(msvc8i.c_str());
     msvc8p = gxSystemTools::CollapseDirectory(msvc8p.c_str());
-    std::string patchI = patchDir + "/vc8Include.patch";
-    std::string patchP = patchDir + "/vc8PlatformSDK.patch";
+    std::string patchIname = "vc8Include.patch";
+    std::string patchPname = "vc8PlatformSDK.patch";
     std::string destPathI = gccxmlRoot+"/Vc8/Include";
     std::string destPathP = gccxmlRoot+"/Vc8/PlatformSDK";
+
+    std::string msvc8sp1;
+    if(gxSystemTools::ReadRegistryValue(vc8sp1Registry, msvc8sp1))
+      {
+      patchIname = "vc8sp1Include.patch";
+      patchPname = "vc8sp1PlatformSDK.patch";
+      }
+    std::string patchI = patchDir + "/" + patchIname;
+    std::string patchP = patchDir + "/" + patchPname;
+
     if(gxSystemTools::FileExists(patchI.c_str()))
       {
       if(!InstallSupport(patchCommand.c_str(), catCommand.c_str(),
@@ -259,7 +282,7 @@ int main(int argc, char* argv[])
       }
     else
       {
-      std::cerr << "Have MSVC 8, but cannot find vc8Include.patch.\n";
+      std::cerr << "Have MSVC 8, but cannot find " << patchIname << ".\n";
       result = 1;
       }
     if(gxSystemTools::FileExists(patchP.c_str()))
@@ -272,16 +295,25 @@ int main(int argc, char* argv[])
       }
     else
       {
-      std::cerr << "Have MSVC 8, but cannot find vc8PlatformSDK.patch.\n";
+      std::cerr << "Have MSVC 8, but cannot find " << patchPname << ".\n";
       result = 1;
       }
     }
+
   if(have8ex)
     {
     std::string msvc8i = msvc8ex + "/../../Vc/Include";
     msvc8i = gxSystemTools::CollapseDirectory(msvc8i.c_str());
-    std::string patchI = patchDir + "/vc8ExpressInclude.patch";
+    std::string patchIname = "vc8ExpressInclude.patch";
     std::string destPathI = gccxmlRoot+"/Vc8ex/Include";
+
+    std::string msvc8exSP1;
+    if(gxSystemTools::ReadRegistryValue(vc8exSP1Registry, msvc8exSP1))
+      {
+      patchIname = "vc8sp1ExpressInclude.patch";
+      }
+
+    std::string patchI = patchDir + "/" + patchIname;
     if(gxSystemTools::FileExists(patchI.c_str()))
       {
       if(!InstallSupport(patchCommand.c_str(), catCommand.c_str(),
@@ -292,8 +324,8 @@ int main(int argc, char* argv[])
       }
     else
       {
-      std::cerr
-        << "Have MSVC 8 Express, but cannot find vc8ExpressInclude.patch.\n";
+      std::cerr << "Have MSVC 8 Express, but cannot find "
+                << patchIname << ".\n";
       result = 1;
       }
     }
@@ -301,8 +333,10 @@ int main(int argc, char* argv[])
     {
     std::string msvc8p = msvc8sdk + "/Include";
     msvc8p = gxSystemTools::CollapseDirectory(msvc8p.c_str());
-    std::string patchP = patchDir + "/vc8ExpressPlatformSDK.patch";
+    std::string patchPname = "vc8ExpressPlatformSDK.patch";
     std::string destPathP = gccxmlRoot+"/Vc8ex/PlatformSDK";
+
+    std::string patchP = patchDir + "/" + patchPname;
     if(gxSystemTools::FileExists(patchP.c_str()))
       {
       if(!InstallSupport(patchCommand.c_str(), catCommand.c_str(),
@@ -314,7 +348,7 @@ int main(int argc, char* argv[])
     else
       {
       std::cerr << "Have MSVC 8 Express Platform SDK, but "
-                << "cannot find vc8ExpressPlatformSDK.patch.\n";
+                << "cannot find " << patchPname << ".\n";
       result = 1;
       }
     }
@@ -348,9 +382,7 @@ bool InstallSupport(const char* patchCommand, const char* catCommand,
     return false;
     }
 
-  // Make sure the destination path exists and is clean
-  // before trying to put files there.
-  gxSystemTools::RemoveADirectory(destPath);
+  // Make sure the destination path exists.
   gxSystemTools::MakeDirectory(destPath);
 
   // Copy the files over before patching.

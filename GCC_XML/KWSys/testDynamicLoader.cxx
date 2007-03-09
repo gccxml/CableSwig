@@ -29,7 +29,9 @@
 # include "kwsys_stl_string.hxx.in"
 #endif
 
-#include "testSystemTools.h"
+// Include with <> instead of "" to avoid getting any in-source copy
+// left on disk.
+#include <testSystemTools.h>
 
 kwsys_stl::string GetLibName(const char* lname)
 {
@@ -88,7 +90,7 @@ int TestDynamicLoader(const char* libname, const char* symbol, int r1, int r2, i
   return 0;
 }
 
-int main(int argc, char *argv[])
+int testDynamicLoader(int argc, char *argv[])
 {
 #if defined(_WIN32)
   SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX);
@@ -113,7 +115,7 @@ int main(int argc, char *argv[])
   res += TestDynamicLoader("libdl.so", "TestDynamicLoader",1,0,1);
 #endif
   // Now try on the generated library
-  kwsys_stl::string libname = GetLibName("testDynload");
+  kwsys_stl::string libname = GetLibName(KWSYS_NAMESPACE_STRING "TestDynload");
   res += TestDynamicLoader(libname.c_str(), "dummy",1,0,1);
   res += TestDynamicLoader(libname.c_str(), "TestDynamicLoaderSymbolPointer",1,1,1);
   res += TestDynamicLoader(libname.c_str(), "_TestDynamicLoaderSymbolPointer",1,0,1);

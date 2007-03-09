@@ -1,6 +1,8 @@
 PROJECT(GCCXML)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.0)
+# We now need at least CMake 2.4.5 to get some custom command fixes
+# and a working INSTALL(DIRECTORY).
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4.5 FATAL_ERROR)
 
 # Set the version number.
 SET(GCCXML_VERSION_MAJOR 0)
@@ -8,6 +10,20 @@ SET(GCCXML_VERSION_MINOR 7)
 SET(GCCXML_VERSION_PATCH 0)
 SET(GCCXML_VERSION "${GCCXML_VERSION_MAJOR}.${GCCXML_VERSION_MINOR}")
 SET(GCCXML_VERSION_FULL "${GCCXML_VERSION}.${GCCXML_VERSION_PATCH}")
+
+# Setup installation components.
+IF(GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_EXECUTABLE)
+  SET(GCCXML_INSTALL_COMPONENT_RUNTIME_EXECUTABLE
+    COMPONENT ${GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_EXECUTABLE})
+ENDIF(GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_EXECUTABLE)
+IF(GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_LIBRARY)
+  SET(GCCXML_INSTALL_COMPONENT_RUNTIME_LIBRARY
+    COMPONENT ${GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_LIBRARY})
+ENDIF(GCCXML_INSTALL_COMPONENT_NAME_RUNTIME_LIBRARY)
+IF(GCCXML_INSTALL_COMPONENT_NAME_DOCUMENTATION)
+  SET(GCCXML_INSTALL_COMPONENT_DOCUMENTATION
+    COMPONENT ${GCCXML_INSTALL_COMPONENT_NAME_DOCUMENTATION})
+ENDIF(GCCXML_INSTALL_COMPONENT_NAME_DOCUMENTATION)
 
 # Configure the build.
 IF(EXECUTABLE_OUTPUT_PATH)
@@ -78,62 +94,58 @@ SET(KWSYS_NAMESPACE gxsys)
 SET(KWSYS_USE_Process 1)
 SET(KWSYS_USE_SystemTools 1)
 SET(KWSYS_HEADER_ROOT ${GCCXML_BINARY_DIR})
+IF("${CMAKE_SYSTEM}" MATCHES "AIX")
+  SET(KWSYS_LFS_DISABLE 1)
+ENDIF("${CMAKE_SYSTEM}" MATCHES "AIX")
 INCLUDE_DIRECTORIES(${GCCXML_BINARY_DIR})
 SUBDIRS(KWSys)
 
-IF(UNIX)
-  # Installation directories.
-  SET(GCCXML_DATA_DIR_HELP "Install location for data (relative to prefix).")
-  SET(GCCXML_DOC_DIR_HELP "Install location for documentation (relative to prefix).")
-  SET(GCCXML_MAN_DIR_HELP "Install location for man pages (relative to prefix).")
-  IF(NOT GCCXML_DATA_DIR)
-    SET(GCCXML_DATA_DIR "share/gccxml-${GCCXML_VERSION}" CACHE STRING
-      "${GCCXML_DATA_DIR_HELP}")
-    MARK_AS_ADVANCED(GCCXML_DATA_DIR)
-  ENDIF(NOT GCCXML_DATA_DIR)
-  IF(NOT GCCXML_DOC_DIR)
-    SET(GCCXML_DOC_DIR "share/doc/gccxml-${GCCXML_VERSION}" CACHE STRING
-      "${GCCXML_DOC_DIR_HELP}")
-    MARK_AS_ADVANCED(GCCXML_DOC_DIR)
-  ENDIF(NOT GCCXML_DOC_DIR)
-  IF(NOT GCCXML_MAN_DIR)
-    SET(GCCXML_MAN_DIR "share/man" CACHE STRING
-      "${GCCXML_MAN_DIR_HELP}")
-    MARK_AS_ADVANCED(GCCXML_MAN_DIR)
-  ENDIF(NOT GCCXML_MAN_DIR)
+# Installation directories.
+SET(GCCXML_DATA_DIR_HELP "Install location for data (relative to prefix).")
+SET(GCCXML_DOC_DIR_HELP "Install location for documentation (relative to prefix).")
+SET(GCCXML_MAN_DIR_HELP "Install location for man pages (relative to prefix).")
+IF(NOT GCCXML_DATA_DIR)
+  SET(GCCXML_DATA_DIR "share/gccxml-${GCCXML_VERSION}" CACHE STRING
+    "${GCCXML_DATA_DIR_HELP}")
+  MARK_AS_ADVANCED(GCCXML_DATA_DIR)
+ENDIF(NOT GCCXML_DATA_DIR)
+IF(NOT GCCXML_DOC_DIR)
+  SET(GCCXML_DOC_DIR "share/doc/gccxml-${GCCXML_VERSION}" CACHE STRING
+    "${GCCXML_DOC_DIR_HELP}")
+  MARK_AS_ADVANCED(GCCXML_DOC_DIR)
+ENDIF(NOT GCCXML_DOC_DIR)
+IF(NOT GCCXML_MAN_DIR)
+  SET(GCCXML_MAN_DIR "share/man" CACHE STRING
+    "${GCCXML_MAN_DIR_HELP}")
+  MARK_AS_ADVANCED(GCCXML_MAN_DIR)
+ENDIF(NOT GCCXML_MAN_DIR)
 
-  # Make sure there are no leading slashes.
-  FOREACH(dir GCCXML_DATA_DIR GCCXML_DOC_DIR GCCXML_MAN_DIR)
-    IF("${dir}" MATCHES "^/")
-      STRING(REGEX REPLACE "^/" "" ${dir} "${${dir}}")
-      SET(${dir} "${${dir}}" CACHE STRING "${${dir}_HELP}" FORCE)
-    ENDIF("${dir}" MATCHES "^/")
-  ENDFOREACH(dir)
+# Make sure there are no leading slashes.
+FOREACH(dir GCCXML_DATA_DIR GCCXML_DOC_DIR GCCXML_MAN_DIR)
+  IF("${dir}" MATCHES "^/")
+    STRING(REGEX REPLACE "^/" "" ${dir} "${${dir}}")
+    SET(${dir} "${${dir}}" CACHE STRING "${${dir}_HELP}" FORCE)
+  ENDIF("${dir}" MATCHES "^/")
+ENDFOREACH(dir)
 
-  # Installation rules for UNIX.
-  SET(GCCXML_ROOT ${GCCXML_SOURCE_DIR}/Support)
-  SUBDIRS (Support)
-ELSE(UNIX)
-  # Include file patch program for Windows.
-  SET(GCCXML_ROOT ${GCCXML_EXECUTABLE_DIR})
-  INCLUDE_DIRECTORIES(${GCCXML_SOURCE_DIR}/GXFront)
+# Include compiler support directory.
+SUBDIRS(Support)
+
+IF(NOT UNIX)
+  # Include Visual Studio compiler support directory.
   SUBDIRS(VcInstall)
-  UTILITY_SOURCE(GCCXML_VCINSTALL_EXE vcInstall VcInstall)
-  MARK_AS_ADVANCED(GCCXML_VCINSTALL_EXE)
-ENDIF(UNIX)
+ENDIF(NOT UNIX)
 
 # Directory to build gccxml executable.
 SUBDIRS(GXFront)
 
 # Create a configuration file for use from the build directory.
 CONFIGURE_FILE(${GCCXML_SOURCE_DIR}/GXFront/config_build.in
-               ${GCCXML_EXECUTABLE_DIR}/gccxml_config)
+               ${GCCXML_BINARY_DIR}/Support/gccxml_config)
 
-IF(UNIX)
-  # Create a configuration file for use from the install directory.
-  CONFIGURE_FILE(${GCCXML_SOURCE_DIR}/GXFront/config_install.in
-    ${GCCXML_BINARY_DIR}/GXFront/InstallOnly/gccxml_config)
-  INSTALL(FILES ${GCCXML_BINARY_DIR}/GXFront/InstallOnly/gccxml_config
-    DESTINATION ${GCCXML_INSTALL_ROOT}${GCCXML_DATA_DIR}
-    COMPONENT Development)
-ENDIF(UNIX)
+# Create a configuration file for use from the install directory.
+CONFIGURE_FILE(${GCCXML_SOURCE_DIR}/GXFront/config_install.in
+  ${GCCXML_BINARY_DIR}/GXFront/InstallOnly/gccxml_config)
+INSTALL(FILES ${GCCXML_BINARY_DIR}/GXFront/InstallOnly/gccxml_config
+  DESTINATION ${GCCXML_INSTALL_ROOT}${GCCXML_DATA_DIR}
+  ${GCCXML_INSTALL_COMPONENT_RUNTIME_LIBRARY})
