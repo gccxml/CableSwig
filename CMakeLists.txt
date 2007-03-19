@@ -60,11 +60,11 @@ SET(CABLE_BIN ${CableSwig_BINARY_DIR}/Cable)
 SET(BUILD_SHARED_LIBS OFF)
 INCLUDE_DIRECTORIES(BEFORE
         ${SWIG_TOP}/Source/Modules
-	${SWIG_TOP}/Source/CParse
-	${SWIG_TOP}/Source/Preprocessor
-	${SWIG_TOP}/Source/Swig
-	${SWIG_TOP}/Source/DOH
-	${SWIG_TOP}/Source/Include
+        ${SWIG_TOP}/Source/CParse
+        ${SWIG_TOP}/Source/Preprocessor
+        ${SWIG_TOP}/Source/Swig
+        ${SWIG_TOP}/Source/DOH
+        ${SWIG_TOP}/Source/Include
         ${SWIG_TOP}/Source/DOH/Include
         ${CableSwig_BINARY_DIR}/SWIG/Source/Include
         ${CableSwig_BINARY_DIR}/SWIG
@@ -78,7 +78,9 @@ INCLUDE_DIRECTORIES(BEFORE
 )
 
 
-LINK_DIRECTORIES( ${CableSwig_BINARY_DIR}/bin  )
+LINK_DIRECTORIES( "${LIBRARY_OUTPUT_PATH}" )
+LINK_DIRECTORIES( "${EXECUTABLE_OUTPUT_PATH}" )
+
 
 SUBDIRS(SWIG Cable)
 
