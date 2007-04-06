@@ -28,14 +28,25 @@ class CABLE_PARSERS_EXPORT Field: public Variable
 public:
   cableTypeMacro(Field, Variable);
   static Pointer New() { return new Self; }
-  
+
+  /** Parse the Field's offset from string input.  */
+  void ParseOffset(const char* offset);
+
+  /** Get the Field's offset.  */
+  int GetOffset(void) const;
+
+  /** Set the Field's offset.  */
+  void SetOffset(int offset);
+
   /** Print the Field's representation.  */
   void Print(std::ostream& os, Indent indent) const;
   
 protected:
   Field();
   ~Field();
-  
+
+  int m_Offset;
+
 private:
   Field(const Self&);  // Not implemented.
   void operator=(const Self&);  // Not implemented.

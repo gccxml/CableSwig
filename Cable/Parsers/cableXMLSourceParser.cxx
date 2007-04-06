@@ -1312,6 +1312,8 @@ SourceObject* XMLSourceParser::AddVariable(XMLSourceElement* element)
 SourceObject* XMLSourceParser::AddField(XMLSourceElement* element)
 {
   Field::Pointer f = Field::New();
+  const char* offset = element->GetAttribute("offset");
+  if(offset) { f->ParseOffset(offset); }
   if(!this->SetupVariable(element, f)) { return 0; }
   return f;
 }
