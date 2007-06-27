@@ -50,6 +50,15 @@ just NOT quote them and let the listfile author deal with it.
 
 */
 
+/*
+TODO: For windows echo:
+
+To display a pipe (|) or redirection character (< or >) when using the
+echo command, use a caret character immediately before the pipe or
+redirection character (for example, ^>, ^<, or ^| ). If you need to
+use the caret character itself (^), use two in a row (^^).
+*/
+
 /*--------------------------------------------------------------------------*/
 static int kwsysSystem_Shell__CharIsWhitespace(char c)
 {
@@ -60,7 +69,9 @@ static int kwsysSystem_Shell__CharIsWhitespace(char c)
 static int kwsysSystem_Shell__CharNeedsQuotesOnUnix(char c)
 {
   return ((c == '\'') || (c == '`') || (c == ';') || (c == '#') ||
-          (c == '&') || (c == '$') || (c == '(') || (c == ')'));
+          (c == '&') || (c == '$') || (c == '(') || (c == ')') ||
+          (c == '~') || (c == '<') || (c == '>') || (c == '|') ||
+          (c == '*') || (c == '^') || (c == '\\'));
 }
 
 /*--------------------------------------------------------------------------*/
@@ -157,6 +168,7 @@ static int kwsysSystem_Shell__ArgumentNeedsQuotes(const char* in, int isUnix,
                                                   int flags)
 {
   /* Scan the string for characters that require quoting.  */
+  {
   const char* c;
   for(c=in; *c; ++c)
     {
@@ -189,6 +201,18 @@ static int kwsysSystem_Shell__ArgumentNeedsQuotes(const char* in, int isUnix,
       return 1;
       }
     }
+  }
+
+  /* On Windows some single character arguments need quotes.  */
+  if(!isUnix && *in && !*(in+1))
+    {
+    char c = *in;
+    if((c == '?') || (c == '&') || (c == '^') || (c == '|') || (c == '#'))
+      {
+      return 1;
+      }
+    }
+
   return 0;
 }
 
@@ -285,6 +309,17 @@ static int kwsysSystem_Shell__GetArgumentSize(const char* in,
         /* In Watcom WMake makefiles a pound is written $# so we need
            one extra character.  */
         ++size;
+        }
+      }
+    else if(*c == '%')
+      {
+      if((flags & kwsysSystem_Shell_Flag_VSIDE) ||
+         ((flags & kwsysSystem_Shell_Flag_Make) &&
+          (flags & kwsysSystem_Shell_Flag_MinGWMake)))
+        {
+        /* In the VS IDE or MinGW make a percent is written %% so we
+           need one extra characters.  */
+        size += 1;
         }
       }
     }
@@ -430,6 +465,22 @@ static char* kwsysSystem_Shell__GetArgument(const char* in, char* out,
         {
         /* Otherwise a pound is written just #. */
         *out++ = '#';
+        }
+      }
+    else if(*c == '%')
+      {
+      if((flags & kwsysSystem_Shell_Flag_VSIDE) ||
+         ((flags & kwsysSystem_Shell_Flag_Make) &&
+          (flags & kwsysSystem_Shell_Flag_MinGWMake)))
+        {
+        /* In the VS IDE or MinGW make a percent is written %%.  */
+        *out++ = '%';
+        *out++ = '%';
+        }
+      else
+        {
+        /* Otherwise a percent is written just %. */
+        *out++ = '%';
         }
       }
     else

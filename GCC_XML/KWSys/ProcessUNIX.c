@@ -100,8 +100,8 @@ static inline void kwsysProcess_usleep(unsigned int msec)
 # define KWSYSPE_USE_SELECT 1
 #endif
 
-/* BeOS does not have siginfo on its signal handlers.  */
-#if !defined(__BEOS__)
+/* Some platforms do not have siginfo on their signal handlers.  */
+#if defined(SA_SIGINFO) && !defined(__BEOS__)
 # define KWSYSPE_USE_SIGINFO 1
 #endif
 
@@ -2228,6 +2228,12 @@ static void kwsysProcessRestoreDefaultSignalHandlers(void)
 }
 
 /*--------------------------------------------------------------------------*/
+static void kwsysProcessExit(void)
+{
+  _exit(0);
+}
+
+/*--------------------------------------------------------------------------*/
 static pid_t kwsysProcessFork(kwsysProcess* cp,
                               kwsysProcessCreateInformation* si)
 {
@@ -2257,7 +2263,7 @@ static pid_t kwsysProcessFork(kwsysProcess* cp,
               (errno == EINTR));
 
         /* Exit without cleanup.  The parent holds all resources.  */
-        _exit(0);
+        kwsysProcessExit();
         return 0; /* Never reached, but avoids SunCC warning.  */
         }
       }
@@ -2306,8 +2312,13 @@ static void kwsysProcessKill(pid_t process_id)
   DIR* procdir;
 #endif
 
-  /* Suspend the process to be sure it will not create more children.  */
-  kill(process_id, SIGSTOP);
+  /* Kill the process now to make sure it does not create more
+     children.  Do not reap it yet so we can identify its existing
+     children.  There is a small race condition here.  If the child
+     forks after we begin looking for children below but before it
+     receives this kill signal we might miss a child.  Also we might
+     not be able to catch up to a fork bomb.  */
+  kill(process_id, SIGKILL);
 
   /* Kill all children if we can find them.  */
 #if defined(__linux__) || defined(__CYGWIN__)
@@ -2395,9 +2406,6 @@ static void kwsysProcessKill(pid_t process_id)
       }
 #endif
     }
-
-  /* Kill the process.  */
-  kill(process_id, SIGKILL);
 }
 
 /*--------------------------------------------------------------------------*/
