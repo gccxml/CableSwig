@@ -11,7 +11,11 @@ SWIGSTATIC(int)
 SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* size)
 {
   static swig_type_info* pchar_info = 0;
-  int psize = 0;
+#if defined(PY_SSIZE_T_MAX)
+ Py_ssize_t psize = 0;
+#else
+ int psize = 0;
+#endif
   if (!pchar_info) pchar_info = SWIG_TypeQuery("char *");
 
   if (SWIG_ConvertPtr(obj, swig_reinterpret_cast(void **,cptr), pchar_info, 0) == -1) {
