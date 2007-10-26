@@ -455,6 +455,11 @@ void SystemTools::ReplaceString(kwsys_stl::string& source,
 
   // perform replacements until done
   size_t replaceSize = strlen(replace);
+  // do while hangs if replaceSize is 0
+  if(replaceSize == 0)
+    {
+    return;
+    }
   char *orig = strdup(src);
   char *currentPos = orig;
   searchPos = searchPos - src + orig;
@@ -1464,7 +1469,8 @@ kwsys_stl::string SystemTools::ConvertToWindowsOutputPath(const char* path)
   // make it big enough for all of path and double quotes
   ret.reserve(strlen(path)+3);
   // put path into the string
-  ret.insert(0,path);
+  ret.assign(path);
+  ret = path;
   kwsys_stl::string::size_type pos = 0;
   // first convert all of the slashes
   while((pos = ret.find('/', pos)) != kwsys_stl::string::npos)
@@ -2747,22 +2753,15 @@ kwsys_stl::string SystemTools::RelativePath(const char* local, const char* remot
     sameCount++;
     }
 
-#if 0
-  // NOTE: We did this at one time to prevent relative paths to the
-  // compiler from looking like "../../../../../../../usr/bin/gcc".
-  // Now however relative paths are only computed for destinations
-  // inside the build tree so this is not a problem.  This is now a
-  // general-purpose method and should not have this hack.  I'm
-  // leaving it in place in case removing it causes a problem so it is
-  // easy to restore:
-  //
-  // If there is nothing in common but the root directory, then just
-  // return the full path.
-  if(sameCount <= 1)
+  // If there is nothing in common at all then just return the full
+  // path.  This is the case only on windows when the paths have
+  // different drive letters.  On unix two full paths always at least
+  // have the root "/" in common so we will return a relative path
+  // that passes through the root directory.
+  if(sameCount == 0)
     {
     return remote;
     }
-#endif
 
   // for each entry that is not common in the local path
   // add a ../ to the finalpath array, this gets us out of the local
@@ -2879,6 +2878,14 @@ kwsys_stl::string SystemTools::GetActualCaseForPath(const char* p)
 #ifndef _WIN32
   return p;
 #else
+  // Check to see if actual case has already been called
+  // for this path, and the result is stored in the LongPathMap
+  SystemToolsTranslationMap::iterator i = 
+    SystemTools::LongPathMap->find(p);
+  if(i != SystemTools::LongPathMap->end())
+    {
+    return i->second;
+    }
   kwsys_stl::string shortPath;
   if(!SystemTools::GetShortPath(p, shortPath))
     {
@@ -2895,6 +2902,7 @@ kwsys_stl::string SystemTools::GetActualCaseForPath(const char* p)
     {
     longPath[0] = toupper(longPath[0]);
     }
+  (*SystemTools::LongPathMap)[p] = longPath;
   return longPath;
 #endif  
 }
@@ -3369,7 +3377,7 @@ bool SystemTools::LocateFileInDir(const char *filename,
       }
     temp += filename_base;
 
-    if (SystemTools::FileExists(filename_found.c_str()))
+    if (SystemTools::FileExists(temp.c_str()))
       {
       res = true;
       filename_found = temp;
@@ -3595,7 +3603,7 @@ kwsys_stl::string SystemTools::MakeCindentifier(const char* s)
   return str;
 }
 
-// Due to a buggy stream library on the HP and another on Mac OSX, we
+// Due to a buggy stream library on the HP and another on Mac OS X, we
 // need this very carefully written version of getline.  Returns true
 // if any data were read before the end-of-file was reached.
 bool SystemTools::GetLineFromStream(kwsys_ios::istream& is,
@@ -4192,6 +4200,7 @@ kwsys_stl::string SystemTools::GetOperatingSystemNameAndVersion()
 // necessary.
 unsigned int SystemToolsManagerCount;
 SystemToolsTranslationMap *SystemTools::TranslationMap;
+SystemToolsTranslationMap *SystemTools::LongPathMap;
 
 // SystemToolsManager manages the SystemTools singleton.
 // SystemToolsManager should be included in any translation unit
@@ -4219,6 +4228,7 @@ void SystemTools::ClassInitialize()
 {
   // Allocate the translation map first.
   SystemTools::TranslationMap = new SystemToolsTranslationMap;
+  SystemTools::LongPathMap = new SystemToolsTranslationMap;
 
   // Add some special translation paths for unix.  These are not added
   // for windows because drive letters need to be maintained.  Also,
@@ -4274,6 +4284,7 @@ void SystemTools::ClassInitialize()
 void SystemTools::ClassFinalize()
 {
   delete SystemTools::TranslationMap;
+  delete SystemTools::LongPathMap;
 }
 
 
