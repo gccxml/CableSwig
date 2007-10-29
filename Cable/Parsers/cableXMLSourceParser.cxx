@@ -879,6 +879,10 @@ Type* XMLSourceParser::GetTypeFromId(const char* tid)
   if(cv.find('c') != String::npos) { isConst = true; }
   if(cv.find('v') != String::npos) { isVolatile = true; }
 
+  // If the desired result type is not const- or volatile-qualified,
+  // we are done (we do not care about restrict-qualification).
+  if(!(isConst || isVolatile)) { return type; }
+
   // Add the type with these cv qualifiers.
   Type::Pointer newType;
   switch (type->GetTypeId())
