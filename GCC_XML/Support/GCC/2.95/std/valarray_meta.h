@@ -503,9 +503,8 @@ public:
     
     _SBase (const _Dom& __e, const slice& __s)
             : _M_expr (__e), _M_slice (__s) {}
-    value_type operator[] (size_t __i) const
-    { return _M_expr[_M_slice.start () + __i * _M_slice.stride ()]; }
-    size_t size() const { return _M_slice.size (); }
+    value_type operator[] (size_t __i) const;
+    size_t size() const;
     
 private:
     const _Dom& _M_expr;
@@ -516,9 +515,7 @@ template<typename _Tp> class _SBase<_Array<_Tp> > {
 public:
     typedef _Tp value_type;
     
-    _SBase (_Array<_Tp> __a, const slice& __s)
-            : _M_array (__a._M_data+__s.start()), _M_size (__s.size()),
-              _M_stride (__s.stride()) {}
+    _SBase (_Array<_Tp> __a, const slice& __s);
     value_type operator[] (size_t __i) const
     { return _M_array._M_data[__i * _M_stride]; }
     size_t size() const { return _M_size; }
@@ -553,9 +550,8 @@ public:
     
     _GBase (const _Dom& __e, const valarray<size_t>& __i)
             : _M_expr (__e), _M_index(__i) {}
-    value_type operator[] (size_t __i) const
-    { return _M_expr[_M_index[__i]]; }
-    size_t size () const { return _M_index.size(); }
+    value_type operator[] (size_t __i) const;
+    size_t size () const;
     
 private:
     const _Dom&  _M_expr;
@@ -568,9 +564,8 @@ public:
     
     _GBase (_Array<_Tp> __a, const valarray<size_t>& __i)
             : _M_array (__a), _M_index(__i) {}
-    value_type operator[] (size_t __i) const
-    { return _M_array._M_data[_M_index[__i]]; }
-    size_t size () const { return _M_index.size(); }
+    value_type operator[] (size_t __i) const;
+    size_t size () const;
     
 private:
     const _Array<_Tp>     _M_array;
@@ -604,9 +599,8 @@ public:
 
     _IBase (const _Dom& __e, const valarray<size_t>& __i)
             : _M_expr (__e), _M_index (__i) {}
-    value_type operator[] (size_t __i) const
-    { return _M_expr[_M_index[__i]]; }
-    size_t size() const { return _M_index.size(); }
+    value_type operator[] (size_t __i) const;
+    size_t size() const;
     
 private:
     const _Dom&             _M_expr;
@@ -647,16 +641,16 @@ public:
     valarray<value_type> operator[] (const valarray<bool>&) const;
     valarray<value_type> operator[] (const valarray<size_t>&) const;
     
-    _Expr<_UnClos<_Unary_plus,_Expr,_Clos>, value_type>
+    _Expr<_UnClos<_Unary_plus,::_Expr,_Clos>, value_type>
     operator+ () const;
     
-    _Expr<_UnClos<negate,_Expr,_Clos>, value_type>
+    _Expr<_UnClos<negate,::_Expr,_Clos>, value_type>
     operator- () const;
     
-    _Expr<_UnClos<_Bitwise_not,_Expr,_Clos>, value_type>
+    _Expr<_UnClos<_Bitwise_not,::_Expr,_Clos>, value_type>
     operator~ () const;
     
-    _Expr<_UnClos<logical_not,_Expr,_Clos>, bool>
+    _Expr<_UnClos<logical_not,::_Expr,_Clos>, bool>
     operator! () const;
     
     size_t size () const;
@@ -686,11 +680,6 @@ template<class _Clos, typename _Tp>
 inline _Tp
 _Expr<_Clos,_Tp>::operator[] (size_t __i) const
 { return _M_closure[__i]; }
-
-template<class _Clos, typename _Tp>
-inline valarray<_Tp>
-_Expr<_Clos,_Tp>::operator[] (slice __s) const
-{ return _M_closure[__s]; }
 
 template<class _Clos, typename _Tp>
 inline valarray<_Tp>
@@ -748,7 +737,7 @@ template<class _Dom, typename _Tp>
 inline _Expr<_UnClos<logical_not,_Expr,_Dom>, bool>
 _Expr<_Dom,_Tp>::operator! () const
 {
-    typedef _UnClos<logical_not,_Expr,_Dom> _Closure;
+    typedef _UnClos<logical_not,::_Expr,_Dom> _Closure;
     return _Expr<_Closure,_Tp> (_Closure(this->_M_closure));
 }
 
@@ -757,7 +746,7 @@ template<class _Dom, typename _Tp>                                      \
 inline _Expr<_UnClos<_Name,_Expr,_Dom>,_Tp>                             \
 _Expr<_Dom,_Tp>::operator  _Op () const                                 \
 {                                                                       \
-    typedef _UnClos<_Name,_Expr,_Dom> _Closure;                         \
+    typedef _UnClos<_Name,::_Expr,_Dom> _Closure;                       \
     return _Expr<_Closure,_Tp> (_Closure (this->_M_closure));           \
 }
 
