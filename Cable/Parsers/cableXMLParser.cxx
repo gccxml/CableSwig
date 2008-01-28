@@ -17,6 +17,7 @@
 #include "cableXMLParser.h"
 
 #include "../Expat/expat.h"
+#include <string.h>
 
 namespace cable
 {

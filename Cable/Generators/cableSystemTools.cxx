@@ -22,6 +22,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
+#include <string.h>
 
 #if !defined(_WIN32) || defined(__CYGWIN__)
 #include <limits.h>

@@ -18,6 +18,7 @@
 #include "cableType.h"
 #include "cableContext.h"
 #include "cxxCvQualifiedType.h"
+#include <stdlib.h>
 
 namespace cable
 {
