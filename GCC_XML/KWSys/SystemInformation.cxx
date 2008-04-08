@@ -14,18 +14,466 @@
      PURPOSE.  See the above copyright notices for more information.
 =========================================================================*/
 #include "kwsysPrivate.h"
+#include KWSYS_HEADER(FundamentalType.h)
+#include KWSYS_HEADER(stl/string)
+#include KWSYS_HEADER(stl/vector)
+#include KWSYS_HEADER(ios/iosfwd)
 #include KWSYS_HEADER(SystemInformation.hxx)
 #include KWSYS_HEADER(Process.h)
 #include KWSYS_HEADER(ios/iostream)
 #include KWSYS_HEADER(ios/sstream)
-#ifndef WIN32
-  #include <sys/utsname.h> // int uname(struct utsname *buf);
+// Work-around CMake dependency scanning limitation.  This must
+// duplicate the above list of headers.
+#if 0
+# include "FundamentalType.h.in"
+# include "SystemInformation.hxx.in"
+# include "Process.h.in"
+# include "Configure.hxx.in"
+# include "kwsys_stl.hxx.in"
+# include "kwsys_stl_vector.in"
+# include "kwsys_stl_iosfwd.in"
+# include "kwsys_ios_sstream.h.in"
+# include "kwsys_ios_iostream.h.in"
 #endif
+
+
+#ifndef WIN32
+# include <sys/utsname.h> // int uname(struct utsname *buf);
+#endif
+
+#ifdef _WIN32
+# include <windows.h>
+#endif
+
+#ifdef __linux
+# include <sys/procfs.h>
+# include <sys/types.h>
+# include <unistd.h>
+# include <fcntl.h>
+# include <ctype.h> // int isdigit(int c);
+# include <errno.h> // extern int errno;
+# include <sys/time.h>
+#elif __hpux
+# include <sys/param.h>
+# include <sys/pstat.h>
+#endif
+
+#include <memory.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+
 
 namespace KWSYS_NAMESPACE
 {
 
+// Create longlong
+#if KWSYS_USE_LONG_LONG
+  typedef long long LongLong;
+#elif KWSYS_USE___INT64
+  typedef __int64 LongLong;
+#else
+# error "No Long Long"
+#endif
+
+//  Define SystemInformationImplementation class
+typedef  void (*DELAY_FUNC)(unsigned int uiMS);
+  
+class SystemInformationImplementation 
+{
+
+public:
+  SystemInformationImplementation ();
+  ~SystemInformationImplementation ();
+
+  const char * GetVendorString();
+  const char * GetVendorID();
+  kwsys_stl::string GetTypeID();
+  kwsys_stl::string GetFamilyID();
+  kwsys_stl::string GetModelID();
+  kwsys_stl::string GetSteppingCode();
+  const char * GetExtendedProcessorName();
+  const char * GetProcessorSerialNumber();
+  int GetProcessorCacheSize();
+  int GetLogicalProcessorsPerPhysical();
+  float GetProcessorClockFrequency();
+  int GetProcessorAPICID();
+  int GetProcessorCacheXSize(long int);
+  bool DoesCPUSupportFeature(long int);
+  
+  const char * GetOSName();
+  const char * GetHostname();
+  const char * GetOSRelease();
+  const char * GetOSVersion();
+  const char * GetOSPlatform();
+
+  bool Is64Bits();
+
+  unsigned int GetNumberOfLogicalCPU(); // per physical cpu
+  unsigned int GetNumberOfPhysicalCPU();
+
+  bool DoesCPUSupportCPUID();
+
+  // Retrieve memory information in megabyte.
+  unsigned long GetTotalVirtualMemory();
+  unsigned long GetAvailableVirtualMemory();
+  unsigned long GetTotalPhysicalMemory();
+  unsigned long GetAvailablePhysicalMemory();  
+
+  /** Run the different checks */
+  void RunCPUCheck();
+  void RunOSCheck();
+  void RunMemoryCheck();
+public:
+#define VENDOR_STRING_LENGTH    (12 + 1)
+#define CHIPNAME_STRING_LENGTH    (48 + 1)
+#define SERIALNUMBER_STRING_LENGTH  (29 + 1)
+
+  typedef struct tagID 
+    {
+    int Type;
+    int Family;
+    int Model;
+    int Revision;
+    int ExtendedFamily;
+    int ExtendedModel;
+    char ProcessorName[CHIPNAME_STRING_LENGTH];
+    char Vendor[VENDOR_STRING_LENGTH];
+    char SerialNumber[SERIALNUMBER_STRING_LENGTH];
+    } ID;
+
+  typedef struct tagCPUPowerManagement 
+    {
+    bool HasVoltageID;
+    bool HasFrequencyID;
+    bool HasTempSenseDiode;
+    } CPUPowerManagement;
+
+  typedef struct tagCPUExtendedFeatures 
+    {
+    bool Has3DNow;
+    bool Has3DNowPlus;
+    bool SupportsMP;
+    bool HasMMXPlus;
+    bool HasSSEMMX;
+    bool SupportsHyperthreading;
+    int LogicalProcessorsPerPhysical;
+    int APIC_ID;
+    CPUPowerManagement PowerManagement;
+    } CPUExtendedFeatures;  
+  
+  typedef struct CPUtagFeatures 
+    {
+    bool HasFPU;
+    bool HasTSC;
+    bool HasMMX;
+    bool HasSSE;
+    bool HasSSEFP;
+    bool HasSSE2;
+    bool HasIA64;
+    bool HasAPIC;
+    bool HasCMOV;
+    bool HasMTRR;
+    bool HasACPI;
+    bool HasSerial;
+    bool HasThermal;
+    int CPUSpeed;
+    int L1CacheSize;
+    int L2CacheSize;
+    int L3CacheSize;
+    CPUExtendedFeatures ExtendedFeatures;
+    } CPUFeatures;
+    
+  enum Manufacturer 
+    {
+    AMD, Intel, NSC, UMC, Cyrix, NexGen, IDT, Rise, Transmeta, Sun, UnknownManufacturer
+    };
+protected:
+
+  // Functions.
+  bool RetrieveCPUFeatures();
+  bool RetrieveCPUIdentity();
+  bool RetrieveCPUCacheDetails();
+  bool RetrieveClassicalCPUCacheDetails();
+  bool RetrieveCPUClockSpeed();
+  bool RetrieveClassicalCPUClockSpeed();
+  bool RetrieveCPUExtendedLevelSupport(int);
+  bool RetrieveExtendedCPUFeatures();
+  bool RetrieveProcessorSerialNumber();
+  bool RetrieveCPUPowerManagement();
+  bool RetrieveClassicalCPUIdentity();
+  bool RetrieveExtendedCPUIdentity();
+  
+  Manufacturer  ChipManufacturer;
+  CPUFeatures   Features;
+  ID            ChipID;
+  float         CPUSpeedInMHz;
+  unsigned int  NumberOfLogicalCPU;
+  unsigned int  NumberOfPhysicalCPU;
+
+  int CPUCount();
+  unsigned char LogicalCPUPerPhysicalCPU();
+  unsigned char GetAPICId();
+  unsigned int IsHyperThreadingSupported();
+  LongLong GetCyclesDifference(DELAY_FUNC, unsigned int);
+
+  // For Linux
+  int RetreiveInformationFromCpuInfoFile();
+  kwsys_stl::string ExtractValueFromCpuInfoFile(kwsys_stl::string buffer,
+                                          const char* word, size_t init=0);
+
+  static void Delay (unsigned int);
+  static void DelayOverhead (unsigned int);
+
+  void FindManufacturer();
+
+  // For Mac
+  bool ParseSysCtl();
+  kwsys_stl::string ExtractValueFromSysCtl(const char* word);
+  kwsys_stl::string SysCtlBuffer;
+
+  // For Solaris
+  bool QuerySolarisInfo();
+  kwsys_stl::string ParseValueFromKStat(const char* arguments);
+  kwsys_stl::string RunProcess(kwsys_stl::vector<const char*> args);
+
+  // Evaluate the memory information.
+  int QueryMemory();
+  unsigned long TotalVirtualMemory;
+  unsigned long AvailableVirtualMemory;
+  unsigned long TotalPhysicalMemory;
+  unsigned long AvailablePhysicalMemory;
+
+  size_t CurrentPositionInFile;
+
+  // Operating System information
+  bool QueryOSInformation();
+  kwsys_stl::string OSName;
+  kwsys_stl::string Hostname;
+  kwsys_stl::string OSRelease;
+  kwsys_stl::string OSVersion;
+  kwsys_stl::string OSPlatform; 
+};
+  
+  
+  
+  
+
 SystemInformation::SystemInformation()
+{
+  this->Implementation = new SystemInformationImplementation;
+}
+
+SystemInformation::~SystemInformation ()
+{
+  delete this->Implementation;
+}
+
+const char * SystemInformation::GetVendorString()
+{
+  return this->Implementation->GetVendorString();
+}
+const char * SystemInformation::GetVendorID()
+{
+  return this->Implementation->GetVendorID();
+}
+kwsys_stl::string SystemInformation::GetTypeID()
+{
+  return this->Implementation->GetTypeID();
+}
+kwsys_stl::string SystemInformation::GetFamilyID()
+{
+  return this->Implementation->GetFamilyID();
+}
+kwsys_stl::string SystemInformation::GetModelID()
+{
+  return this->Implementation->GetModelID();
+}
+kwsys_stl::string SystemInformation::GetSteppingCode()
+{
+  return this->Implementation->GetSteppingCode();
+}
+const char * SystemInformation::GetExtendedProcessorName()
+{
+  return this->Implementation->GetExtendedProcessorName();
+}
+const char * SystemInformation::GetProcessorSerialNumber()
+{
+  return this->Implementation->GetProcessorSerialNumber();
+}
+int SystemInformation::GetProcessorCacheSize()
+{
+  return this->Implementation->GetProcessorCacheSize();
+}
+int SystemInformation::GetLogicalProcessorsPerPhysical()
+{
+  return this->Implementation->GetLogicalProcessorsPerPhysical();
+}
+float SystemInformation::GetProcessorClockFrequency()
+{
+  return this->Implementation->GetProcessorClockFrequency();
+}
+int SystemInformation::GetProcessorAPICID()
+{
+  return this->Implementation->GetProcessorAPICID();
+}
+int SystemInformation::GetProcessorCacheXSize(long int l)
+{
+  return this->Implementation->GetProcessorCacheXSize(l);
+}
+bool SystemInformation::DoesCPUSupportFeature(long int i)
+{
+  return this->Implementation->DoesCPUSupportFeature(i);
+}
+
+const char * SystemInformation::GetOSName()
+{
+  return this->Implementation->GetOSName();
+}
+const char * SystemInformation::GetHostname()
+{
+  return this->Implementation->GetHostname();
+}
+const char * SystemInformation::GetOSRelease()
+{
+  return this->Implementation->GetOSRelease();
+}
+const char * SystemInformation::GetOSVersion()
+{
+  return this->Implementation->GetOSVersion();
+}
+const char * SystemInformation::GetOSPlatform()
+{
+  return this->Implementation->GetOSPlatform();
+}
+
+bool SystemInformation::Is64Bits()
+{
+  return this->Implementation->Is64Bits();
+}
+
+unsigned int SystemInformation::GetNumberOfLogicalCPU() // per physical cpu
+{
+  return this->Implementation->GetNumberOfLogicalCPU();
+}
+unsigned int SystemInformation::GetNumberOfPhysicalCPU()
+{
+  return this->Implementation->GetNumberOfPhysicalCPU();
+}
+
+bool SystemInformation::DoesCPUSupportCPUID()
+{
+  return this->Implementation->DoesCPUSupportCPUID();
+}
+
+// Retrieve memory information in megabyte.
+unsigned long SystemInformation::GetTotalVirtualMemory()
+{
+  return this->Implementation->GetTotalVirtualMemory();
+}
+unsigned long SystemInformation::GetAvailableVirtualMemory()
+{
+  return this->Implementation->GetAvailableVirtualMemory();
+}
+unsigned long SystemInformation::GetTotalPhysicalMemory()
+{
+  return this->Implementation->GetTotalPhysicalMemory();
+}
+
+unsigned long SystemInformation::GetAvailablePhysicalMemory()
+{
+  return this->Implementation->GetAvailablePhysicalMemory();
+}
+
+/** Run the different checks */
+void SystemInformation::RunCPUCheck()
+{
+  this->Implementation->RunCPUCheck();
+}
+void SystemInformation::RunOSCheck()
+{
+  this->Implementation->RunOSCheck();
+}
+void SystemInformation::RunMemoryCheck()
+{
+  this->Implementation->RunMemoryCheck();
+}
+
+
+
+// --------------------------------------------------------------
+// SystemInformationImplementation starts here
+
+#if defined(_MSC_VER) && (_MSC_VER >= 1300) && !defined(_WIN64)
+#define USE_ASM_INSTRUCTIONS 1
+#else
+#define USE_ASM_INSTRUCTIONS 0
+#endif
+
+#define STORE_TLBCACHE_INFO(x,y)  x = (x < y) ? y : x
+#define TLBCACHE_INFO_UNITS      (15)
+#define CLASSICAL_CPU_FREQ_LOOP    10000000
+#define RDTSC_INSTRUCTION      _asm _emit 0x0f _asm _emit 0x31
+
+#define CPUID_AWARE_COMPILER
+#ifdef CPUID_AWARE_COMPILER
+  #define CPUID_INSTRUCTION    cpuid
+#else
+  #define CPUID_INSTRUCTION    _asm _emit 0x0f _asm _emit 0xa2
+#endif
+
+#define MMX_FEATURE          0x00000001
+#define MMX_PLUS_FEATURE      0x00000002
+#define SSE_FEATURE          0x00000004
+#define SSE2_FEATURE        0x00000008
+#define AMD_3DNOW_FEATURE      0x00000010
+#define AMD_3DNOW_PLUS_FEATURE    0x00000020
+#define IA64_FEATURE        0x00000040
+#define MP_CAPABLE          0x00000080
+#define HYPERTHREAD_FEATURE      0x00000100
+#define SERIALNUMBER_FEATURE    0x00000200
+#define APIC_FEATURE        0x00000400
+#define SSE_FP_FEATURE        0x00000800
+#define SSE_MMX_FEATURE        0x00001000
+#define CMOV_FEATURE        0x00002000
+#define MTRR_FEATURE        0x00004000
+#define L1CACHE_FEATURE        0x00008000
+#define L2CACHE_FEATURE        0x00010000
+#define L3CACHE_FEATURE        0x00020000
+#define ACPI_FEATURE        0x00040000
+#define THERMALMONITOR_FEATURE    0x00080000
+#define TEMPSENSEDIODE_FEATURE    0x00100000
+#define FREQUENCYID_FEATURE      0x00200000
+#define VOLTAGEID_FREQUENCY      0x00400000
+
+// Status Flag
+#define HT_NOT_CAPABLE           0
+#define HT_ENABLED               1
+#define HT_DISABLED              2
+#define HT_SUPPORTED_NOT_ENABLED 3
+#define HT_CANNOT_DETECT         4
+
+// EDX[28]  Bit 28 is set if HT is supported
+#define HT_BIT             0x10000000   
+
+// EAX[11:8] Bit 8-11 contains family processor ID.
+#define FAMILY_ID          0x0F00
+#define PENTIUM4_ID        0x0F00         
+// EAX[23:20] Bit 20-23 contains extended family processor ID
+#define EXT_FAMILY_ID      0x0F00000 
+// EBX[23:16] Bit 16-23 in ebx contains the number of logical
+#define NUM_LOGICAL_BITS   0x00FF0000  
+// processors per physical processor when execute cpuid with 
+// eax set to 1
+// EBX[31:24] Bits 24-31 (8 bits) return the 8-bit unique 
+#define INITIAL_APIC_ID_BITS  0xFF000000  
+// initial APIC ID for the processor this code is running on.
+// Default value = 0xff if HT is not supported
+
+
+  
+SystemInformationImplementation::SystemInformationImplementation()
 {
   this->TotalVirtualMemory = 0;
   this->AvailableVirtualMemory = 0;
@@ -45,11 +493,11 @@ SystemInformation::SystemInformation()
   this->OSPlatform = "";
 }
 
-SystemInformation::~SystemInformation()
+SystemInformationImplementation::~SystemInformationImplementation()
 {
 }
 
-void SystemInformation::RunCPUCheck()
+void SystemInformationImplementation::RunCPUCheck()
 {
 #ifdef WIN32
   // Check to see if this processor supports CPUID.
@@ -88,12 +536,12 @@ void SystemInformation::RunCPUCheck()
 #endif
 }
 
-void SystemInformation::RunOSCheck()
+void SystemInformationImplementation::RunOSCheck()
 {
   this->QueryOSInformation();
 }
  
-void SystemInformation::RunMemoryCheck()
+void SystemInformationImplementation::RunMemoryCheck()
 {
 #if defined(__APPLE__)
   this->ParseSysCtl();
@@ -105,43 +553,43 @@ void SystemInformation::RunMemoryCheck()
 }
 
 /** Get the vendor string */
-const char * SystemInformation::GetVendorString()
+const char * SystemInformationImplementation::GetVendorString()
 {
   return this->ChipID.Vendor;
 }
 
 /** Get the OS Name */
-const char * SystemInformation::GetOSName()
+const char * SystemInformationImplementation::GetOSName()
 {
   return this->OSName.c_str();
 }
 
 /** Get the hostname */
-const char* SystemInformation::GetHostname()
+const char* SystemInformationImplementation::GetHostname()
 {
   return this->Hostname.c_str();
 }
 
 /** Get the OS release */
-const char* SystemInformation::GetOSRelease()
+const char* SystemInformationImplementation::GetOSRelease()
 {
   return this->OSRelease.c_str();
 }
 
 /** Get the OS version */
-const char* SystemInformation::GetOSVersion()
+const char* SystemInformationImplementation::GetOSVersion()
 {
   return this->OSVersion.c_str();
 }
 
 /** Get the OS platform */
-const char* SystemInformation::GetOSPlatform()
+const char* SystemInformationImplementation::GetOSPlatform()
 {
   return this->OSPlatform.c_str();
 }
 
 /** Get the vendor ID */
-const char * SystemInformation::GetVendorID()
+const char * SystemInformationImplementation::GetVendorID()
 {
   // Return the vendor ID.
   switch (this->ChipManufacturer) 
@@ -172,7 +620,7 @@ const char * SystemInformation::GetVendorID()
 }
 
 /** Return the type ID of the CPU */
-kwsys_stl::string SystemInformation::GetTypeID()
+kwsys_stl::string SystemInformationImplementation::GetTypeID()
 {
   kwsys_ios::ostringstream str;
   str << this->ChipID.Type;
@@ -180,7 +628,7 @@ kwsys_stl::string SystemInformation::GetTypeID()
 }
 
 /** Return the family of the CPU present */
-kwsys_stl::string SystemInformation::GetFamilyID()
+kwsys_stl::string SystemInformationImplementation::GetFamilyID()
 {
   kwsys_ios::ostringstream str;
   str << this->ChipID.Family;
@@ -188,7 +636,7 @@ kwsys_stl::string SystemInformation::GetFamilyID()
 }
 
 // Return the model of CPU present */
-kwsys_stl::string SystemInformation::GetModelID()
+kwsys_stl::string SystemInformationImplementation::GetModelID()
 {
   kwsys_ios::ostringstream str;
   str << this->ChipID.Model;
@@ -196,7 +644,7 @@ kwsys_stl::string SystemInformation::GetModelID()
 }
 
 /** Return the stepping code of the CPU present. */
-kwsys_stl::string SystemInformation::GetSteppingCode()
+kwsys_stl::string SystemInformationImplementation::GetSteppingCode()
 { 
   kwsys_ios::ostringstream str;
   str << this->ChipID.Revision;
@@ -204,44 +652,44 @@ kwsys_stl::string SystemInformation::GetSteppingCode()
 }
 
 /** Return the stepping code of the CPU present. */
-const char * SystemInformation::GetExtendedProcessorName()
+const char * SystemInformationImplementation::GetExtendedProcessorName()
 {
   return this->ChipID.ProcessorName;
 }
   
 /** Return the serial number of the processor 
  *  in hexadecimal: xxxx-xxxx-xxxx-xxxx-xxxx-xxxx. */
-const char * SystemInformation::GetProcessorSerialNumber()
+const char * SystemInformationImplementation::GetProcessorSerialNumber()
 {
   return this->ChipID.SerialNumber;
 }
 
 /** Return the logical processors per physical */
-int SystemInformation::GetLogicalProcessorsPerPhysical()
+int SystemInformationImplementation::GetLogicalProcessorsPerPhysical()
 {
   return this->Features.ExtendedFeatures.LogicalProcessorsPerPhysical;
 }
 
 /** Return the processor clock frequency. */
-float SystemInformation::GetProcessorClockFrequency()
+float SystemInformationImplementation::GetProcessorClockFrequency()
 {
   return this->CPUSpeedInMHz;
 }
 
 /**  Return the APIC ID. */
-int SystemInformation::GetProcessorAPICID()
+int SystemInformationImplementation::GetProcessorAPICID()
 {
   return this->Features.ExtendedFeatures.APIC_ID;
 }
 
 /** Return the L1 cache size. */
-int SystemInformation::GetProcessorCacheSize()
+int SystemInformationImplementation::GetProcessorCacheSize()
 {
   return this->Features.L1CacheSize;
 }
 
 /** Return the chosen cache size. */
-int SystemInformation::GetProcessorCacheXSize(long int dwCacheID)
+int SystemInformationImplementation::GetProcessorCacheXSize(long int dwCacheID)
 {
   switch (dwCacheID) 
     {
@@ -255,7 +703,7 @@ int SystemInformation::GetProcessorCacheXSize(long int dwCacheID)
   return -1;
 }
 
-bool SystemInformation::DoesCPUSupportFeature(long int dwFeature)
+bool SystemInformationImplementation::DoesCPUSupportFeature(long int dwFeature)
 {
   bool bHasFeature = false;
 
@@ -328,7 +776,7 @@ bool SystemInformation::DoesCPUSupportFeature(long int dwFeature)
   return bHasFeature;
 }
 
-void SystemInformation::Delay(unsigned int uiMS)
+void SystemInformationImplementation::Delay(unsigned int uiMS)
 {
 #ifdef WIN32
   LARGE_INTEGER Frequency, StartCounter, EndCounter;
@@ -349,11 +797,11 @@ void SystemInformation::Delay(unsigned int uiMS)
   (void)uiMS;
 }
 
-bool SystemInformation::DoesCPUSupportCPUID()
+bool SystemInformationImplementation::DoesCPUSupportCPUID()
 {
   int CPUIDPresent = 0;
 
-#ifdef _WIN32 
+#if USE_ASM_INSTRUCTIONS
   // Use SEH to determine CPUID presence
     __try {
         _asm {
@@ -392,9 +840,9 @@ bool SystemInformation::DoesCPUSupportCPUID()
   return (CPUIDPresent == 0) ? true : false;
 }
 
-bool SystemInformation::RetrieveCPUFeatures()
+bool SystemInformationImplementation::RetrieveCPUFeatures()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int localCPUFeatures = 0;
   int localCPUAdvanced = 0;
 
@@ -494,7 +942,7 @@ bool SystemInformation::RetrieveCPUFeatures()
 
 
 /** Find the manufacturer given the vendor id */
-void SystemInformation::FindManufacturer()
+void SystemInformationImplementation::FindManufacturer()
 {
   if (strcmp (this->ChipID.Vendor, "GenuineIntel") == 0)    this->ChipManufacturer = Intel;        // Intel Corp.
   else if (strcmp (this->ChipID.Vendor, "UMC UMC UMC ") == 0)  this->ChipManufacturer = UMC;          // United Microelectronics Corp.
@@ -512,9 +960,9 @@ void SystemInformation::FindManufacturer()
 }
 
 /** */
-bool SystemInformation::RetrieveCPUIdentity()
+bool SystemInformationImplementation::RetrieveCPUIdentity()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int localCPUVendor[3];
   int localCPUSignature;
 
@@ -585,9 +1033,9 @@ bool SystemInformation::RetrieveCPUIdentity()
 }
 
 /** */
-bool SystemInformation::RetrieveCPUCacheDetails()
+bool SystemInformationImplementation::RetrieveCPUCacheDetails()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int L1Cache[4] = { 0, 0, 0, 0 };
   int L2Cache[4] = { 0, 0, 0, 0 };
 
@@ -702,9 +1150,9 @@ bool SystemInformation::RetrieveCPUCacheDetails()
 }
 
 /** */
-bool SystemInformation::RetrieveClassicalCPUCacheDetails()
+bool SystemInformationImplementation::RetrieveClassicalCPUCacheDetails()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int TLBCode = -1, TLBData = -1, L1Code = -1, L1Data = -1, L1Trace = -1, L2Unified = -1, L3Unified = -1;
   int TLBCacheData[4] = { 0, 0, 0, 0 };
   int TLBPassCounter = 0;
@@ -902,9 +1350,9 @@ bool SystemInformation::RetrieveClassicalCPUCacheDetails()
 }
 
 /** */
-bool SystemInformation::RetrieveCPUClockSpeed()
+bool SystemInformationImplementation::RetrieveCPUClockSpeed()
 {
-#ifdef WIN32
+#if _WIN32
   // First of all we check to see if the RDTSC (0x0F, 0x31) instruction is supported.
   if (!this->Features.HasTSC) 
     {
@@ -918,8 +1366,11 @@ bool SystemInformation::RetrieveCPUClockSpeed()
 
   for (unsigned int nCounter = 0; nCounter < uiRepetitions; nCounter ++) 
     {
-    i64Total += GetCyclesDifference (SystemInformation::Delay, uiMSecPerRepetition);
-    i64Overhead += GetCyclesDifference (SystemInformation::DelayOverhead, uiMSecPerRepetition);
+    i64Total += GetCyclesDifference (SystemInformationImplementation::Delay,
+                                     uiMSecPerRepetition);
+    i64Overhead +=
+      GetCyclesDifference (SystemInformationImplementation::DelayOverhead,
+                           uiMSecPerRepetition);
     }
 
   // Calculate the MHz speed.
@@ -938,9 +1389,9 @@ bool SystemInformation::RetrieveCPUClockSpeed()
 }
 
 /** */
-bool SystemInformation::RetrieveClassicalCPUClockSpeed()
+bool SystemInformationImplementation::RetrieveClassicalCPUClockSpeed()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   LARGE_INTEGER liStart, liEnd, liCountsPerSecond;
   double dFrequency, dDifference;
 
@@ -996,7 +1447,7 @@ bool SystemInformation::RetrieveClassicalCPUClockSpeed()
 }
 
 /** */
-bool SystemInformation::RetrieveCPUExtendedLevelSupport(int CPULevelToCheck)
+bool SystemInformationImplementation::RetrieveCPUExtendedLevelSupport(int CPULevelToCheck)
 {
   int MaxCPUExtendedLevel = 0;
 
@@ -1041,7 +1492,7 @@ bool SystemInformation::RetrieveCPUExtendedLevelSupport(int CPULevelToCheck)
       }
     }
     
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
 
   // Use assembly to detect CPUID information...
   __try {
@@ -1089,7 +1540,7 @@ bool SystemInformation::RetrieveCPUExtendedLevelSupport(int CPULevelToCheck)
 }
 
 /** */
-bool SystemInformation::RetrieveExtendedCPUFeatures()
+bool SystemInformationImplementation::RetrieveExtendedCPUFeatures()
 {
 
   // Check that we are not using an Intel processor as it does not support this.
@@ -1103,7 +1554,7 @@ bool SystemInformation::RetrieveExtendedCPUFeatures()
     {
     return false;
     }
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int localCPUExtendedFeatures = 0;
 
   // Use assembly to detect CPUID information...
@@ -1164,7 +1615,7 @@ bool SystemInformation::RetrieveExtendedCPUFeatures()
 }
 
 /** */
-bool SystemInformation::RetrieveProcessorSerialNumber()
+bool SystemInformationImplementation::RetrieveProcessorSerialNumber()
 {
   // Check to see if the processor supports the processor serial number.
   if (!this->Features.HasSerial)
@@ -1172,7 +1623,7 @@ bool SystemInformation::RetrieveProcessorSerialNumber()
     return false;
     }
 
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int SerialNumber[3];
 
 
@@ -1231,7 +1682,7 @@ bool SystemInformation::RetrieveProcessorSerialNumber()
 }
 
 /** */
-bool SystemInformation::RetrieveCPUPowerManagement()
+bool SystemInformationImplementation::RetrieveCPUPowerManagement()
 {  
   // Check to see if what we are about to do is supported...
   if (!RetrieveCPUExtendedLevelSupport (0x80000007)) 
@@ -1242,7 +1693,7 @@ bool SystemInformation::RetrieveCPUPowerManagement()
     return false;
     }
 
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int localCPUPowerManagement = 0;
 
 
@@ -1288,14 +1739,14 @@ bool SystemInformation::RetrieveCPUPowerManagement()
 }
 
 /** */
-bool SystemInformation::RetrieveExtendedCPUIdentity()
+bool SystemInformationImplementation::RetrieveExtendedCPUIdentity()
 {
   // Check to see if what we are about to do is supported...
   if (!RetrieveCPUExtendedLevelSupport(0x80000002)) return false;
   if (!RetrieveCPUExtendedLevelSupport(0x80000003)) return false;
   if (!RetrieveCPUExtendedLevelSupport(0x80000004)) return false;
    
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   int ProcessorNameStartPos = 0;
   int CPUExtendedIdentity[12];
 
@@ -1396,7 +1847,7 @@ bool SystemInformation::RetrieveExtendedCPUIdentity()
 }
 
 /** */
-bool SystemInformation::RetrieveClassicalCPUIdentity()
+bool SystemInformationImplementation::RetrieveClassicalCPUIdentity()
 {
   // Start by decided which manufacturer we are using....
   switch (this->ChipManufacturer) 
@@ -1671,38 +2122,38 @@ bool SystemInformation::RetrieveClassicalCPUIdentity()
 }
 
 /** Extract a value from the CPUInfo file */
-std::string SystemInformation::ExtractValueFromCpuInfoFile(std::string buffer,const char* word,int init)
+kwsys_stl::string SystemInformationImplementation::ExtractValueFromCpuInfoFile(kwsys_stl::string buffer,const char* word,size_t init)
 {
-  long int pos = buffer.find(word,init);
-  if(pos != -1)
+  size_t pos = buffer.find(word,init);
+  if(pos != buffer.npos)
     {
     this->CurrentPositionInFile = pos;
     pos = buffer.find(":",pos);
-    long int pos2 = buffer.find("\n",pos);
-    if(pos!=-1 && pos2!=-1)
+    size_t pos2 = buffer.find("\n",pos);
+    if(pos!=buffer.npos && pos2!=buffer.npos)
       {
       return buffer.substr(pos+2,pos2-pos-2);
       }
     }
-  this->CurrentPositionInFile = -1;
+  this->CurrentPositionInFile = buffer.npos;
   return "";
 }
 
 /** Query for the cpu status */
-int SystemInformation::RetreiveInformationFromCpuInfoFile()
+int SystemInformationImplementation::RetreiveInformationFromCpuInfoFile()
 {
   this->NumberOfLogicalCPU = 0;
   this->NumberOfPhysicalCPU = 0;
-  std::string buffer;
+  kwsys_stl::string buffer;
 
   FILE *fd = fopen("/proc/cpuinfo", "r" );
   if ( !fd ) 
     {
-    kwsys_ios::cout << "Problem opening /proc/cpuinfo" << std::endl;
+    kwsys_ios::cout << "Problem opening /proc/cpuinfo" << kwsys_stl::endl;
     return 0;
     }
   
-  long int fileSize = 0;
+  size_t fileSize = 0;
   while(!feof(fd))
     {
     buffer += fgetc(fd);
@@ -1713,8 +2164,8 @@ int SystemInformation::RetreiveInformationFromCpuInfoFile()
   buffer.resize(fileSize-2);
 
   // Number of CPUs
-  long int pos = buffer.find("processor\t");
-  while(pos != -1)
+  size_t pos = buffer.find("processor\t");
+  while(pos != buffer.npos)
     {
     this->NumberOfLogicalCPU++;
     this->NumberOfPhysicalCPU++;
@@ -1723,9 +2174,9 @@ int SystemInformation::RetreiveInformationFromCpuInfoFile()
 
   // Count the number of physical ids that are the same
   int currentId = -1;
-  std::string idc = this->ExtractValueFromCpuInfoFile(buffer,"physical id");
+  kwsys_stl::string idc = this->ExtractValueFromCpuInfoFile(buffer,"physical id");
 
-  while(this->CurrentPositionInFile>0)
+  while(this->CurrentPositionInFile != buffer.npos)
     {
     int id = atoi(idc.c_str());
     if(id == currentId)
@@ -1742,7 +2193,7 @@ int SystemInformation::RetreiveInformationFromCpuInfoFile()
      }
 
   // CPU speed (checking only the first proc
-  std::string CPUSpeed = this->ExtractValueFromCpuInfoFile(buffer,"cpu MHz");
+  kwsys_stl::string CPUSpeed = this->ExtractValueFromCpuInfoFile(buffer,"cpu MHz");
   this->CPUSpeedInMHz = (float)atof(CPUSpeed.c_str());
 
   // Chip family
@@ -1757,9 +2208,9 @@ int SystemInformation::RetreiveInformationFromCpuInfoFile()
   this->RetrieveClassicalCPUIdentity();
 
   // L1 Cache size
-  std::string cacheSize = this->ExtractValueFromCpuInfoFile(buffer,"cache size");
+  kwsys_stl::string cacheSize = this->ExtractValueFromCpuInfoFile(buffer,"cache size");
   pos = cacheSize.find(" KB");
-  if(pos!=-1)
+  if(pos!=cacheSize.npos)
     {
     cacheSize = cacheSize.substr(0,pos);
     }
@@ -1770,7 +2221,7 @@ int SystemInformation::RetreiveInformationFromCpuInfoFile()
 }
 
 /** Query for the memory status */
-int SystemInformation::QueryMemory()
+int SystemInformationImplementation::QueryMemory()
 {
   this->TotalVirtualMemory = 0;
   this->TotalPhysicalMemory = 0;
@@ -1807,7 +2258,7 @@ int SystemInformation::QueryMemory()
   int errorFlag = uname(&unameInfo);
   if( errorFlag!=0 )
     {
-    std::cout << "Problem calling uname(): " << strerror(errno) << std::endl;
+    kwsys_ios::cout << "Problem calling uname(): " << strerror(errno) << kwsys_stl::endl;
     return 0;
     }
  
@@ -1831,7 +2282,7 @@ int SystemInformation::QueryMemory()
   FILE *fd = fopen("/proc/meminfo", "r" );
   if ( !fd ) 
     {
-    std::cout << "Problem opening /proc/meminfo" << std::endl;
+    kwsys_ios::cout << "Problem opening /proc/meminfo" << kwsys_stl::endl;
     return 0;
     }
   
@@ -1923,33 +2374,33 @@ int SystemInformation::QueryMemory()
 }
 
 /** */
-unsigned long SystemInformation::GetTotalVirtualMemory() 
+unsigned long SystemInformationImplementation::GetTotalVirtualMemory() 
 { 
   return this->TotalVirtualMemory; 
 }
 
 /** */
-unsigned long SystemInformation::GetAvailableVirtualMemory() 
+unsigned long SystemInformationImplementation::GetAvailableVirtualMemory() 
 { 
   return this->AvailableVirtualMemory; 
 }
 
-unsigned long SystemInformation::GetTotalPhysicalMemory() 
+unsigned long SystemInformationImplementation::GetTotalPhysicalMemory() 
 { 
   return this->TotalPhysicalMemory; 
 }
 
 /** */
-unsigned long SystemInformation::GetAvailablePhysicalMemory() 
+unsigned long SystemInformationImplementation::GetAvailablePhysicalMemory() 
 { 
   return this->AvailablePhysicalMemory; 
 }
 
 /** Get Cycle differences */
-LongLong SystemInformation::GetCyclesDifference (DELAY_FUNC DelayFunction,
+LongLong SystemInformationImplementation::GetCyclesDifference (DELAY_FUNC DelayFunction,
                                                   unsigned int uiParameter)
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
 
   unsigned int edx1, eax1;
   unsigned int edx2, eax2;
@@ -1993,9 +2444,9 @@ LongLong SystemInformation::GetCyclesDifference (DELAY_FUNC DelayFunction,
 }
 
 /** Compute the delay overhead */
-void SystemInformation::DelayOverhead(unsigned int uiMS)
+void SystemInformationImplementation::DelayOverhead(unsigned int uiMS)
 {
-#ifdef WIN32
+#if _WIN32
   LARGE_INTEGER Frequency, StartCounter, EndCounter;
   __int64 x;
 
@@ -2018,10 +2469,10 @@ void SystemInformation::DelayOverhead(unsigned int uiMS)
 }
 
 /** Return the number of logical CPU per physical CPUs Works only for windows */
-unsigned char SystemInformation::LogicalCPUPerPhysicalCPU(void)
+unsigned char SystemInformationImplementation::LogicalCPUPerPhysicalCPU(void)
 {
   unsigned int Regebx = 0;
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   if (!this->IsHyperThreadingSupported()) 
     {
     return (unsigned char) 1;  // HT not supported
@@ -2037,9 +2488,9 @@ unsigned char SystemInformation::LogicalCPUPerPhysicalCPU(void)
 }
 
 /** Works only for windows */
-unsigned int SystemInformation::IsHyperThreadingSupported()
+unsigned int SystemInformationImplementation::IsHyperThreadingSupported()
 {
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   unsigned int Regedx    = 0,
              Regeax      = 0,
              VendorId[3] = {0, 0, 0};
@@ -2083,10 +2534,10 @@ unsigned int SystemInformation::IsHyperThreadingSupported()
 }
 
 /** Return the APIC Id. Works only for windows. */
-unsigned char SystemInformation::GetAPICId()
+unsigned char SystemInformationImplementation::GetAPICId()
 {
   unsigned int Regebx = 0;
-#ifdef WIN32
+#if USE_ASM_INSTRUCTIONS
   if (!this->IsHyperThreadingSupported()) 
     {
     return (unsigned char) -1;  // HT not supported
@@ -2102,9 +2553,9 @@ unsigned char SystemInformation::GetAPICId()
 }
 
 /** Count the number of CPUs. Works only on windows. */
-int SystemInformation::CPUCount()
+int SystemInformationImplementation::CPUCount()
 {
-#ifdef WIN32
+#if _WIN32
   unsigned char StatusFlag  = 0;
   SYSTEM_INFO info;
 
@@ -2124,13 +2575,16 @@ int SystemInformation::CPUCount()
     if (this->NumberOfLogicalCPU >= 1)    // >1 Doesn't mean HT is enabled in the BIOS
       {
       HANDLE hCurrentProcessHandle;
-      DWORD  dwProcessAffinity;
-      DWORD  dwSystemAffinity;
+#ifndef _WIN64
+# define DWORD_PTR DWORD
+#endif
+      DWORD_PTR  dwProcessAffinity;
+      DWORD_PTR  dwSystemAffinity;
       DWORD  dwAffinityMask;
 
       // Calculate the appropriate  shifts and mask based on the 
       // number of logical processors.
-      unsigned char i = 1;
+      unsigned int i = 1;
       unsigned char PHY_ID_MASK  = 0xFF;
       unsigned char PHY_ID_SHIFT = 0;
 
@@ -2163,12 +2617,11 @@ int SystemInformation::CPUCount()
           if (SetProcessAffinityMask(hCurrentProcessHandle,
                                      dwAffinityMask))
             {
-            unsigned char APIC_ID, LOG_ID, PHY_ID;
+            unsigned char APIC_ID, LOG_ID;
             Sleep(0); // Give OS time to switch CPU
 
             APIC_ID = GetAPICId();
             LOG_ID  = APIC_ID & ~PHY_ID_MASK;
-            PHY_ID  = APIC_ID >> PHY_ID_SHIFT;
  
             if (LOG_ID != 0) 
               {
@@ -2213,22 +2666,22 @@ int SystemInformation::CPUCount()
 }
 
 /** Return the number of logical CPUs on the system */
-unsigned int SystemInformation::GetNumberOfLogicalCPU()
+unsigned int SystemInformationImplementation::GetNumberOfLogicalCPU()
 {
   return this->NumberOfLogicalCPU;
 }
 
 /** Return the number of physical CPUs on the system */
-unsigned int SystemInformation::GetNumberOfPhysicalCPU()
+unsigned int SystemInformationImplementation::GetNumberOfPhysicalCPU()
 {
   return this->NumberOfPhysicalCPU;
 }
 
 /** For Mac we Parse the sysctl -a output */
-bool SystemInformation::ParseSysCtl()
+bool SystemInformationImplementation::ParseSysCtl()
 {
   // Extract the arguments from the command line
-  std::vector<const char*> args;
+  kwsys_stl::vector<const char*> args;
   args.push_back("sysctl");
   args.push_back("-a");
   args.push_back(0);
@@ -2271,14 +2724,14 @@ bool SystemInformation::ParseSysCtl()
 }
 
 /** Extract a value from sysctl command */
-std::string SystemInformation::ExtractValueFromSysCtl(const char* word)
+kwsys_stl::string SystemInformationImplementation::ExtractValueFromSysCtl(const char* word)
 {
-  long int pos = this->SysCtlBuffer.find(word);
-  if(pos != -1)
+  size_t pos = this->SysCtlBuffer.find(word);
+  if(pos != this->SysCtlBuffer.npos)
     {
     pos = this->SysCtlBuffer.find(": ",pos);
-    long int pos2 = this->SysCtlBuffer.find("\n",pos);
-    if(pos!=-1 && pos2!=-1)
+    size_t pos2 = this->SysCtlBuffer.find("\n",pos);
+    if(pos!=this->SysCtlBuffer.npos && pos2!=this->SysCtlBuffer.npos)
       {
       return this->SysCtlBuffer.substr(pos+2,pos2-pos-2);
       }
@@ -2287,9 +2740,9 @@ std::string SystemInformation::ExtractValueFromSysCtl(const char* word)
 }
 
 /** Run a given process */
-std::string SystemInformation::RunProcess(std::vector<const char*> args)
+kwsys_stl::string SystemInformationImplementation::RunProcess(kwsys_stl::vector<const char*> args)
 { 
-  std::string buffer = "";
+  kwsys_stl::string buffer = "";
 
   // Run the application
   kwsysProcess* gp = kwsysProcess_New();
@@ -2311,7 +2764,7 @@ std::string SystemInformation::RunProcess(std::vector<const char*> args)
     }
   kwsysProcess_WaitForExit(gp, 0);
 
-  int result = 1;
+  int result = 0;
   switch(kwsysProcess_GetState(gp))
     {
     case kwsysProcess_State_Exited:
@@ -2320,12 +2773,12 @@ std::string SystemInformation::RunProcess(std::vector<const char*> args)
       } break;
     case kwsysProcess_State_Error:
       {
-      std::cerr << "Error: Could not run " << args[0] << ":\n";
-      std::cerr << kwsysProcess_GetErrorString(gp) << "\n";
+      kwsys_ios::cerr << "Error: Could not run " << args[0] << ":\n";
+      kwsys_ios::cerr << kwsysProcess_GetErrorString(gp) << "\n";
       } break;
     case kwsysProcess_State_Exception:
       {
-      std::cerr << "Error: " << args[0]
+      kwsys_ios::cerr << "Error: " << args[0]
                 << " terminated with an exception: "
                 << kwsysProcess_GetExceptionString(gp) << "\n";
       } break;
@@ -2335,33 +2788,36 @@ std::string SystemInformation::RunProcess(std::vector<const char*> args)
     case kwsysProcess_State_Killed:
       {
       // Should not get here.
-      std::cerr << "Unexpected ending state after running " << args[0]
-                << std::endl;
+      kwsys_ios::cerr << "Unexpected ending state after running " << args[0]
+                << kwsys_stl::endl;
       } break;
     }
   kwsysProcess_Delete(gp);
-
+  if(result)
+    {
+    kwsys_ios::cerr << "Error " << args[0] << " returned :" << result << "\n";
+    }
   return buffer;
 }
   
 
-std::string SystemInformation::ParseValueFromKStat(const char* arguments)
+kwsys_stl::string SystemInformationImplementation::ParseValueFromKStat(const char* arguments)
 {
-  std::vector<const char*> args;
+  kwsys_stl::vector<const char*> args;
   args.clear();
   args.push_back("kstat");
   args.push_back("-p");
   
-  std::string command = arguments;
-  long int start = -1;
-  long int pos = command.find(' ',0);
-  while(pos!=-1)
+  kwsys_stl::string command = arguments;
+  size_t start = command.npos;
+  size_t pos = command.find(' ',0);
+  while(pos!=command.npos)
     {
     bool inQuotes = false;
     // Check if we are between quotes
-    long int b0 = command.find('"',0);
-    long int b1 = command.find('"',b0+1);
-    while(b0 != -1 && b1 != -1 && b1>b0)
+    size_t b0 = command.find('"',0);
+    size_t b1 = command.find('"',b0+1);
+    while(b0 != command.npos && b1 != command.npos && b1>b0)
       {
       if(pos>b0 && pos<b1)
         {
@@ -2374,11 +2830,11 @@ std::string SystemInformation::ParseValueFromKStat(const char* arguments)
     
     if(!inQuotes)
       {
-      std::string arg = command.substr(start+1,pos-start-1);
+      kwsys_stl::string arg = command.substr(start+1,pos-start-1);
 
       // Remove the quotes if any
-      long int quotes = arg.find('"');
-      while(quotes != -1)
+      size_t quotes = arg.find('"');
+      while(quotes != arg.npos)
         {
         arg.erase(quotes,1);
         quotes = arg.find('"');
@@ -2388,15 +2844,15 @@ std::string SystemInformation::ParseValueFromKStat(const char* arguments)
       }
     pos = command.find(' ',pos+1);
     }
-  std::string lastArg = command.substr(start+1,command.size()-start-1);
+  kwsys_stl::string lastArg = command.substr(start+1,command.size()-start-1);
   args.push_back(lastArg.c_str());
 
   args.push_back(0);
 
-  std::string buffer = this->RunProcess(args);
+  kwsys_stl::string buffer = this->RunProcess(args);
 
-  std::string value = "";
-  for(unsigned int i=buffer.size()-1;i>0;i--)
+  kwsys_stl::string value = "";
+  for(size_t i=buffer.size()-1;i>0;i--)
     {
     if(buffer[i] == ' ' || buffer[i] == '\t')
       {
@@ -2404,7 +2860,7 @@ std::string SystemInformation::ParseValueFromKStat(const char* arguments)
       }   
     if(buffer[i] != '\n' && buffer[i] != '\r')
       {
-      std::string val = value;
+      kwsys_stl::string val = value;
       value = buffer[i];
       value += val;
       }          
@@ -2413,7 +2869,7 @@ std::string SystemInformation::ParseValueFromKStat(const char* arguments)
 }
 
 /** Querying for system information from Solaris */
-bool SystemInformation::QuerySolarisInfo()
+bool SystemInformationImplementation::QuerySolarisInfo()
 {
   // Parse values
   this->NumberOfPhysicalCPU = atoi(this->ParseValueFromKStat("-n systethis->misc -s ncpus").c_str());
@@ -2457,9 +2913,9 @@ bool SystemInformation::QuerySolarisInfo()
 }
 
 /** Query the operating system information */
-bool SystemInformation::QueryOSInformation()
+bool SystemInformationImplementation::QueryOSInformation()
 {
-#ifdef WIN32
+#if _WIN32
 
   this->OSName = "Windows";
 
@@ -2471,13 +2927,13 @@ bool SystemInformation::QueryOSInformation()
   // Try calling GetVersionEx using the OSVERSIONINFOEX structure.
   ZeroMemory (&osvi, sizeof (OSVERSIONINFOEX));
   osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
-
-  if (!(bOsVersionInfoEx = GetVersionEx ((OSVERSIONINFO *) &osvi))) 
+  bOsVersionInfoEx = GetVersionEx ((OSVERSIONINFO *) &osvi);
+  if (!bOsVersionInfoEx) 
     {
     osvi.dwOSVersionInfoSize = sizeof (OSVERSIONINFO);
     if (!GetVersionEx ((OSVERSIONINFO *) &osvi)) 
       {
-      return NULL;
+      return false;
       }
     }
 
@@ -2497,12 +2953,14 @@ bool SystemInformation::QueryOSInformation()
         {
         this->OSRelease = "XP";
         }
-
+#ifdef VER_NT_WORKSTATION
       // Test for product type.
       if (bOsVersionInfoEx) 
         {
         if (osvi.wProductType == VER_NT_WORKSTATION) 
           {
+// VER_SUITE_PERSONAL may not be defined
+#ifdef VER_SUITE_PERSONAL
           if (osvi.wSuiteMask & VER_SUITE_PERSONAL)
             {
             this->OSRelease += " Personal";
@@ -2511,6 +2969,7 @@ bool SystemInformation::QueryOSInformation()
             {
             this->OSRelease += " Professional";
             }
+#endif
           } 
         else if (osvi.wProductType == VER_NT_SERVER)
           {
@@ -2537,8 +2996,9 @@ bool SystemInformation::QueryOSInformation()
 
         sprintf (operatingSystem, "%s(Build %d)", osvi.szCSDVersion, osvi.dwBuildNumber & 0xFFFF);
         this->OSVersion = operatingSystem; 
-        } 
+        }
       else 
+#endif        // VER_NT_WORKSTATION
         {
         HKEY hKey;
         char szProductType[80];
@@ -2692,13 +3152,9 @@ bool SystemInformation::QueryOSInformation()
 }
 
 /** Return true if the machine is 64 bits */
-bool SystemInformation::Is64Bits()
+bool SystemInformationImplementation::Is64Bits()
 {
-  if(sizeof(long int) == 4)
-    {
-    return false;
-    }
-  return true;
+  return (sizeof(void*) == 8);
 }
 
 } // namespace @KWSYS_NAMESPACE@

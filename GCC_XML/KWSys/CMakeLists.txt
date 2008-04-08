@@ -111,6 +111,12 @@ IF(NOT KWSYS_NAMESPACE)
   SET(KWSYS_NAMESPACE "kwsys")
   SET(KWSYS_STANDALONE 1)
 ENDIF(NOT KWSYS_NAMESPACE)
+IF(KWSYS_STANDALONE)
+  CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+  IF(COMMAND CMAKE_POLICY)
+    CMAKE_POLICY(SET CMP0003 NEW)
+  ENDIF(COMMAND CMAKE_POLICY)
+ENDIF(KWSYS_STANDALONE)
 
 #-----------------------------------------------------------------------------
 # The project name is that of the specified namespace.
@@ -137,9 +143,10 @@ IF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
   SET(KWSYS_USE_IOStream 1)
   SET(KWSYS_USE_DateStamp 1)
   SET(KWSYS_USE_String 1)
-#  SET(KWSYS_USE_SystemInformation 1)
+  SET(KWSYS_USE_SystemInformation 1)
+  SET(KWSYS_USE_CPU 1)
 ENDIF(KWSYS_STANDALONE OR CMake_SOURCE_DIR)
-
+  
 # Setup the large file support default.
 IF(KWSYS_LFS_DISABLE)
   SET(KWSYS_LFS_REQUESTED 0)
@@ -579,6 +586,15 @@ ENDFOREACH(header)
 CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/kwsys_cstddef.hxx.in
                ${KWSYS_HEADER_DIR}/cstddef
                @ONLY IMMEDIATE)
+IF(KWSYS_INSTALL_INCLUDE_DIR)
+  INSTALL(FILES ${KWSYS_HEADER_DIR}/cstddef
+    DESTINATION ${KWSYS_INSTALL_INCLUDE_DIR}/${KWSYS_NAMESPACE}
+    ${KWSYS_INSTALL_INCLUDE_OPTIONS})
+  IF(KWSYS_HEADER_INSTALL_DIR)
+    INSTALL_FILES(${KWSYS_HEADER_INSTALL_DIR}/${KWSYS_NAMESPACE}
+      FILES ${KWSYS_HEADER_DIR}/cstddef)
+  ENDIF(KWSYS_HEADER_INSTALL_DIR)
+ENDIF(KWSYS_INSTALL_INCLUDE_DIR)
 
 #-----------------------------------------------------------------------------
 # Create streams header wrappers to give standard names by which they
@@ -642,7 +658,9 @@ FOREACH(cpp ${cppclasses})
 ENDFOREACH(cpp)
 
 # Add selected C components.
-FOREACH(c Process Base64 FundamentalType MD5 Terminal System DateStamp String)
+FOREACH(c
+    Process Base64 FundamentalType MD5 Terminal System DateStamp String CPU
+    )
   IF(KWSYS_USE_${c})
     # Use the corresponding header file.
     SET(KWSYS_H_FILES ${KWSYS_H_FILES} ${c})
