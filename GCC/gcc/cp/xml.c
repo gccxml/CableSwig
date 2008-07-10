@@ -65,7 +65,7 @@ along with this program; if not, write to the
 
 #include "toplev.h" /* ident_hash */
 
-#define GCC_XML_C_VERSION "$Revision: 1.120 $"
+#define GCC_XML_C_VERSION "$Revision: 1.123 $"
 
 /*--------------------------------------------------------------------------*/
 /* Data structures for the actual XML dump.  */
@@ -1842,7 +1842,7 @@ xml_output_function_decl (xml_dump_info_p xdi, tree fd, xml_dump_node_p dn)
         tag = "OperatorMethod";
         name = xml_reverse_opname_lookup (DECL_NAME (fd));
         do_returns = 1; do_const = 1; do_virtual = 1;
-        do_static = 1;
+        do_static = 1; do_artificial = 1;
         }
       else
         {
@@ -2188,11 +2188,12 @@ xml_output_record_type (xml_dump_info_p xdi, tree rt, xml_dump_node_p dn)
       {
       int id;
 
-      /* Don't process any compiler-generated functions except constructors
-         and destructors.  */
+      /* Don't process any compiler-generated functions except
+         constructors, destructors, and the assignment operator.  */
       if (DECL_ARTIFICIAL(func)
           && !DECL_CONSTRUCTOR_P (func)
-          && !DECL_DESTRUCTOR_P (func)) continue;
+          && !DECL_DESTRUCTOR_P (func)
+          && !DECL_ASSIGNMENT_OPERATOR_P (func)) continue;
 
       /* Don't output the cloned functions.  */
       if (DECL_CLONED_FUNCTION_P (func)) continue;
@@ -2992,6 +2993,7 @@ xml_find_template_parm (tree t)
     case CONST_DECL: return 1;
     case VAR_DECL: return 1;
     case FUNCTION_DECL: return 1;
+    case FIELD_DECL: return 1;
 
     /* A template deferred scoped lookup.  */
     case SCOPE_REF: return 1;
