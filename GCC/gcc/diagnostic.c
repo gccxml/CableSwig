@@ -178,6 +178,10 @@ static bool diagnostic_in_xml_synthesize_test()
     }
   return false;
 }
+bool diagnostic_get_xml_synthesize_test()
+{
+  return diagnostic_xml_synthesize_test > 0;
+}
 /* END GCC-XML MODIFICATIONS 2008-10-01 */
 
 /* Count a diagnostic.  Return true if the message should be printed.  */

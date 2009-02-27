@@ -1,5 +1,5 @@
 # Install UNIX compiler support files.
-INSTALL(PROGRAMS gccxml_find_flags
+INSTALL(FILES gccxml_identify_compiler.cc
   DESTINATION ${GCCXML_INSTALL_ROOT}${GCCXML_DATA_DIR}
   ${GCCXML_INSTALL_COMPONENT_RUNTIME_LIBRARY})
 

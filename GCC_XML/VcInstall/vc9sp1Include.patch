@@ -1,11 +1,11 @@
 Index: algorithm
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/algorithm,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/algorithm,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** algorithm	29 Jan 2008 21:05:21 -0000	1.1
---- algorithm	21 Apr 2008 14:19:05 -0000	1.2
+*** algorithm	6 Jan 2009 21:18:02 -0000	1.1
+--- algorithm	6 Jan 2009 21:21:23 -0000	1.2
 ***************
 *** 11,16 ****
 --- 11,51 ----
@@ -52,12 +52,12 @@ diff -c -3 -p -r1.1 -r1.2
   		// COMMON SORT PARAMETERS
 Index: crtdbg.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/crtdbg.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/crtdbg.h,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** crtdbg.h	29 Jan 2008 21:05:21 -0000	1.1
---- crtdbg.h	15 Dec 2008 20:37:10 -0000	1.2
+*** crtdbg.h	6 Jan 2009 21:18:02 -0000	1.1
+--- crtdbg.h	6 Jan 2009 21:21:23 -0000	1.2
 *************** should not have done so since it was not
 *** 588,593 ****
 --- 588,594 ----
@@ -70,14 +70,13 @@ diff -c -3 -p -r1.1 -r1.2
   #define _CrtDbgBreak() __asm { int 3 }
 Index: crtdefs.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/crtdefs.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/crtdefs.h,v
 retrieving revision 1.1
-retrieving revision 1.2
-diff -c -3 -p -r1.1 -r1.2
-*** crtdefs.h	29 Jan 2008 21:05:21 -0000	1.1
---- crtdefs.h	21 Apr 2008 13:38:16 -0000	1.2
+diff -c -3 -p -r1.1 crtdefs.h
+*** crtdefs.h	6 Jan 2009 21:18:02 -0000	1.1
+--- crtdefs.h	9 Jan 2009 13:53:55 -0000
 *************** typedef __time64_t time_t;      /* time 
-*** 654,752 ****
+*** 666,764 ****
   #define __DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_0(_ReturnType, _FuncName, _DstType, _Dst) \
       extern "C++" \
       { \
@@ -177,7 +176,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       }
   
---- 654,752 ----
+--- 666,764 ----
   #define __DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_0(_ReturnType, _FuncName, _DstType, _Dst) \
       extern "C++" \
       { \
@@ -278,7 +277,7 @@ diff -c -3 -p -r1.1 -r1.2
       }
   
 *************** typedef __time64_t time_t;      /* time 
-*** 755,767 ****
+*** 767,779 ****
       { \
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -292,7 +291,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
   	__pragma(warning(pop)); \
       }
---- 755,767 ----
+--- 767,779 ----
       { \
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -307,7 +306,7 @@ diff -c -3 -p -r1.1 -r1.2
   	__pragma(warning(pop)); \
       }
 *************** typedef __time64_t time_t;      /* time 
-*** 771,783 ****
+*** 783,795 ****
       { \
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -321,7 +320,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
   	__pragma(warning(pop)); \
       }
---- 771,783 ----
+--- 783,795 ----
       { \
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -336,7 +335,7 @@ diff -c -3 -p -r1.1 -r1.2
   	__pragma(warning(pop)); \
       }
 *************** typedef __time64_t time_t;      /* time 
-*** 914,924 ****
+*** 926,936 ****
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -348,7 +347,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 914,924 ----
+--- 926,936 ----
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -361,7 +360,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 959,970 ****
+*** 971,982 ****
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -374,7 +373,7 @@ diff -c -3 -p -r1.1 -r1.2
           _Dst[1] = (_DstType)(_SizeRead); \
           return (_Err == 0 ? _Dst + 2 : 0); \
       } \
---- 959,970 ----
+--- 971,982 ----
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -388,7 +387,7 @@ diff -c -3 -p -r1.1 -r1.2
           return (_Err == 0 ? _Dst + 2 : 0); \
       } \
 *************** typedef __time64_t time_t;      /* time 
-*** 1014,1024 ****
+*** 1026,1036 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1); \
       } \
@@ -400,7 +399,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1014,1024 ----
+--- 1026,1036 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1); \
       } \
@@ -413,7 +412,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1059,1069 ****
+*** 1071,1081 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -425,7 +424,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1059,1069 ----
+--- 1071,1081 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -438,7 +437,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1104,1114 ****
+*** 1116,1126 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -450,7 +449,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1104,1114 ----
+--- 1116,1126 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -463,7 +462,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1149,1159 ****
+*** 1161,1171 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3, _TArg4); \
       } \
@@ -475,7 +474,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1149,1159 ----
+--- 1161,1171 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3, _TArg4); \
       } \
@@ -488,7 +487,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1194,1204 ****
+*** 1206,1216 ****
       { \
           return __insecure_##_FuncName(_HArg1, _Dst, _TArg1); \
       } \
@@ -500,7 +499,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1194,1204 ----
+--- 1206,1216 ----
       { \
           return __insecure_##_FuncName(_HArg1, _Dst, _TArg1); \
       } \
@@ -513,7 +512,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1239,1249 ****
+*** 1251,1261 ****
       { \
           return __insecure_##_FuncName(_HArg1, _HArg2, _Dst); \
       } \
@@ -525,7 +524,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1239,1249 ----
+--- 1251,1261 ----
       { \
           return __insecure_##_FuncName(_HArg1, _HArg2, _Dst); \
       } \
@@ -538,7 +537,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1300,1312 ****
+*** 1312,1324 ****
   	\
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -552,7 +551,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
   	__pragma(warning(pop)); \
   	\
---- 1300,1312 ----
+--- 1312,1324 ----
   	\
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -567,7 +566,7 @@ diff -c -3 -p -r1.1 -r1.2
   	__pragma(warning(pop)); \
   	\
 *************** typedef __time64_t time_t;      /* time 
-*** 1344,1354 ****
+*** 1356,1366 ****
       { \
           return __insecure_##_VFuncName(_Dst, _TArg1, _ArgList); \
       } \
@@ -579,7 +578,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1344,1354 ----
+--- 1356,1366 ----
       { \
           return __insecure_##_VFuncName(_Dst, _TArg1, _ArgList); \
       } \
@@ -592,7 +591,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1405,1417 ****
+*** 1417,1429 ****
   	\
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -606,7 +605,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
   	__pragma(warning(pop)); \
   	\
---- 1405,1417 ----
+--- 1417,1429 ----
   	\
   	__pragma(warning(push)); \
   	__pragma(warning(disable: 4793)); \
@@ -621,7 +620,7 @@ diff -c -3 -p -r1.1 -r1.2
   	__pragma(warning(pop)); \
   	\
 *************** typedef __time64_t time_t;      /* time 
-*** 1449,1459 ****
+*** 1461,1471 ****
       { \
           return __insecure_##_VFuncName(_Dst, _TArg1, _TArg2, _ArgList); \
       } \
@@ -633,7 +632,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1449,1459 ----
+--- 1461,1471 ----
       { \
           return __insecure_##_VFuncName(_Dst, _TArg1, _TArg2, _ArgList); \
       } \
@@ -646,7 +645,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1494,1505 ****
+*** 1506,1517 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -659,7 +658,7 @@ diff -c -3 -p -r1.1 -r1.2
           return (_Ret > 0 ? (_Ret - 1) : _Ret); \
       } \
       template <> \
---- 1494,1505 ----
+--- 1506,1517 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -673,7 +672,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
 *************** typedef __time64_t time_t;      /* time 
-*** 1543,1554 ****
+*** 1555,1566 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -686,7 +685,7 @@ diff -c -3 -p -r1.1 -r1.2
           return (_Ret > 0 ? (_Ret - 1) : _Ret); \
       } \
       template <> \
---- 1543,1554 ----
+--- 1555,1566 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -700,7 +699,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
 *************** typedef __time64_t time_t;      /* time 
-*** 1590,1600 ****
+*** 1602,1612 ****
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -712,7 +711,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1590,1600 ----
+--- 1602,1612 ----
       { \
           return __insecure_##_FuncName(_Dst); \
       } \
@@ -725,7 +724,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1633,1643 ****
+*** 1645,1655 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1); \
       } \
@@ -737,7 +736,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1633,1643 ----
+--- 1645,1655 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1); \
       } \
@@ -750,7 +749,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1676,1686 ****
+*** 1688,1698 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -762,7 +761,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1676,1686 ----
+--- 1688,1698 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2); \
       } \
@@ -775,7 +774,7 @@ diff -c -3 -p -r1.1 -r1.2
       template <> \
       inline \
 *************** typedef __time64_t time_t;      /* time 
-*** 1719,1729 ****
+*** 1731,1741 ****
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -787,7 +786,7 @@ diff -c -3 -p -r1.1 -r1.2
       } \
       template <> \
       inline \
---- 1719,1729 ----
+--- 1731,1741 ----
       { \
           return __insecure_##_FuncName(_Dst, _TArg1, _TArg2, _TArg3); \
       } \
@@ -801,12 +800,12 @@ diff -c -3 -p -r1.1 -r1.2
       inline \
 Index: deque
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/deque,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/deque,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** deque	29 Jan 2008 21:05:21 -0000	1.1
---- deque	21 Apr 2008 15:37:01 -0000	1.2
+*** deque	6 Jan 2009 21:18:02 -0000	1.1
+--- deque	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 61,68 ****
   		_Deque_const_iterator<_Ty, _Alloc, false>,
@@ -862,12 +861,12 @@ diff -c -3 -p -r1.1 -r1.2
   		}
 Index: eh.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/eh.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/eh.h,v
 retrieving revision 1.1
-retrieving revision 1.3
-diff -c -3 -p -r1.1 -r1.3
-*** eh.h	29 Jan 2008 21:05:21 -0000	1.1
---- eh.h	21 Apr 2008 13:53:32 -0000	1.3
+retrieving revision 1.2
+diff -c -3 -p -r1.1 -r1.2
+*** eh.h	6 Jan 2009 21:18:02 -0000	1.1
+--- eh.h	6 Jan 2009 21:21:23 -0000	1.2
 ***************
 *** 30,35 ****
 --- 30,38 ----
@@ -882,12 +881,12 @@ diff -c -3 -p -r1.1 -r1.3
   typedef void (__cdecl *terminate_function)();
 Index: iosfwd
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/iosfwd,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/iosfwd,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** iosfwd	29 Jan 2008 21:05:21 -0000	1.1
---- iosfwd	21 Apr 2008 14:07:00 -0000	1.2
+*** iosfwd	6 Jan 2009 21:18:02 -0000	1.1
+--- iosfwd	6 Jan 2009 21:21:23 -0000	1.2
 *************** struct _Secure_char_traits_tag
 *** 145,150 ****
 --- 145,184 ----
@@ -933,12 +932,12 @@ diff -c -3 -p -r1.1 -r1.2
   		// only for user defined char_traits. A user defined char_traits should 
 Index: iterator
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/iterator,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/iterator,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** iterator	29 Jan 2008 21:05:21 -0000	1.1
---- iterator	21 Apr 2008 14:18:44 -0000	1.2
+*** iterator	6 Jan 2009 21:18:02 -0000	1.1
+--- iterator	6 Jan 2009 21:21:23 -0000	1.2
 *************** template <class _Cont, class _Iter = typ
 *** 361,367 ****
   			typename _STD iterator_traits<_Iter>::pointer, 
@@ -958,12 +957,12 @@ diff -c -3 -p -r1.1 -r1.2
   	typedef typename _STD iterator_traits<_Iter>::difference_type difference_type;
 Index: limits
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/limits,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/limits,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** limits	29 Jan 2008 21:05:21 -0000	1.1
---- limits	21 Apr 2008 15:37:21 -0000	1.2
+*** limits	6 Jan 2009 21:18:02 -0000	1.1
+--- limits	6 Jan 2009 21:21:23 -0000	1.2
 *************** _STCONSDEF(_Num_base, int, min_exponent)
 *** 93,110 ****
   _STCONSDEF(_Num_base, int, min_exponent10)
@@ -1007,12 +1006,12 @@ diff -c -3 -p -r1.1 -r1.2
   		}
 Index: list
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/list,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/list,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** list	29 Jan 2008 21:05:21 -0000	1.1
---- list	21 Apr 2008 15:37:01 -0000	1.2
+*** list	6 Jan 2009 21:18:02 -0000	1.1
+--- list	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 191,198 ****
   		_Const_iterator<false>,
@@ -1051,12 +1050,12 @@ diff -c -3 -p -r1.1 -r1.2
   	{
 Index: locale
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/locale,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/locale,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** locale	29 Jan 2008 21:05:21 -0000	1.1
---- locale	24 Apr 2008 03:14:54 -0000	1.2
+*** locale	6 Jan 2009 21:18:02 -0000	1.1
+--- locale	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 64,71 ****
   		const locale *_Ploc = 0)
@@ -1080,12 +1079,12 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: memory
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/memory,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/memory,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** memory	29 Jan 2008 21:05:21 -0000	1.1
---- memory	21 Apr 2008 14:19:05 -0000	1.2
+*** memory	6 Jan 2009 21:18:02 -0000	1.1
+--- memory	6 Jan 2009 21:21:23 -0000	1.2
 ***************
 *** 10,15 ****
 --- 10,26 ----
@@ -1108,12 +1107,12 @@ diff -c -3 -p -r1.1 -r1.2
   		// TEMPLATE FUNCTION get_temporary_buffer
 Index: sal.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/sal.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/sal.h,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** sal.h	29 Jan 2008 21:05:21 -0000	1.1
---- sal.h	21 Apr 2008 13:36:06 -0000	1.2
+*** sal.h	6 Jan 2009 21:18:02 -0000	1.1
+--- sal.h	6 Jan 2009 21:21:23 -0000	1.2
 ***************
 *** 107,113 ****
   
@@ -1133,12 +1132,12 @@ diff -c -3 -p -r1.1 -r1.2
   #if _USE_DECLSPECS_FOR_SAL
 Index: setjmp.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/setjmp.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/setjmp.h,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** setjmp.h	29 Jan 2008 21:05:21 -0000	1.1
---- setjmp.h	21 Apr 2008 14:19:23 -0000	1.2
+*** setjmp.h	6 Jan 2009 21:18:02 -0000	1.1
+--- setjmp.h	6 Jan 2009 21:21:23 -0000	1.2
 *************** int __cdecl setjmp(_Out_ jmp_buf _Buf);
 *** 253,259 ****
   #ifdef  __cplusplus
@@ -1158,11 +1157,11 @@ diff -c -3 -p -r1.1 -r1.2
   _CRTIMP __declspec(noreturn) void __cdecl longjmp(_In_ jmp_buf _Buf, _In_ int _Value);
 Index: stddef.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/stddef.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/stddef.h,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** stddef.h	29 Jan 2008 21:05:21 -0000	1.1
+*** stddef.h	6 Jan 2009 21:18:02 -0000	1.1
 --- stddef.h	9 Jan 2009 13:47:14 -0000	1.2
 *************** errno_t __cdecl _get_errno(_Out_ int * _
 *** 46,51 ****
@@ -1187,12 +1186,12 @@ diff -c -3 -p -r1.1 -r1.2
   _CRTIMP extern unsigned long  __cdecl __threadid(void);
 Index: typeinfo
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/typeinfo,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/typeinfo,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** typeinfo	29 Jan 2008 21:05:21 -0000	1.1
---- typeinfo	21 Apr 2008 13:53:32 -0000	1.2
+*** typeinfo	6 Jan 2009 21:19:55 -0000	1.1
+--- typeinfo	6 Jan 2009 21:21:23 -0000	1.2
 *************** struct __type_info_node {
 *** 40,45 ****
 --- 40,46 ----
@@ -1216,14 +1215,14 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: vector
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/vector,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/vector,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** vector	29 Jan 2008 21:05:21 -0000	1.1
---- vector	21 Apr 2008 15:37:38 -0000	1.2
+*** vector	6 Jan 2009 21:19:55 -0000	1.1
+--- vector	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
-*** 2243,2249 ****
+*** 2246,2252 ****
   
   	void flip()
   		{	// toggle all elements
@@ -1231,7 +1230,7 @@ diff -c -3 -p -r1.1 -r1.2
   			_Next != _Myvec.end(); ++_Next)
   			*_Next = (_Vbase)~*_Next;
   		_Trim(_Mysize);
---- 2243,2249 ----
+--- 2246,2252 ----
   
   	void flip()
   		{	// toggle all elements
@@ -1241,37 +1240,37 @@ diff -c -3 -p -r1.1 -r1.2
   		_Trim(_Mysize);
 Index: xhash
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xhash,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xhash,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xhash	29 Jan 2008 21:05:21 -0000	1.1
---- xhash	21 Apr 2008 15:37:53 -0000	1.2
+*** xhash	6 Jan 2009 21:19:25 -0000	1.1
+--- xhash	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
-*** 260,266 ****
+*** 303,309 ****
   			}
   
   	protected:
 ! 		typename _Mylist::_Iterator<0> _Mypos;
   	};
   
-  	typedef _List_position _Myvec_value_type;
---- 260,266 ----
+  typedef _List_position _Myvec_value_type;
+--- 303,309 ----
   			}
   
   	protected:
 ! 		typename _Mylist::template _Iterator<0> _Mypos;
   	};
   
-  	typedef _List_position _Myvec_value_type;
+  typedef _List_position _Myvec_value_type;
 Index: xlocale
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xlocale,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xlocale,v
 retrieving revision 1.1
-retrieving revision 1.3
-diff -c -3 -p -r1.1 -r1.3
-*** xlocale	29 Jan 2008 21:05:21 -0000	1.1
---- xlocale	21 Apr 2008 14:06:27 -0000	1.3
+retrieving revision 1.2
+diff -c -3 -p -r1.1 -r1.2
+*** xlocale	6 Jan 2009 21:19:25 -0000	1.1
+--- xlocale	6 Jan 2009 21:21:23 -0000	1.2
 *************** template<class _Dummy>
 *** 54,59 ****
 --- 54,61 ----
@@ -1432,12 +1431,12 @@ diff -c -3 -p -r1.1 -r1.3
   
 Index: xlocmes
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xlocmes,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xlocmes,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xlocmes	29 Jan 2008 21:05:21 -0000	1.1
---- xlocmes	24 Apr 2008 03:14:54 -0000	1.2
+*** xlocmes	6 Jan 2009 21:19:25 -0000	1.1
+--- xlocmes	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 76,83 ****
   		const locale *_Ploc = 0)
@@ -1461,12 +1460,12 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: xlocmon
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xlocmon,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xlocmon,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xlocmon	29 Jan 2008 21:05:21 -0000	1.1
---- xlocmon	24 Apr 2008 03:14:54 -0000	1.2
+*** xlocmon	6 Jan 2009 21:19:25 -0000	1.1
+--- xlocmon	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 280,287 ****
   		const locale *_Ploc = 0)
@@ -1532,12 +1531,12 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: xlocnum
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xlocnum,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xlocnum,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xlocnum	29 Jan 2008 21:05:21 -0000	1.1
---- xlocnum	24 Apr 2008 03:14:54 -0000	1.2
+*** xlocnum	6 Jan 2009 21:19:25 -0000	1.1
+--- xlocnum	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 111,118 ****
   		const locale *_Ploc = 0)
@@ -1560,7 +1559,7 @@ diff -c -3 -p -r1.1 -r1.2
   		}
   
 *************** public:
-*** 239,246 ****
+*** 236,243 ****
   		const locale *_Ploc = 0)
   		{	// return locale category mask and construct standard facet
   		if (_Ppf != 0 && *_Ppf == 0)
@@ -1569,7 +1568,7 @@ diff -c -3 -p -r1.1 -r1.2
   		return (_X_NUMERIC);
   		}
   
---- 241,250 ----
+--- 238,247 ----
   		const locale *_Ploc = 0)
   		{	// return locale category mask and construct standard facet
   		if (_Ppf != 0 && *_Ppf == 0)
@@ -1581,7 +1580,7 @@ diff -c -3 -p -r1.1 -r1.2
   		}
   
 *************** public:
-*** 1032,1039 ****
+*** 1029,1036 ****
   		const locale *_Ploc = 0)
   		{	// return locale category mask and construct standard facet
   		if (_Ppf != 0 && *_Ppf == 0)
@@ -1590,7 +1589,7 @@ diff -c -3 -p -r1.1 -r1.2
   		return (_X_NUMERIC);
   		}
   
---- 1036,1045 ----
+--- 1033,1042 ----
   		const locale *_Ploc = 0)
   		{	// return locale category mask and construct standard facet
   		if (_Ppf != 0 && *_Ppf == 0)
@@ -1603,12 +1602,12 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: xloctime
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xloctime,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xloctime,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xloctime	29 Jan 2008 21:05:21 -0000	1.1
---- xloctime	24 Apr 2008 03:14:54 -0000	1.2
+*** xloctime	6 Jan 2009 21:19:25 -0000	1.1
+--- xloctime	6 Jan 2009 21:21:23 -0000	1.2
 *************** public:
 *** 97,104 ****
   		const locale *_Ploc = 0)
@@ -1674,12 +1673,12 @@ diff -c -3 -p -r1.1 -r1.2
   
 Index: xstddef
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xstddef,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xstddef,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xstddef	29 Jan 2008 21:05:21 -0000	1.1
---- xstddef	21 Apr 2008 13:36:23 -0000	1.2
+*** xstddef	6 Jan 2009 21:19:25 -0000	1.1
+--- xstddef	6 Jan 2009 21:21:23 -0000	1.2
 *************** _STD_BEGIN
 *** 33,39 ****
    #endif /* _THROWS */
@@ -1699,12 +1698,12 @@ diff -c -3 -p -r1.1 -r1.2
    #define _THROW_NCEE(x, y)	_THROW(x, y)
 Index: xutility
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/xutility,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xutility,v
 retrieving revision 1.1
 retrieving revision 1.2
 diff -c -3 -p -r1.1 -r1.2
-*** xutility	29 Jan 2008 21:05:21 -0000	1.1
---- xutility	21 Apr 2008 13:54:00 -0000	1.2
+*** xutility	6 Jan 2009 21:19:25 -0000	1.1
+--- xutility	6 Jan 2009 21:21:23 -0000	1.2
 ***************
 *** 12,19 ****
 --- 12,48 ----
@@ -1786,7 +1785,7 @@ diff -c -3 -p -r1.1 -r1.2
   	}
   
 *************** public:
-*** 2136,2142 ****
+*** 2162,2168 ****
    
   	_Checked_iterator_base_type _Checked_iterator_base() const
   	{
@@ -1794,7 +1793,7 @@ diff -c -3 -p -r1.1 -r1.2
   		return _Base;
   	}
   
---- 2165,2171 ----
+--- 2191,2197 ----
    
   	_Checked_iterator_base_type _Checked_iterator_base() const
   	{
@@ -1802,16 +1801,534 @@ diff -c -3 -p -r1.1 -r1.2
   		return _Base;
   	}
   
+Index: xxmem_fn
+===================================================================
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xxmem_fn,v
+retrieving revision 1.1
+retrieving revision 1.2
+diff -c -3 -p -r1.1 -r1.2
+*** xxmem_fn	6 Jan 2009 21:19:25 -0000	1.1
+--- xxmem_fn	6 Jan 2009 21:37:23 -0000	1.2
+*************** public:
+*** 29,41 ****
+  	// TEMPLATE FUNCTION mem_fn, pointer to member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2), _ARG0_ARG1>
+! 		mem_fn(_Rx(__thiscall _Arg0::*_Pm)(_ARG1_ARG2))
+  	{	// bind to pointer to member function
+! 	return (_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2),
+  		_ARG0_ARG1>(_Pm));
+  	}
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+--- 29,42 ----
+  	// TEMPLATE FUNCTION mem_fn, pointer to member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2), _ARG0_ARG1>
+! 		mem_fn(_Rx(_Arg0::*_Pm)(_ARG1_ARG2))
+  	{	// bind to pointer to member function
+! 	return (_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2),
+  		_ARG0_ARG1>(_Pm));
+  	}
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+*************** template<class _Rx,
+*** 78,95 ****
+  		_ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to const member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) const,
+  		const _ARG0_ARG1>
+! 		mem_fn(_Rx(__thiscall _Arg0::*_Pm)(_ARG1_ARG2) const)
+  	{	// bind to pointer to const member function
+! 	return (_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) const,
+  		const _ARG0_ARG1>(_Pm));
+  	}
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+--- 79,98 ----
+  		_ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to const member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) const,
+  		const _ARG0_ARG1>
+! 		mem_fn(_Rx(_Arg0::*_Pm)(_ARG1_ARG2) const)
+  	{	// bind to pointer to const member function
+! 	return (_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) const,
+  		const _ARG0_ARG1>(_Pm));
+  	}
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+*************** template<class _Rx,
+*** 136,153 ****
+  		const _ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to volatile member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) volatile,
+  		volatile _ARG0_ARG1>
+! 		mem_fn(_Rx(__thiscall _Arg0::*_Pm)(_ARG1_ARG2) volatile)
+  	{	// bind to pointer to volatile member function
+! 	return (_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) volatile,
+  		volatile _ARG0_ARG1>(_Pm));
+  	}
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+--- 139,158 ----
+  		const _ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to volatile member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) volatile,
+  		volatile _ARG0_ARG1>
+! 		mem_fn(_Rx(_Arg0::*_Pm)(_ARG1_ARG2) volatile)
+  	{	// bind to pointer to volatile member function
+! 	return (_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) volatile,
+  		volatile _ARG0_ARG1>(_Pm));
+  	}
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+*************** template<class _Rx,
+*** 194,211 ****
+  		volatile _ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to const volatile member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) const volatile,
+  		const volatile _ARG0_ARG1>
+! 		mem_fn(_Rx(__thiscall _Arg0::*_Pm)(_ARG1_ARG2) const volatile)
+  	{	// bind to pointer to const volatile member function
+! 	return (_NAME<_Rx, _Rx(__thiscall _Arg0::*)(_ARG1_ARG2) const volatile,
+  		const volatile _ARG0_ARG1>(_Pm));
+  	}
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+--- 199,218 ----
+  		volatile _ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION mem_fn, pointer to const volatile member function
+  template<class _Rx,
+  	_CLASS_ARG0>
+! 	_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) const volatile,
+  		const volatile _ARG0_ARG1>
+! 		mem_fn(_Rx(_Arg0::*_Pm)(_ARG1_ARG2) const volatile)
+  	{	// bind to pointer to const volatile member function
+! 	return (_NAME<_Rx, _Rx(_Arg0::*)(_ARG1_ARG2) const volatile,
+  		const volatile _ARG0_ARG1>(_Pm));
+  	}
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0>
+*************** template<class _Rx,
+*** 252,257 ****
+--- 259,265 ----
+  		const volatile _ARG0_ARG1>(_Pm));
+  	}
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  #undef _NAME
+  
+Index: xxresult
+===================================================================
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/xxresult,v
+retrieving revision 1.1
+retrieving revision 1.2
+diff -c -3 -p -r1.1 -r1.2
+*** xxresult	6 Jan 2009 21:19:25 -0000	1.1
+--- xxresult	6 Jan 2009 21:37:23 -0000	1.2
+*************** template<class _Rx,
+*** 89,100 ****
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*)(_ARG1_ARG2),
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 89,101 ----
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*)(_ARG1_ARG2),
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 136,152 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to const member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*)(_ARG1_ARG2) const,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to const member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 137,155 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to const member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*)(_ARG1_ARG2) const,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to const member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 188,204 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*)(_ARG1_ARG2) volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 191,209 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*)(_ARG1_ARG2) volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 240,256 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to const volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*)(_ARG1_ARG2) const volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to const volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 245,263 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, pointer to const volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*)(_ARG1_ARG2) const volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// pointer to const volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 292,308 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*const)(_ARG1_ARG2),
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 299,317 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*const)(_ARG1_ARG2),
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 344,360 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to const member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*const)(_ARG1_ARG2) const,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to const member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 353,371 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to const member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*const)(_ARG1_ARG2) const,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to const member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 396,412 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*const)(_ARG1_ARG2) volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 407,425 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*const)(_ARG1_ARG2) volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 448,464 ****
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to const volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (__thiscall _Arg0::*const)(_ARG1_ARG2) const volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to const volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+--- 461,479 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+  
+  	// TEMPLATE FUNCTION _RESULT_OF, const pointer to const volatile member fn
+  template<class _Rx,
+  	_CLASS_ARG0
+  	_C_CLASS_FARG0>
+! 	struct _RESULT_OF<_Rx (_Arg0::*const)(_ARG1_ARG2) const volatile,
+  		_Farg0& _C_FARG1_FARG2>
+  	{	// const pointer to const volatile member fn
+  	typedef _Rx _Type;
+  	};
+  
++ #if 0 // Disabled for gccxml
+   #ifdef _M_IX86
+  template<class _Rx,
+  	_CLASS_ARG0
+*************** template<class _Rx,
+*** 500,505 ****
+--- 515,521 ----
+  	typedef _Rx _Type;
+  	};
+   #endif /* _M_CEE */
++ #endif // Disabled for gccxml
+   #endif /* _NARGS != 0 */
+  
+  	// TEMPLATE CLASS _Result_of
 Index: yvals.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/yvals.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/yvals.h,v
 retrieving revision 1.1
-retrieving revision 1.5
-diff -c -3 -p -r1.1 -r1.5
-*** yvals.h	29 Jan 2008 21:05:21 -0000	1.1
---- yvals.h	15 Dec 2008 20:36:52 -0000	1.5
+retrieving revision 1.3
+diff -c -3 -p -r1.1 -r1.3
+*** yvals.h	6 Jan 2009 21:18:02 -0000	1.1
+--- yvals.h	6 Jan 2009 21:48:10 -0000	1.3
 ***************
-*** 116,122 ****
+*** 11,16 ****
+--- 11,35 ----
+  
+  #define _CPPLIB_VER	505
+  
++ #if 1 // gccxml cannot provide these builtins until we use the 4.3 parser
++ #define __is_union(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_class(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_enum(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_pod(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_empty(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_polymorphic(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_abstract(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __is_convertible_to(X,Y) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_trivial_constructor(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_trivial_copy(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_trivial_assign(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_trivial_destructor(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_nothrow_constructor(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_nothrow_copy(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_nothrow_assign(X) gccxml_does_not_yet_support_tr1_type_traits
++ #define __has_virtual_destructor(X) gccxml_does_not_yet_support_tr1_type_traits
++ #endif
++ 
+   #if !defined(_HAS_TR1)
+    #define _HAS_TR1	1	/* enable TR1 extensions */
+   #endif /* !defined(_HAS_TR1) */
+***************
+*** 120,126 ****
   #define _STR2WSTR(str)     __STR2WSTR(str)
   
   #define __FILEW__          _STR2WSTR(__FILE__)
@@ -1819,7 +2336,7 @@ diff -c -3 -p -r1.1 -r1.5
   
   /* _SECURE_SCL switches: default values */
   
---- 116,123 ----
+--- 139,146 ----
   #define _STR2WSTR(str)     __STR2WSTR(str)
   
   #define __FILEW__          _STR2WSTR(__FILE__)
@@ -1829,8 +2346,8 @@ diff -c -3 -p -r1.1 -r1.5
   /* _SECURE_SCL switches: default values */
   
 ***************
-*** 181,186 ****
---- 182,207 ----
+*** 185,190 ****
+--- 205,230 ----
   
    #endif
   
@@ -1858,7 +2375,7 @@ diff -c -3 -p -r1.1 -r1.5
   
    #define _SCL_SECURE_INVALID_ARGUMENT_NO_ASSERT		_Xinvarg()
 *************** _STD_END
-*** 529,536 ****
+*** 533,540 ****
   		/* VC++ COMPILER PARAMETERS */
   #define _LONGLONG	__int64
   #define _ULONGLONG	unsigned __int64
@@ -1867,7 +2384,7 @@ diff -c -3 -p -r1.1 -r1.5
   
   		/* INTEGER PROPERTIES */
   #define _C2			1	/* 0 if not 2's complement */
---- 550,557 ----
+--- 573,580 ----
   		/* VC++ COMPILER PARAMETERS */
   #define _LONGLONG	__int64
   #define _ULONGLONG	unsigned __int64
@@ -1878,12 +2395,12 @@ diff -c -3 -p -r1.1 -r1.5
   #define _C2			1	/* 0 if not 2's complement */
 Index: CodeAnalysis/sourceannotations.h
 ===================================================================
-RCS file: /cvsroot/GxInclude/Vc9/Include/CodeAnalysis/sourceannotations.h,v
+RCS file: /cvsroot/GxInclude/Vc9sp1/Include/CodeAnalysis/sourceannotations.h,v
+retrieving revision 1.1
 retrieving revision 1.2
-retrieving revision 1.3
-diff -c -3 -p -r1.2 -r1.3
-*** CodeAnalysis/sourceannotations.h	29 Feb 2008 16:31:44 -0000	1.2
---- CodeAnalysis/sourceannotations.h	29 Feb 2008 16:33:19 -0000	1.3
+diff -c -3 -p -r1.1 -r1.2
+*** CodeAnalysis/sourceannotations.h	6 Jan 2009 21:19:11 -0000	1.1
+--- CodeAnalysis/sourceannotations.h	6 Jan 2009 21:21:23 -0000	1.2
 *************** typedef unsigned short wchar_t;
 *** 32,38 ****
   
