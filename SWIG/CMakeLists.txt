@@ -25,6 +25,9 @@ SET(SWIG_LIB "\"${SWIG_SOURCE_DIR}/Lib\"")
 SET(SWIG_CXX "\"${CMAKE_CXX_COMPILER}\"")
 SET(SWIG_PLATFORM "\"${CMAKE_SYSTEM}-${CMAKE_C_COMPILER}\"")
 
+SET(SWIG_LIB_INSTALL
+  ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}lib/CableSwig/SWIGLib)
+
 INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
 INCLUDE (${CMAKE_ROOT}/Modules/CheckLibraryExists.cmake)
 
@@ -159,6 +162,4 @@ CONFIGURE_FILE(${SWIG_SOURCE_DIR}/SWIGConfig.cmake.in
   ${SWIG_BINARY_DIR}/SWIGConfig.cmake @ONLY IMMEDIATE)
 
 # Install support library.
-SET(SWIG_LIB_INSTALL
-  ${CMAKE_INSTALL_PREFIX}/${CableSwig_INSTALL_ROOT}lib/CableSwig/SWIGLib)
 SUBDIRS(Lib)
