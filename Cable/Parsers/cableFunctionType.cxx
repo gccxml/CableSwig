@@ -133,7 +133,7 @@ void FunctionType::AddArgument(Type* argument, bool hasDefault, const char *name
 //----------------------------------------------------------------------------
 unsigned int FunctionType::GetNumberOfArguments() const
 {
-  return m_ArgumentTypeVector.size();
+  return static_cast<unsigned int>(m_ArgumentTypeVector.size());
 }
 
 //----------------------------------------------------------------------------

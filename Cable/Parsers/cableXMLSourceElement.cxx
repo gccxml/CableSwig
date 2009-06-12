@@ -94,7 +94,7 @@ XMLSourceElement* XMLSourceElement::GetElement(const char* name) const
 //----------------------------------------------------------------------------
 unsigned int XMLSourceElement::GetNumberOfNestedElements() const
 {
-  return m_NestedElementVector.size();
+  return static_cast<unsigned int>(m_NestedElementVector.size());
 }
   
 //----------------------------------------------------------------------------

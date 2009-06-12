@@ -105,7 +105,7 @@ bool XMLParser::ParseStream()
     in.read(buffer, bufferSize);
     if(in.gcount())
       {
-      if(!this->ParseBuffer(buffer, in.gcount()))
+      if(!this->ParseBuffer(buffer, static_cast<unsigned int>(in.gcount())))
         {
         return false;
         }
@@ -208,7 +208,7 @@ bool XMLParser::ParseBuffer(const char* buffer, unsigned int count)
 //----------------------------------------------------------------------------
 bool XMLParser::ParseBuffer(const char* buffer)
 {
-  return this->ParseBuffer(buffer, strlen(buffer));
+  return this->ParseBuffer(buffer, static_cast<unsigned int>(strlen(buffer)));
 }
 
 //----------------------------------------------------------------------------
