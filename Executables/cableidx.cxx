@@ -174,6 +174,14 @@ int DetermineClassesToWrap(std::ofstream& fout, const Namespace* cns, const char
             << "{" << c->GetQualifiedName() << "} {"
             << td->GetName() << "} {" << group << "}\n";
           }
+        const EnumerationType* et = EnumerationType::SafeDownCast(td->GetType());
+        if(et)
+          {
+          const Enumeration* e = et->GetEnumeration();
+          fout
+            << "{" << e->GetQualifiedName() << "} {"
+            << td->GetName() << "} {" << group << "}\n";
+          }
         }
       }
     }
