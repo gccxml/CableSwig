@@ -9,6 +9,13 @@ SET(CableSwig_VERSION_MAJOR 0)
 SET(CableSwig_VERSION_MINOR 1)
 SET(CableSwig_VERSION_PATCH 0)
 
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "CableSwig creates interfaces (i.e. "wrappers") to interpreted languages such as Tcl and Python.")
+SET(CPACK_PACKAGE_VENDOR "Insight Software Consortium")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${CableSwig_VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${CableSwig_VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${CableSwig_VERSION_PATCH}")
+INCLUDE(CPack)
+
 # Check for ANSI flags on non-GNU compilers.
 IF(NOT CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_TRY_ANSI_CXX_FLAGS "")
