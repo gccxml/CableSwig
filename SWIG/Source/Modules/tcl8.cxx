@@ -90,35 +90,35 @@ public:
     
     for (int i = 1; i < argc; i++) {
       if (argv[i]) {
-	if (strcmp(argv[i],"-prefix") == 0) {
-	  if (argv[i+1]) {
-	    prefix = NewString(argv[i+1]);
-	    Swig_mark_arg(i);
-	    Swig_mark_arg(i+1);
-	    i++;
-	  } else Swig_arg_error();
-	} else if (strcmp(argv[i],"-pkgversion") == 0) {
-	  if (argv[i+1]) {
-	    version = NewString(argv[i+1]);
-	    Swig_mark_arg(i);
-	    Swig_mark_arg(i+1);
-	    i++;
-	  }
-	} else if (strcmp(argv[i],"-namespace") == 0) {
-	  nspace = 1;
-	  Swig_mark_arg(i);
-	} else if (strcmp(argv[i],"-itcl") == 0) {
-	  itcl = 1;
-	  Swig_mark_arg(i);
-	} else if (strcmp(argv[i],"-nosafe") == 0) {
-	  nosafe = 1;
-	  Swig_mark_arg(i);
-	} else if (strcmp(argv[i],"-help") == 0) {
-	  fputs(usage,stderr);
-	} else if (strcmp (argv[i], "-ldflags") == 0) {
-	  printf("%s\n", SWIG_TCL_RUNTIME);
-	  SWIG_exit (EXIT_SUCCESS);
-	}
+        if (strcmp(argv[i],"-prefix") == 0) {
+          if (argv[i+1]) {
+            prefix = NewString(argv[i+1]);
+            Swig_mark_arg(i);
+            Swig_mark_arg(i+1);
+            i++;
+          } else Swig_arg_error();
+        } else if (strcmp(argv[i],"-pkgversion") == 0) {
+          if (argv[i+1]) {
+            version = NewString(argv[i+1]);
+            Swig_mark_arg(i);
+            Swig_mark_arg(i+1);
+            i++;
+          }
+        } else if (strcmp(argv[i],"-namespace") == 0) {
+          nspace = 1;
+          Swig_mark_arg(i);
+        } else if (strcmp(argv[i],"-itcl") == 0) {
+          itcl = 1;
+          Swig_mark_arg(i);
+        } else if (strcmp(argv[i],"-nosafe") == 0) {
+          nosafe = 1;
+          Swig_mark_arg(i);
+        } else if (strcmp(argv[i],"-help") == 0) {
+          fputs(usage,stderr);
+        } else if (strcmp (argv[i], "-ldflags") == 0) {
+          printf("%s\n", SWIG_TCL_RUNTIME);
+          SWIG_exit (EXIT_SUCCESS);
+        }
       }
     }
     Preprocessor_define("SWIGTCL 1",0);
@@ -183,8 +183,8 @@ public:
       Insert( module,0,"_" );
 
       if ((f_shadow = NewFile(filen,"w")) == 0) {
-	Printf(stderr,"Unable to open %s\n", filen);
-	SWIG_exit (EXIT_FAILURE);
+        Printf(stderr,"Unable to open %s\n", filen);
+        SWIG_exit (EXIT_FAILURE);
       }
       f_shadow_stubs = NewString("");
 
@@ -192,10 +192,10 @@ public:
       Swig_register_filebyname("itcl",f_shadow);
 
       Printv(f_shadow,
-	     "# This file was created automatically by SWIG.\n",
-	     "# Don't modify this file, modify the SWIG interface instead.\n",
-	     "# This file is compatible with both classic and new-style classes.\n",
-	     NIL);
+             "# This file was created automatically by SWIG.\n",
+             "# Don't modify this file, modify the SWIG interface instead.\n",
+             "# This file is compatible with both classic and new-style classes.\n",
+             NIL);
 
       Printv(f_shadow,"\npackage require Itcl\n\n", NIL);
     };
@@ -306,9 +306,9 @@ public:
     Setattr(n,"wrap:name",wname);
 
     Printv(f->def,
-	   "static int\n ", wname, "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
+           "static int\n ", wname, "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
            "(void)clientData; (void)interp; (void)objc; (void)objv;",
-	   NIL);
+           NIL);
     
     /* Print out variables for storing arguments. */
     emit_args(type,parms, f);
@@ -328,7 +328,7 @@ public:
       /* Skip ignored arguments */
     
       while (checkAttribute(p,"tmap:in:numinputs","0")) {
-	p = Getattr(p,"tmap:in:next");
+        p = Getattr(p,"tmap:in:next");
       }
       
       SwigType *pt = Getattr(p,"type");
@@ -339,47 +339,47 @@ public:
       
       if (i == num_required) Putc('|',argstr);
       if ((tm = Getattr(p,"tmap:in"))) {
-	String *parse = Getattr(p,"tmap:in:parse");
-	if (!parse) {
-	  Replaceall(tm,"$target",ln);
-	  Replaceall(tm,"$source",source);
-	  Replaceall(tm,"$input",source);
-	  Setattr(p,"emit:input",source);
+        String *parse = Getattr(p,"tmap:in:parse");
+        if (!parse) {
+          Replaceall(tm,"$target",ln);
+          Replaceall(tm,"$source",source);
+          Replaceall(tm,"$input",source);
+          Setattr(p,"emit:input",source);
 
-	  if (Getattr(p,"wrap:disown") || (Getattr(p,"tmap:in:disown"))) {
-	    Replaceall(tm,"$disown","SWIG_POINTER_DISOWN");
-	  } else {
-	    Replaceall(tm,"$disown","0");
-	  }
+          if (Getattr(p,"wrap:disown") || (Getattr(p,"tmap:in:disown"))) {
+            Replaceall(tm,"$disown","SWIG_POINTER_DISOWN");
+          } else {
+            Replaceall(tm,"$disown","0");
+          }
 
-	  Putc('o',argstr);
-	  Printf(args,",0");
-	  if (i >= num_required) {
-	    Printf(incode, "if (objc > %d) {\n", i+1);
-	  }
-	  Printf(incode,"%s\n", tm);
-	  if (i >= num_required) {
-	    Printf(incode, "}\n");
-	  }
-	} else {
-	  Printf(argstr,"%s",parse);
-	  Printf(args,",&%s",ln);
-	  if (Strcmp(parse,"p") == 0) {
-	    SwigType *lt = SwigType_ltype(pt);
-	    SwigType_remember(pt);
-	    if (Cmp(lt,"p.void") == 0) {
-	      Printf(args,",0");
-	    } else {
-	      Printf(args,",SWIGTYPE%s", SwigType_manglestr(pt));
-	    }
-	    Delete(lt);
-	  }
-	}
-	p = Getattr(p,"tmap:in:next");
-	continue;
+          Putc('o',argstr);
+          Printf(args,",0");
+          if (i >= num_required) {
+            Printf(incode, "if (objc > %d) {\n", i+1);
+          }
+          Printf(incode,"%s\n", tm);
+          if (i >= num_required) {
+            Printf(incode, "}\n");
+          }
+        } else {
+          Printf(argstr,"%s",parse);
+          Printf(args,",&%s",ln);
+          if (Strcmp(parse,"p") == 0) {
+            SwigType *lt = SwigType_ltype(pt);
+            SwigType_remember(pt);
+            if (Cmp(lt,"p.void") == 0) {
+              Printf(args,",0");
+            } else {
+              Printf(args,",SWIGTYPE%s", SwigType_manglestr(pt));
+            }
+            Delete(lt);
+          }
+        }
+        p = Getattr(p,"tmap:in:next");
+        continue;
       } else {
-	Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-		     "Unable to use type %s as a function argument.\n", SwigType_str(pt,0));
+        Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
+                     "Unable to use type %s as a function argument.\n", SwigType_str(pt,0));
       }
       p = nextSibling(p);
     }
@@ -390,56 +390,56 @@ public:
       Putc(';',argstr);
       /* If variable length arguments we need to emit the in typemap here */
       if (p && (tm = Getattr(p,"tmap:in"))) {
-	sprintf(source,"objv[%d]", i+1);
-	Printf(incode,"if (objc > %d) {\n", i);
-	Replaceall(tm,"$input",source);
-	Printv(incode,tm,"\n", NIL);
-	Printf(incode,"}\n");
+        sprintf(source,"objv[%d]", i+1);
+        Printf(incode,"if (objc > %d) {\n", i);
+        Replaceall(tm,"$input",source);
+        Printv(incode,tm,"\n", NIL);
+        Printf(incode,"}\n");
       }
     }
     
     Printf(argstr,"%s\"",usage_string(Char(iname),type,parms));
     
     Printv(f->code,
-	   "if (SWIG_GetArgs(interp, objc, objv,", argstr, args, ") == TCL_ERROR) SWIG_fail;\n",
-	   NIL);
+           "if (SWIG_GetArgs(interp, objc, objv,", argstr, args, ") == TCL_ERROR) SWIG_fail;\n",
+           NIL);
     
     Printv(f->code,incode,NIL);
     
     /* Insert constraint checking code */
     for (p = parms; p;) {
       if ((tm = Getattr(p,"tmap:check"))) {
-	Replaceall(tm,"$target",Getattr(p,"lname"));
-	Printv(f->code,tm,"\n",NIL);
-	p = Getattr(p,"tmap:check:next");
+        Replaceall(tm,"$target",Getattr(p,"lname"));
+        Printv(f->code,tm,"\n",NIL);
+        p = Getattr(p,"tmap:check:next");
       } else {
-	p = nextSibling(p);
+        p = nextSibling(p);
       }
     }
     
     /* Insert cleanup code */
     for (i = 0, p = parms; p; i++) {
       if ((tm = Getattr(p,"tmap:freearg"))) {
-	Replaceall(tm,"$source",Getattr(p,"lname"));
-	Printv(cleanup,tm,"\n",NIL);
-	p = Getattr(p,"tmap:freearg:next");
+        Replaceall(tm,"$source",Getattr(p,"lname"));
+        Printv(cleanup,tm,"\n",NIL);
+        p = Getattr(p,"tmap:freearg:next");
       } else {
-	p = nextSibling(p);
+        p = nextSibling(p);
       }
     }
     
     /* Insert argument output code */
     for (i=0,p = parms; p;i++) {
       if ((tm = Getattr(p,"tmap:argout"))) {
-	Replaceall(tm,"$source",Getattr(p,"lname"));
-	Replaceall(tm,"$target","(Tcl_GetObjResult(interp))");
-	Replaceall(tm,"$result","(Tcl_GetObjResult(interp))");
-	Replaceall(tm,"$arg",Getattr(p,"emit:input"));
-	Replaceall(tm,"$input",Getattr(p,"emit:input"));
-	Printv(outarg,tm,"\n",NIL);
-	p = Getattr(p,"tmap:argout:next");
+        Replaceall(tm,"$source",Getattr(p,"lname"));
+        Replaceall(tm,"$target","(Tcl_GetObjResult(interp))");
+        Replaceall(tm,"$result","(Tcl_GetObjResult(interp))");
+        Replaceall(tm,"$arg",Getattr(p,"emit:input"));
+        Replaceall(tm,"$input",Getattr(p,"emit:input"));
+        Printv(outarg,tm,"\n",NIL);
+        p = Getattr(p,"tmap:argout:next");
       } else {
-	p = nextSibling(p);
+        p = nextSibling(p);
       }
     }
     
@@ -456,7 +456,7 @@ public:
       Printf(f->code,"%s\n", tm);
     } else {
       Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number,
-		   "Unable to use return type %s in function %s.\n", SwigType_str(type,0), name);
+                   "Unable to use return type %s in function %s.\n", SwigType_str(type,0), name);
     }
     
     /* Dump output argument code */
@@ -468,8 +468,8 @@ public:
     /* Look for any remaining cleanup */
     if (Getattr(n,"feature:new")) {
       if ((tm = Swig_typemap_lookup_new("newfree",n,"result",0))) {
-	Replaceall(tm,"$source","result");
-	Printf(f->code,"%s\n", tm);
+        Replaceall(tm,"$source","result");
+        Printf(f->code,"%s\n", tm);
       }
     }
     
@@ -493,32 +493,32 @@ public:
       Printv(cmd_tab, tab4, "{ SWIG_prefix \"", iname, "\", (swig_wrapper_func) ", Swig_name_wrapper(iname), ", NULL},\n", NIL);
     } else {
       if (!Getattr(n,"sym:nextSibling")) {
-	/* Emit overloading dispatch function */
+        /* Emit overloading dispatch function */
 
-	int maxargs;
-	String *dispatch = Swig_overload_dispatch(n,"return %s(clientData, interp, objc, objv);",&maxargs);
-	
-	/* Generate a dispatch wrapper for all overloaded functions */
+        int maxargs;
+        String *dispatch = Swig_overload_dispatch(n,"return %s(clientData, interp, objc, objv);",&maxargs);
+        
+        /* Generate a dispatch wrapper for all overloaded functions */
 
-	Wrapper *df      = NewWrapper();
-	String  *dname   = Swig_name_wrapper(iname);
+        Wrapper *df      = NewWrapper();
+        String  *dname   = Swig_name_wrapper(iname);
 
-	Printv(df->def,	
-	       "static int\n", dname,
-	       "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
+        Printv(df->def,        
+               "static int\n", dname,
+               "(ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {\n"
                "(void)clientData; (void)interp; (void)objc; (void)objv;",
-	       NIL);
-	Printf(df->code,"Tcl_Obj *CONST *argv = objv+1; (void)argv;\n");
-	Printf(df->code,"int argc = objc-1; (void)argc;\n");
-	Printv(df->code,dispatch,"\n",NIL);
-	Printf(df->code,"Tcl_SetResult(interp, \"No matching function for overloaded '%s'\", TCL_STATIC);\n", iname);
-	Printf(df->code,"return TCL_ERROR;\n");
-	Printv(df->code,"}\n",NIL);
-	Wrapper_print(df,f_wrappers);
-	Printv(cmd_tab, tab4, "{ SWIG_prefix \"", iname, "\", (swig_wrapper_func) ", dname, ", NULL},\n", NIL);
-	DelWrapper(df);
-	Delete(dispatch);
-	Delete(dname);
+               NIL);
+        Printf(df->code,"Tcl_Obj *CONST *argv = objv+1; (void)argv;\n");
+        Printf(df->code,"int argc = objc-1; (void)argc;\n");
+        Printv(df->code,dispatch,"\n",NIL);
+        Printf(df->code,"Tcl_SetObjResult(interp, Tcl_NewStringObj(\"No matching function for overloaded '%s'\", -1));\n", iname);
+        Printf(df->code,"return TCL_ERROR;\n");
+        Printv(df->code,"}\n",NIL);
+        Wrapper_print(df,f_wrappers);
+        Printv(cmd_tab, tab4, "{ SWIG_prefix \"", iname, "\", (swig_wrapper_func) ", dname, ", NULL},\n", NIL);
+        DelWrapper(df);
+        Delete(dispatch);
+        Delete(dname);
       }
     }
     
@@ -569,7 +569,7 @@ public:
       Wrapper_print(getf,f_wrappers);
     } else {
       Swig_warning(WARN_TYPEMAP_VAROUT_UNDEF, input_file, line_number, 
-		   "Unable to read variable of type %s\n", SwigType_str(t,0));
+                   "Unable to read variable of type %s\n", SwigType_str(t,0));
       DelWrapper(getf);
       return SWIG_NOWRAP;
     }
@@ -584,21 +584,21 @@ public:
       Wrapper_add_local(setf,"name1o", "Tcl_Obj *name1o = 0");
 
       if ((tm = Swig_typemap_lookup_new("varin", n, name, 0))) {
-	Replaceall(tm,"$source","value");
-	Replaceall(tm,"$target",name);
-	Replaceall(tm,"$input", "value");
-	Printf(setf->code,"name1o = Tcl_NewStringObj(name1,-1);\n");
-	Printf(setf->code,"value = Tcl_ObjGetVar2(interp, name1o, 0, flags);\n");
-	Printf(setf->code,"Tcl_DecrRefCount(name1o);\n");
-	Printf(setf->code,"if (!value) return NULL;\n");
-	Printf(setf->code,"%s\n", tm);
-	Printf(setf->code,"return NULL;\n");
-	Printf(setf->code,"}\n");
-	if (setf) Wrapper_print(setf,f_wrappers);  
+        Replaceall(tm,"$source","value");
+        Replaceall(tm,"$target",name);
+        Replaceall(tm,"$input", "value");
+        Printf(setf->code,"name1o = Tcl_NewStringObj(name1,-1);\n");
+        Printf(setf->code,"value = Tcl_ObjGetVar2(interp, name1o, 0, flags);\n");
+        Printf(setf->code,"Tcl_DecrRefCount(name1o);\n");
+        Printf(setf->code,"if (!value) return NULL;\n");
+        Printf(setf->code,"%s\n", tm);
+        Printf(setf->code,"return NULL;\n");
+        Printf(setf->code,"}\n");
+        if (setf) Wrapper_print(setf,f_wrappers);  
       } else {
-	Swig_warning(WARN_TYPEMAP_VARIN_UNDEF,input_file, line_number,
-		     "Unable to set variable of type %s.\n", SwigType_str(t,0));
-	readonly = 1;
+        Swig_warning(WARN_TYPEMAP_VARIN_UNDEF,input_file, line_number,
+                     "Unable to set variable of type %s.\n", SwigType_str(t,0));
+        readonly = 1;
       }
       DelWrapper(setf);
     } 
@@ -607,12 +607,12 @@ public:
     if (readonly || Getattr(n,"feature:immutable")) {
       static int readonlywrap = 0;
       if (!readonlywrap) {
-	Wrapper *ro = NewWrapper();
-	Printf(ro->def, "static const char *swig_readonly(ClientData clientData, Tcl_Interp *interp, char *name1, char *name2, int flags) {");
-	Printv(ro->code, "return \"Variable is read-only\";\n", "}\n", NIL);
-	Wrapper_print(ro,f_wrappers);
-	readonlywrap = 1;
-	DelWrapper(ro);
+        Wrapper *ro = NewWrapper();
+        Printf(ro->def, "static const char *swig_readonly(ClientData clientData, Tcl_Interp *interp, char *name1, char *name2, int flags) {");
+        Printv(ro->code, "return \"Variable is read-only\";\n", "}\n", NIL);
+        Wrapper_print(ro,f_wrappers);
+        readonlywrap = 1;
+        DelWrapper(ro);
       }
       Printf(var_tab, "(swig_variable_func) swig_readonly},\n");
     } else {
@@ -654,7 +654,7 @@ public:
       Printf(f_init, "%s\n", tm);
     } else {
       Swig_warning(WARN_TYPEMAP_CONST_UNDEF,
-		   input_file, line_number, "Unsupported constant value.\n");
+                   input_file, line_number, "Unsupported constant value.\n");
       return SWIG_NOWRAP;
     }
     return SWIG_OK;
@@ -738,14 +738,14 @@ public:
     if (have_destructor) {
       Printv(f_wrappers, "static void swig_delete_", class_name, "(void *obj) {\n", NIL);
       if (destructor_action) {
-	Printv(f_wrappers, SwigType_str(rt,"arg1"), " = (", SwigType_str(rt,0), ") obj;\n", NIL);
-	Printv(f_wrappers, destructor_action, NIL);
+        Printv(f_wrappers, SwigType_str(rt,"arg1"), " = (", SwigType_str(rt,0), ") obj;\n", NIL);
+        Printv(f_wrappers, destructor_action, NIL);
       } else {
-	if (CPlusPlus) {
-	  Printv(f_wrappers,"    delete (", SwigType_str(rt,0), ") obj;\n",NIL);
-	} else {
-	  Printv(f_wrappers,"    free(obj);\n",NIL);
-	}
+        if (CPlusPlus) {
+          Printv(f_wrappers,"    delete (", SwigType_str(rt,0), ") obj;\n",NIL);
+        } else {
+          Printv(f_wrappers,"    free(obj);\n",NIL);
+        }
       }
       Printf(f_wrappers,"}\n");
     }
@@ -770,28 +770,28 @@ public:
       int index = 0;
       b = First(baselist);
       while (b.item) {
-	String *bname = Getattr(b.item, "name");
-	if ((!bname) || Getattr(b.item,"feature:ignore") || (!Getattr(b.item,"module"))) {
-	  b = Next(b);
-	  continue;
-	}
+        String *bname = Getattr(b.item, "name");
+        if ((!bname) || Getattr(b.item,"feature:ignore") || (!Getattr(b.item,"module"))) {
+          b = Next(b);
+          continue;
+        }
         if( itcl ) {
           have_base_classes = 1;
           Printv( base_classes, bname, " ", NIL );
           Printv( base_class_init , "    ", bname, "Ptr::constructor $ptr\n", NIL );
         } 
-	String *bmangle = Swig_name_mangle(bname);
-	//	Printv(f_wrappers,"extern swig_class _wrap_class_", bmangle, ";\n", NIL);
-	//	Printf(base_class,"&_wrap_class_%s",bmangle);
-	Printf(base_class,"0");
-	/* Put code to register base classes in init function */
-	
-	Printf(f_init,"/* Register base : %s */\n", bmangle);
+        String *bmangle = Swig_name_mangle(bname);
+        //        Printv(f_wrappers,"extern swig_class _wrap_class_", bmangle, ";\n", NIL);
+        //        Printf(base_class,"&_wrap_class_%s",bmangle);
+        Printf(base_class,"0");
+        /* Put code to register base classes in init function */
+        
+        Printf(f_init,"/* Register base : %s */\n", bmangle);
         Printf(f_init,"swig_%s_bases[%d] = \"%s *\";\n",  mangled_classname, index, SwigType_namestr(bname));
-	b = Next(b);
-	index++;
-	Putc(',',base_class);
-	Delete(bmangle);
+        b = Next(b);
+        index++;
+        Putc(',',base_class);
+        Delete(bmangle);
       }
     }
     
@@ -900,7 +900,7 @@ public:
     Delete(base_class);
 
     Printv(f_wrappers, "swig_class _wrap_class_", mangled_classname, " = { \"", class_name,
-	   "\", &SWIGTYPE", SwigType_manglestr(t), ",",NIL);
+           "\", &SWIGTYPE", SwigType_manglestr(t), ",",NIL);
   
     if (have_constructor) {
       Printf(f_wrappers,"%s", Swig_name_wrapper(Swig_name_construct(class_name)));
@@ -1204,16 +1204,16 @@ public:
       String    *pn = Getattr(p,"name");
       /* Only print an argument if not ignored */      
       if (!checkAttribute(p,"tmap:in:numinputs","0")) {
-	if (i >= (pcount-numopt))
-	  Putc('?',temp);
-	if (Len(pn) > 0) {
-	  Printf(temp, "%s",pn);
-	} else {
-	  Printf(temp,"%s", SwigType_str(pt,0));
-	}
-	if (i >= (pcount-numopt))	Putc('?',temp);
-	Putc(' ',temp);
-	i++;
+        if (i >= (pcount-numopt))
+          Putc('?',temp);
+        if (Len(pn) > 0) {
+          Printf(temp, "%s",pn);
+        } else {
+          Printf(temp,"%s", SwigType_str(pt,0));
+        }
+        if (i >= (pcount-numopt))        Putc('?',temp);
+        Putc(' ',temp);
+        i++;
       }
     }
     return Char(temp);
