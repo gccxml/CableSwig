@@ -145,8 +145,14 @@ bool __builtin_isnan(...);
 bool __builtin_isnormal(...);
 bool __builtin_isunordered(...);
 bool __builtin_va_arg_pack(...);
+int  __builtin_va_arg_pack_len(...);
 
 /* We fake some constant expressions from GCC 4.4 parser.  */
 #define __is_pod(x) false
 #define __is_empty(x) false
 #define __has_trivial_destructor(x) false
+
+#ifdef __llvm__
+extern unsigned int  __builtin_bswap32(unsigned int _data);
+extern unsigned long __builtin_bswap64(unsigned long _data);
+#endif

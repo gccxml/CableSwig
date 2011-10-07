@@ -56,6 +56,7 @@
 
 // support for realpath call
 #ifndef _WIN32
+#include <sys/time.h>
 #include <utime.h>
 #include <limits.h>
 #include <sys/wait.h>
@@ -281,70 +282,28 @@ extern int putenv (char *__string) __THROW;
 }
 #endif
 
-/* Implement floattime() for various platforms */
-// Taken from Python 2.1.3
-
-#if defined( _WIN32 ) && !defined( __CYGWIN__ )
-#  include <sys/timeb.h>
-#  define HAVE_FTIME
-#  if defined( __BORLANDC__)
-#    define FTIME ftime
-#    define TIMEB timeb
-#  else // Visual studio?
-#    define FTIME _ftime
-#    define TIMEB _timeb
-#  endif
-#elif defined( __CYGWIN__ ) || defined( __linux__ ) || defined(__APPLE__)
-#  include <sys/time.h>
-#  include <time.h>
-#  define HAVE_GETTIMEOFDAY
-#endif
-
 namespace KWSYS_NAMESPACE
 {
+
+double SystemTools::GetTime(void)
+{
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  return (429.4967296*ft.dwHighDateTime
+          + 0.0000001*ft.dwLowDateTime
+          - 11644473600.0);
+#else
+  struct timeval t;
+  gettimeofday(&t, 0);
+  return 1.0*double(t.tv_sec) + 0.000001*double(t.tv_usec);
+#endif
+}
 
 class SystemToolsTranslationMap : 
     public kwsys_stl::map<kwsys_stl::string,kwsys_stl::string>
 {
 };
-
-
-double
-SystemTools::GetTime(void)
-{
-  /* There are three ways to get the time:
-     (1) gettimeofday() -- resolution in microseconds
-     (2) ftime() -- resolution in milliseconds
-     (3) time() -- resolution in seconds
-     In all cases the return value is a float in seconds.
-     Since on some systems (e.g. SCO ODT 3.0) gettimeofday() may
-     fail, so we fall back on ftime() or time().
-     Note: clock resolution does not imply clock accuracy! */
-#ifdef HAVE_GETTIMEOFDAY
-  {
-  struct timeval t;
-#ifdef GETTIMEOFDAY_NO_TZ
-  if (gettimeofday(&t) == 0)
-#else /* !GETTIMEOFDAY_NO_TZ */
-  if (gettimeofday(&t, static_cast<struct timezone *>(NULL)) == 0)
-#endif /* !GETTIMEOFDAY_NO_TZ */
-    return static_cast<double>(t.tv_sec) +
-      static_cast<double>(t.tv_usec)*0.000001;
-  }
-#endif /* !HAVE_GETTIMEOFDAY */
-  {
-#if defined(HAVE_FTIME)
-  struct TIMEB t;
-  ::FTIME(&t);
-  return static_cast<double>(t.time) +
-    static_cast<double>(t.millitm) * static_cast<double>(0.001);
-#else /* !HAVE_FTIME */
-  time_t secs;
-  time(&secs);
-  return static_cast<double>(secs);
-#endif /* !HAVE_FTIME */
-  }
-}
 
 // adds the elements of the env variable path to the arg passed in
 void SystemTools::GetPath(kwsys_stl::vector<kwsys_stl::string>& path, const char* env)
@@ -378,9 +337,7 @@ void SystemTools::GetPath(kwsys_stl::vector<kwsys_stl::string>& path, const char
     kwsys_stl::string::size_type endpos = pathEnv.find(pathSep, start);
     if(endpos != kwsys_stl::string::npos)
       {
-      kwsys_stl::string convertedPath;
-      Realpath(pathEnv.substr(start, endpos-start).c_str(), convertedPath);
-      path.push_back(convertedPath);
+      path.push_back(pathEnv.substr(start, endpos-start));
       start = endpos+1;
       }
     else
@@ -565,6 +522,14 @@ void SystemTools::ReplaceString(kwsys_stl::string& source,
 static DWORD SystemToolsMakeRegistryMode(DWORD mode,
                                          SystemTools::KeyWOW64 view)
 {
+  // only add the modes when on a system that supports Wow64.
+  static FARPROC wow64p = GetProcAddress(GetModuleHandle("kernel32"),
+                                         "IsWow64Process");
+  if(wow64p == NULL)
+    {
+    return mode;
+    }
+
   if(view == SystemTools::KeyWOW64_32)
     {
     return mode | KWSYS_ST_KEY_WOW64_32KEY;
@@ -736,10 +701,11 @@ bool SystemTools::WriteRegistryValue(const char *key, const char *value,
   
   HKEY hKey;
   DWORD dwDummy;
+  char lpClass[] = "";
   if(RegCreateKeyEx(primaryKey, 
                     second.c_str(), 
                     0, 
-                    "",
+                    lpClass,
                     REG_OPTION_NON_VOLATILE,
                     SystemToolsMakeRegistryMode(KEY_WRITE, view),
                     NULL,
@@ -1405,6 +1371,10 @@ kwsys_stl::vector<kwsys::String> SystemTools::SplitString(const char* p, char se
 {
   kwsys_stl::string path = p;
   kwsys_stl::vector<kwsys::String> paths;
+  if(path.empty())
+    {
+    return paths;
+    }
   if(isPath && path[0] == '/')
     {
     path.erase(path.begin());
@@ -1638,7 +1608,7 @@ kwsys_stl::string SystemTools::ConvertToUnixOutputPath(const char* path)
   kwsys_stl::string ret = path;
   
   // remove // except at the beginning might be a cygwin drive
-  kwsys_stl::string::size_type pos=0;
+  kwsys_stl::string::size_type pos=1;
   while((pos = ret.find("//", pos)) != kwsys_stl::string::npos)
     {
     ret.erase(pos, 1);
@@ -3059,39 +3029,50 @@ kwsys_stl::string SystemTools::RelativePath(const char* local, const char* remot
 static int GetCasePathName(const kwsys_stl::string & pathIn,
                             kwsys_stl::string & casePath)
 {
-  kwsys_stl::string::size_type iFound = pathIn.rfind('/');
-  if (iFound > 1  && iFound != pathIn.npos)
+  kwsys_stl::vector<kwsys_stl::string> path_components;
+  SystemTools::SplitPath(pathIn.c_str(), path_components);
+  if(path_components[0].empty()) // First component always exists.
     {
-    // recurse to peel off components
-    //
-    if (GetCasePathName(pathIn.substr(0, iFound), casePath) > 0)
-      {
-      casePath += '/';
-      if (pathIn[1] != '/')
-        {
-        WIN32_FIND_DATA findData;
-
-        // append the long component name to the path
-        //
-        HANDLE hFind = ::FindFirstFile(pathIn.c_str(), &findData);
-        if (INVALID_HANDLE_VALUE != hFind)
-          {
-          casePath += findData.cFileName;
-          ::FindClose(hFind);
-          }
-        else
-          {
-          // if FindFirstFile fails, return the error code
-          //
-          casePath = "";
-          return 0;
-          }
-        }
-      }
+    // Relative paths cannot be converted.
+    casePath = "";
+    return 0;
     }
-  else
+
+  // Start with root component.
+  kwsys_stl::vector<kwsys_stl::string>::size_type idx = 0;
+  casePath = path_components[idx++];
+  const char* sep = "";
+
+  // If network path, fill casePath with server/share so FindFirstFile
+  // will work after that.  Maybe someday call other APIs to get
+  // actual case of servers and shares.
+  if(path_components.size() > 2 && path_components[0] == "//")
     {
-    casePath = pathIn;
+    casePath += path_components[idx++];
+    casePath += "/";
+    casePath += path_components[idx++];
+    sep = "/";
+    }
+
+  for(; idx < path_components.size(); idx++)
+    {
+    casePath += sep;
+    sep = "/";
+    kwsys_stl::string test_str = casePath;
+    test_str += path_components[idx];
+
+    WIN32_FIND_DATA findData;
+    HANDLE hFind = ::FindFirstFile(test_str.c_str(), &findData);
+    if (INVALID_HANDLE_VALUE != hFind)
+      {
+      casePath += findData.cFileName;
+      ::FindClose(hFind);
+      }
+    else
+      {
+      casePath = "";
+      return 0;
+      }
     }
   return (int)casePath.size();
 }
@@ -3104,28 +3085,29 @@ kwsys_stl::string SystemTools::GetActualCaseForPath(const char* p)
 #ifndef _WIN32
   return p;
 #else
-  // Check to see if actual case has already been called
-  // for this path, and the result is stored in the LongPathMap
-  SystemToolsTranslationMap::iterator i = 
-    SystemTools::LongPathMap->find(p);
-  if(i != SystemTools::LongPathMap->end())
-    {
-    return i->second;
-    }
-  kwsys_stl::string casePath;
-  int len = GetCasePathName(p, casePath);
-  if(len == 0 || len > MAX_PATH+1)
-    {
-    return p;
-    }
+  kwsys_stl::string casePath = p;
   // make sure drive letter is always upper case
   if(casePath.size() > 1 && casePath[1] == ':')
     {
     casePath[0] = toupper(casePath[0]);
     }
+
+  // Check to see if actual case has already been called
+  // for this path, and the result is stored in the LongPathMap
+  SystemToolsTranslationMap::iterator i =
+    SystemTools::LongPathMap->find(casePath);
+  if(i != SystemTools::LongPathMap->end())
+    {
+    return i->second;
+    }
+  int len = GetCasePathName(p, casePath);
+  if(len == 0 || len > MAX_PATH+1)
+    {
+    return p;
+    }
   (*SystemTools::LongPathMap)[p] = casePath;
   return casePath;
-#endif  
+#endif
 }
 
 //----------------------------------------------------------------------------
@@ -3143,9 +3125,9 @@ const char* SystemTools::SplitPathRootComponent(const char* p,
       }
     c += 2;
     }
-  else if(c[0] == '/')
+  else if(c[0] == '/' || c[0] == '\\')
     {
-    // Unix path.
+    // Unix path (or Windows path w/out drive letter).
     if(root)
       {
       *root = "/";
@@ -4591,8 +4573,6 @@ void SystemTools::ClassInitialize()
   // for windows because drive letters need to be maintained.  Also,
   // there are not sym-links and mount points on windows anyway.
 #if !defined(_WIN32) || defined(__CYGWIN__)
-  // Work-around an SGI problem by always adding this mapping:
-  SystemTools::AddTranslationPath("/tmp_mnt/", "/");
   // The tmp path is frequently a logical path so always keep it:
   SystemTools::AddKeepPath("/tmp/");
 
