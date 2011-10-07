@@ -10,3 +10,17 @@ ADD_LIBRARY(CableGenerators STATIC
 )
 
 TARGET_LINK_LIBRARIES(CableGenerators CableParsers CxxTypes CableExpat)
+
+IF(NOT CABLE_NO_INSTALL_FACILITIES)
+  INSTALL(TARGETS CableGenerators
+    ARCHIVE DESTINATION ${CableSwig_INSTALL_ROOT}lib
+    COMPONENT Development)
+
+  INSTALL(FILES
+    cableCvTypeWriter.h
+    cableGenerator.h
+    cableTclGenerator.h
+    cableSystemTools.h
+    DESTINATION ${CableSwig_INSTALL_ROOT}include/Cable
+    COMPONENT Development)
+ENDIF(NOT CABLE_NO_INSTALL_FACILITIES)
