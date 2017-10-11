@@ -29,7 +29,7 @@
 #endif
 
 // Visual C++ for-loop scoping hack.
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1700
 #ifndef for
 #define for if(false) {} else for
 #endif

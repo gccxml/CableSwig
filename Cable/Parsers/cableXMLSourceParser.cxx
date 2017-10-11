@@ -579,6 +579,14 @@ bool XMLSourceParser::SetupNamed(XMLSourceElement* element, Named* named)
     {
     named->SetName("{anonymous-constructor}");
     }
+  else if (Destructor::SafeDownCast(named))
+  {
+	  named->SetName("{anonymous-destructor}");
+  }
+  else if (Converter::SafeDownCast(named))
+  {
+	  named->SetName("{operator}");
+  }
   else
     {
     cableErrorMacro("No name on Named object " << named->GetNameOfClass());
