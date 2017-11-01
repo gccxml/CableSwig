@@ -1356,9 +1356,15 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
   bool isStatic = false;
   bool isVirtual = false;
   bool isPureVirtual = false;
+  bool isOverride = false;
 
   const char* virtualAttr = element->GetAttribute("virtual");
   if(virtualAttr && (String(virtualAttr) == "1")) { isVirtual = true; }
+  if (isVirtual)
+  {
+	  const char* overridesAttr = element->GetAttribute("overrides");
+	  if (overridesAttr && (String(overridesAttr) != "")) { isOverride = true; }
+  }
   const char* pureVirtualAttr = element->GetAttribute("pure_virtual");
   if(pureVirtualAttr && (String(pureVirtualAttr) == "1")) { isPureVirtual = true; }
 
@@ -1389,6 +1395,7 @@ SourceObject* XMLSourceParser::AddMethod(XMLSourceElement* element)
   m->SetStatic(isStatic);
   m->SetVirtual(isVirtual);
   m->SetPureVirtual(isPureVirtual);
+  m->SetOverride(isOverride);
 
   // Add the FunctionType element with a dummy id.
   String fid = element->GetId();
