@@ -143,6 +143,19 @@ unsigned int FunctionType::GetNumberOfRequiredArguments() const
 }
 
 //----------------------------------------------------------------------------
+int FunctionType::GetIndexOf(const std::string& argname) const
+{
+  int result = -1;
+  std::vector<std::string>::iterator iterator = std::find(m_ArgumentNameVector.begin(), m_ArgumentNameVector.end(), argname);
+  if (iterator != m_ArgumentNameVector.end())
+  {
+    result = iterator - m_ArgumentNameVector.begin();
+  }
+
+  return result;
+}
+
+//----------------------------------------------------------------------------
 Type* FunctionType::GetArgument(unsigned int index) const
 {
   if(index >= m_ArgumentTypeVector.size())

@@ -52,7 +52,10 @@ public:
   
   /** Get the number of arguments without default values.  */
   unsigned int GetNumberOfRequiredArguments() const;
-  
+
+  /** Get the index of an argument by name */
+  int GetIndexOf(const std::string& argname) const;
+      
   /** Get the argument with the given index.  */
   Type* GetArgument(unsigned int index) const;
   
