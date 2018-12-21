@@ -90,6 +90,18 @@ void Method::SetPureVirtual(bool s)
 }
 
 //----------------------------------------------------------------------------
+bool Method::GetOverride() const
+{
+	return m_Override;
+}
+
+//----------------------------------------------------------------------------
+void Method::SetOverride(bool s)
+{
+	m_Override = s;
+}
+
+//----------------------------------------------------------------------------
 void Method::Print(std::ostream& os, Indent indent) const
 {
   if(m_FunctionType && m_FunctionType->GetCxxType().GetType())

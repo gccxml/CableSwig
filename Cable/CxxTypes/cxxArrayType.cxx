@@ -87,8 +87,11 @@ String ArrayType::GenerateDeclaration(const String& name,
  */
 String ArrayType::GenerateLengthString() const
 {
-  char buf[128];
-  sprintf(buf, "%lu", m_Length);
+  char buf[128] = "";
+  if (m_Length > 0)
+  {
+    sprintf(buf, "%lu", m_Length);
+  }
   return buf;
 }
 

@@ -44,6 +44,10 @@ public:
   bool GetPureVirtual() const;
   void SetPureVirtual(bool s);
 
+  /** Get/Set whether the method is overridden.  */
+  bool GetOverride() const;
+  void SetOverride(bool s);
+
   /** Get/Set whether the method is const.  */
   bool GetConst() const;
   void SetConst(bool c);
@@ -60,6 +64,9 @@ protected:
 
   // Whether or not the method is virtual.
   bool m_Virtual;
+
+  // Whether or not the method is overridden.
+  bool m_Override;
 
   // Whether or not the method is static.
   bool m_Static;
